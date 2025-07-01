@@ -1,0 +1,24 @@
+<head>
+  <meta charset="UTF-8">
+  <title>J-Chess</title>
+  <link rel="stylesheet" href="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" />
+  <style>
+    #board {
+      width: 400px;
+      margin: 20px auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to J-Chess</h1>
+  <p>This is a demo board. Randomisation will be added next.</p>
+  <div id="board"></div>
+
+  <script src="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+  <script>
+    const board = Chessboard('board', {
+      position: 'start',
+      draggable: true
+    });
+  </script>
+</body>
