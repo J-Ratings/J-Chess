@@ -3,57 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <title>J-Chess</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Board CSS -->
-  <link
-    rel="stylesheet"
-    href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css"
-  />
+  <!-- Chessboard.js CSS -->
+  <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 20px }
-    #board { width: 400px; margin: 20px auto }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background-color: #f5f5f5;
+      text-align: center;
+    }
+
+    #board {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 2em;
+    }
   </style>
 </head>
 <body>
   <h1>J-Chess</h1>
   <div id="board"></div>
 
-  <!-- 1) Load jQuery -->
+  <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- 2) Load chessboard.js -->
+  <!-- Chessboard.js -->
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
-  <!-- 3) Load UMD/browser build of chess.js (v0.12) -->
+  <!-- chess.js for legality -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
-  <!-- 4) Initialise with move legality -->
   <script>
-    $(function() {
-      // Set up game logic and board
-      const game = new Chess();  
-      const board = Chessboard('board', {
-        position: 'start',
+    $(function () {
+      const game = new Chess();
+
+      const config = {
         draggable: true,
+        position: 'start',
         pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
 
-        onDragStart: function(source, piece) {
-          // only pick up pieces for the side to move
+        onDragStart: function (source, piece) {
           if (game.game_over() ||
-             (game.turn() === 'w' && piece[0] !== 'w') ||
-             (game.turn() === 'b' && piece[0] !== 'b')) {
+            (game.turn() === 'w' && piece[0] !== 'w') ||
+            (game.turn() === 'b' && piece[0] !== 'b')) {
             return false;
           }
         },
 
-        onDrop: function(source, target) {
-          const move = game.move({ from: source, to: target, promotion: 'q' });
+        onDrop: function (source, target) {
+          const move = game.move({
+            from: source,
+            to: target,
+            promotion: 'q'
+          });
+
           if (move === null) return 'snapback';
-          board.position(game.fen());
         },
 
-        onSnapEnd: function() {
+        onSnapEnd: function () {
           board.position(game.fen());
         }
-      });
+      };
+
+      const board = Chessboard('board', config);
+
+      // Auto-resize board
+      $(window).resize(board.resize);
     });
   </script>
 </body>
