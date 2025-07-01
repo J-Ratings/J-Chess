@@ -1,129 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>J-Chess</title>
-  <!-- Board CSS from CDN -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/css/chessboard.min.css"
-  />
+  <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard.css">
   <style>
-    body { font-family: sans-serif; padding: 30px; text-align: center; }
-    #board { width: 400px; margin: 20px auto; }
-    #controls { margin-top: 20px; }
-    #status { margin-top: 10px; font-weight: bold; }
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
   </style>
 </head>
 <body>
   <h1>J-Chess</h1>
-  <div id="board"></div>
-
-  <div id="controls">
-    Engine depth:
-    <input type="range" id="depth" min="1" max="20" value="10" />
-    <span id="depthVal">10</span>
-    <button id="newGame">New game</button>
+  <div>
+    <label for="depth">Engine depth:</label>
+    <input type="range" id="depth" name="depth" min="1" max="20" value="10" onchange="updateDepth(this.value)">
+    <span id="depthValue">10</span>
+    <button onclick="startNewGame()">New game</button>
   </div>
+  <div id="board" style="width: 400px; margin: 20px auto;"></div>
 
-  <div id="status"></div>
-
-  <!-- Dependencies -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/js/chessboard.min.js">
-  </script>
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js">
-  </script>
-  <!-- Local Stockfish you just downloaded -->
-  <script src="stockfish.js"></script>
-
+  <script src="chessboardjs-1.0.0/js/chessboard.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="engine/stockfish-17-single.js"></script> <!-- Use local engine file -->
   <script>
-  $(function() {
-    // 1) Create the engine instance from global STOCKFISH()
-    const engine = STOCKFISH();
-    engine.postMessage('uci');
-    engine.postMessage('isready');
+    let board;
+    let engine = new Worker('engine/stockfish-17-single.js'); // Use the correct path here
+    let depth = 10;
 
-    // 2) Set up chess.js game logic
-    const game = new Chess();
-
-    // 3) Initialise the board
-    const board = Chessboard('board', {
-      draggable: true,
-      position: 'start',
-      pieceTheme:
-        'https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/{piece}.png',
-      onDragStart: (source, piece) => {
-        // prevent moving out of turn or after game over
-        if (
-          game.game_over() ||
-          (game.turn() === 'w' && piece[0] !== 'w') ||
-          (game.turn() === 'b' && piece[0] !== 'b')
-        )
-          return false;
-      },
-      onDrop: (source, target) => {
-        const move = game.move({ from: source, to: target, promotion: 'q' });
-        if (!move) return 'snapback';
-        board.position(game.fen());
-        updateStatus();
-        setTimeout(engineMove, 200);
-      },
-      onSnapEnd: () => {
-        board.position(game.fen());
-      },
-    });
-
-    // 4) Handle engine responses
-    engine.onmessage = (event) => {
-      const line = event.data || event;
-      if (line.startsWith('bestmove')) {
-        const mv = line.split(' ')[1];
-        game.move({
-          from: mv.substr(0, 2),
-          to: mv.substr(2, 2),
-          promotion: 'q',
-        });
-        board.position(game.fen());
-        updateStatus();
-      }
-    };
-
-    // 5) Ask engine to play
-    function engineMove() {
-      engine.postMessage('position fen ' + game.fen());
-      engine.postMessage('go depth ' + $('#depth').val());
+    function updateDepth(val) {
+      depth = val;
+      document.getElementById("depthValue").textContent = val;
     }
 
-    // 6) Update status text
-    function updateStatus() {
-      let status = '';
-      if (game.in_checkmate()) {
-        status = 'Checkmate! ' + (game.turn() === 'w' ? 'Black' : 'White') + ' wins.';
-      } else if (game.in_draw()) {
-        status = 'Draw!';
-      } else {
-        status = (game.turn() === 'w' ? 'White' : 'Black') + ' to move';
-        if (game.in_check()) status += ', in check';
-      }
-      $('#status').text(status);
-    }
-
-    // 7) Wire up controls
-    $('#depth').on('input change', function() {
-      $('#depthVal').text(this.value);
-    });
-    $('#newGame').click(function() {
-      game.reset();
+    function startNewGame() {
       board.start();
-      updateStatus();
-    });
+      engine.postMessage('ucinewgame');
+    }
 
-    // 8) Kick off
-    updateStatus();
-  });
+    $(function () {
+      board = Chessboard('board', {
+        draggable: true,
+        position: 'start'
+      });
+    });
   </script>
 </body>
 </html>
