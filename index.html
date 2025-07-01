@@ -3,106 +3,112 @@
 <head>
   <meta charset="UTF-8">
   <title>J-Chess</title>
-
-  <!-- board CSS -->
-  <link rel="stylesheet"
-        href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
+  <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css">
   <style>
-    body { font-family: sans-serif; text-align: centre; margin: 20px }
-    #board { width: 400px; margin: 20px auto }
-    #controls { text-align: centre; margin: 10px }
-    #status { margin-top: 10px; font-weight: bold }
+    body {
+      font-family: sans-serif;
+      padding: 30px;
+    }
+    #board {
+      width: 400px;
+      margin: 20px 0;
+    }
+    #engine-controls {
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
   <h1>J-Chess</h1>
-
   <div id="board"></div>
 
-  <div id="controls">
-    Engine depth:
-    <input id="depth" type="range" min="1" max="20" value="10">
-    <span id="depthVal">10</span>
+  <div id="engine-controls">
+    <label>Engine depth:</label>
+    <input type="range" id="depth" min="1" max="20" value="10">
+    <span id="depth-val">10</span>
     <button id="newGame">New game</button>
   </div>
 
-  <div id="status"></div>
+  <p id="status"></p>
 
-  <!-- dependencies -->
+  <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/niklasf/stockfish.js/stockfish.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js"></script>
 
   <script>
-    $(function() {
-      const game = new Chess()
+    $(function () {
       const board = Chessboard('board', {
-        position: 'start',
         draggable: true,
-        pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-        onDragStart(source, piece) {
-          if (game.game_over() ||
-              (game.turn() === 'w' && piece[0] !== 'w') ||
-              (game.turn() === 'b' && piece[0] !== 'b')) return false
-        },
-        onDrop(source, target) {
-          const move = game.move({ from: source, to: target, promotion: 'q' })
-          if (!move) return 'snapback'
-          board.position(game.fen())
-          updateStatus()
-          window.setTimeout(engineMove, 200)
-        },
-        onSnapEnd() {
-          board.position(game.fen())
-        }
-      })
+        position: 'start',
+        onDrop: onDrop,
+      });
 
-      const engine = STOCKFISH()
-      engine.postMessage('uci')
-      engine.postMessage('isready')
-      engine.onmessage = ({ data }) => {
-        if (data.startsWith('bestmove')) {
-          const best = data.split(' ')[1]
-          game.move(best, { sloppy: true })
-          board.position(game.fen())
-          updateStatus()
-        }
-      }
+      const game = new Chess();
+      const engine = STOCKFISH();
 
-      function updateStatus() {
-        let status = game.turn() === 'w' ? 'White to move' : 'Black to move'
-        if (game.in_checkmate()) {
-          status = 'Checkmate! ' +
-                   (game.turn() === 'w' ? 'Black' : 'White') +
-                   ' wins.'
-        } else if (game.in_draw()) {
-          status = 'Draw!'
-        } else if (game.in_check()) {
-          status += ' Check!'
+      engine.postMessage('uci');
+      engine.postMessage('isready');
+
+      engine.onmessage = function (event) {
+        const line = event.data || event;
+        if (line.startsWith('bestmove')) {
+          const move = line.split(' ')[1];
+          game.move({ from: move.slice(0, 2), to: move.slice(2, 4), promotion: 'q' });
+          board.position(game.fen());
+          updateStatus();
         }
-        $('#status').text(status)
+      };
+
+      function onDrop(source, target) {
+        const move = game.move({
+          from: source,
+          to: target,
+          promotion: 'q'
+        });
+
+        if (move === null) return 'snapback';
+
+        board.position(game.fen());
+        updateStatus();
+        engineMove();
       }
 
       function engineMove() {
-        engine.postMessage('position fen ' + game.fen())
-        engine.postMessage('go depth ' + $('#depth').val())
+        engine.postMessage('position fen ' + game.fen());
+        const depth = parseInt($('#depth').val());
+        engine.postMessage('go depth ' + depth);
       }
 
-      // controls
-      $('#depth').on('input change', function() {
-        $('#depthVal').text(this.value)
-      })
+      function updateStatus() {
+        let status = '';
+        const moveColor = game.turn() === 'w' ? 'White' : 'Black';
 
-      $('#newGame').click(function() {
-        game.reset()
-        board.start()
-        updateStatus()
-      })
+        if (game.in_checkmate()) {
+          status = `Game over. ${moveColor} is in checkmate.`;
+        } else if (game.in_draw()) {
+          status = 'Game over. Draw.';
+        } else {
+          status = `${moveColor} to move`;
+          if (game.in_check()) status += `, in check`;
+        }
 
-      // start
-      updateStatus()
-    })
+        $('#status').text(status);
+      }
+
+      $('#depth').on('input', function () {
+        $('#depth-val').text($(this).val());
+      });
+
+      $('#newGame').on('click', function () {
+        game.reset();
+        board.start();
+        updateStatus();
+      });
+
+      updateStatus();
+    });
   </script>
 </body>
 </html>
