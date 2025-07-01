@@ -3,30 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <title>J-Chess</title>
-  <!-- Cloudflare CDN for chessboard.js -->
+
+  <!-- chessboard.js CSS -->
   <link
     rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/css/chessboard.min.css"
+    href="chessboardjs-1.0.0/css/chessboard.min.css"
   />
+
   <style>
-    #board { width: 400px; margin: 20px auto; }
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    #board {
+      width: 400px;
+      margin: 20px auto;
+    }
   </style>
 </head>
 <body>
   <h1>J-Chess</h1>
   <div id="board"></div>
 
-  <!-- 1) jQuery -->
+  <!-- jQuery (required by chessboard.js) -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- 2) chessboard.js -->
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/js/chessboard.min.js"
-    integrity="sha512-+N8uDhlz+qsu0X8ZFbsc5jKmU9V7D7GR3gAtV7Szt3f/DQqLPPCkWczmsKR2+zZ39/ruKmeBCmW76Xx1XGfvmg=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer">
-  </script>
-
-  <!-- 3) Initialise the board -->
+  <!-- chessboard.js (local copy) -->
+  <script src="chessboardjs-1.0.0/js/chessboard.min.js"></script>
+  <!-- Initialise the demo board -->
   <script>
     $(function() {
       Chessboard('board', {
