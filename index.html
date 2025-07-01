@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>J-Chess</title>
-  <!-- chessboard.js CSS -->
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"
@@ -12,31 +11,39 @@
     body {
       font-family: sans-serif;
       text-align: center;
+      padding: 20px;
     }
     #board {
-      width: 400px;
-      margin: 20px auto;
+      width: 480px;
+      margin: 0 auto 20px;
+    }
+    #controls {
+      margin-bottom: 10px;
+    }
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h1>Welcome to J-Chess</h1>
-  <p>This is a demo board. Randomisation will be added next.</p>
+  <h1>J-Chess</h1>
+  <div id="controls">
+    <label for="level">Engine level (depth): </label>
+    <select id="level">
+      <option value="2">2</option>
+      <option value="4" selected>4</option>
+      <option value="6">6</option>
+      <option value="8">8</option>
+      <option value="10">10</option>
+    </select>
+    <button id="newBtn">New game</button>
+  </div>
+
   <div id="board"></div>
+  <div id="status"></div>
 
-  <!-- 1) Load jQuery -->
+  <!-- dependencies -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- 2) Then load chessboard.js -->
   <script src="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-
-  <script>
-    // initialise the board once both scripts have loaded
-    $(function() {
-      Chessboard('board', {
-        position: 'start',
-        draggable: true
-      });
-    });
-  </script>
-</body>
-</html>
+  <script src="https://cdnjs.cloudflare.com/ajax
