@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>J-Chess</title>
   <!-- Board CSS from CDN -->
   <link
@@ -9,22 +9,10 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/css/chessboard.min.css"
   />
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 30px;
-      text-align: center;
-    }
-    #board {
-      width: 400px;
-      margin: 20px auto;
-    }
-    #controls {
-      margin-top: 20px;
-    }
-    #status {
-      margin-top: 10px;
-      font-weight: bold;
-    }
+    body { font-family: sans-serif; padding: 30px; text-align: center; }
+    #board { width: 400px; margin: 20px auto; }
+    #controls { margin-top: 20px; }
+    #status { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -33,10 +21,11 @@
 
   <div id="controls">
     Engine depth:
-    <input type="range" id="depth" min="1" max="20" value="10">
+    <input type="range" id="depth" min="1" max="20" value="10" />
     <span id="depthVal">10</span>
     <button id="newGame">New game</button>
   </div>
+
   <div id="status"></div>
 
   <!-- Dependencies -->
@@ -47,17 +36,17 @@
   <script
     src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js">
   </script>
+  <!-- Local Stockfish you just downloaded -->
+  <script src="stockfish.js"></script>
 
   <script>
   $(function() {
-    // 1) Spin up the engine as a Worker
-    const engine = new Worker(
-      'https://cdn.jsdelivr.net/npm/stockfish@16.1.1/src/stockfish-umd.js'
-    );
+    // 1) Create the engine instance from global STOCKFISH()
+    const engine = STOCKFISH();
     engine.postMessage('uci');
     engine.postMessage('isready');
 
-    // 2) Set up game logic
+    // 2) Set up chess.js game logic
     const game = new Chess();
 
     // 3) Initialise the board
@@ -67,68 +56,62 @@
       pieceTheme:
         'https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/{piece}.png',
       onDragStart: (source, piece) => {
-        // Prevent moving when game over or wrong colour
-        if (game.game_over() ||
-            (game.turn() === 'w' && piece[0] !== 'w') ||
-            (game.turn() === 'b' && piece[0] !== 'b')) {
+        // prevent moving out of turn or after game over
+        if (
+          game.game_over() ||
+          (game.turn() === 'w' && piece[0] !== 'w') ||
+          (game.turn() === 'b' && piece[0] !== 'b')
+        )
           return false;
-        }
       },
       onDrop: (source, target) => {
-        const move = game.move({
-          from: source,
-          to: target,
-          promotion: 'q'
-        });
-        // Illegal move
+        const move = game.move({ from: source, to: target, promotion: 'q' });
         if (!move) return 'snapback';
         board.position(game.fen());
         updateStatus();
-        window.setTimeout(engineMove, 200);
+        setTimeout(engineMove, 200);
       },
       onSnapEnd: () => {
         board.position(game.fen());
-      }
+      },
     });
 
-    // 4) Engine → play function
-    engine.onmessage = ({ data }) => {
-      if (data.startsWith('bestmove')) {
-        const mv = data.split(' ')[1];
+    // 4) Handle engine responses
+    engine.onmessage = (event) => {
+      const line = event.data || event;
+      if (line.startsWith('bestmove')) {
+        const mv = line.split(' ')[1];
         game.move({
           from: mv.substr(0, 2),
           to: mv.substr(2, 2),
-          promotion: 'q'
+          promotion: 'q',
         });
         board.position(game.fen());
         updateStatus();
       }
     };
 
-    // 5) Send position to engine
+    // 5) Ask engine to play
     function engineMove() {
       engine.postMessage('position fen ' + game.fen());
       engine.postMessage('go depth ' + $('#depth').val());
     }
 
-    // 6) Update status display
+    // 6) Update status text
     function updateStatus() {
+      let status = '';
       if (game.in_checkmate()) {
-        $('#status').text(
-          'Checkmate! ' +
-          (game.turn() === 'w' ? 'Black' : 'White') +
-          ' wins.'
-        );
+        status = 'Checkmate! ' + (game.turn() === 'w' ? 'Black' : 'White') + ' wins.';
       } else if (game.in_draw()) {
-        $('#status').text('Draw!');
+        status = 'Draw!';
       } else {
-        let s = (game.turn() === 'w' ? 'White' : 'Black') + ' to move';
-        if (game.in_check()) s += ', in check';
-        $('#status').text(s);
+        status = (game.turn() === 'w' ? 'White' : 'Black') + ' to move';
+        if (game.in_check()) status += ', in check';
       }
+      $('#status').text(status);
     }
 
-    // 7) Controls
+    // 7) Wire up controls
     $('#depth').on('input change', function() {
       $('#depthVal').text(this.value);
     });
@@ -138,7 +121,7 @@
       updateStatus();
     });
 
-    // 8) Kick it off
+    // 8) Kick off
     updateStatus();
   });
   </script>
