@@ -3,115 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <title>J-Chess</title>
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"
-  />
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" />
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-    #board {
-      width: 400px;
-      margin: 20px auto;
-    }
-    #controls {
-      margin: 10px;
-    }
-    #status {
-      margin-top: 10px;
-      font-weight: bold;
-    }
+    #board { width: 400px; margin: 20px auto; }
   </style>
 </head>
 <body>
   <h1>J-Chess</h1>
-  <p>Play from a balanced random back-rank against Stockfish in your browser.</p>
   <div id="board"></div>
-  <div id="controls">
-    <label>Engine depth:
-      <input id="difficulty" type="range" min="1" max="20" value="10">
-      <span id="depthLabel">10</span>
-    </label>
-  </div>
-  <div id="status">Loading…</div>
 
-  <!-- Libraries -->
+  <!-- external libraries -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chess.js@0.13.4/chess.min.js"></script>
-#  <script src="https://cdn.jsdelivr.net/gh/niklasf/stockfish.js/stockfish.js"></script>
 
+  <!-- inline init script -->
   <script>
-    // Sample J-Chess position (bishops on opposite colours, no castling rights)
-    const START_FEN = 'rnbqkrnb/pppppppp/8/8/8/8/PPPPPPPP/RNBQKRNB w - - 0 1';
-
-    let board, game, engine;
-
-    function updateStatus() {
-      const turn = game.turn() === 'w' ? 'White' : 'Black';
-      let status = turn + ' to move.';
-      if (game.in_checkmate()) {
-        status = 'Checkmate! ' + (turn === 'w' ? 'Black' : 'White') + ' wins.';
-      } else if (game.in_draw()) {
-        status = 'Draw!';
-      } else if (game.in_check()) {
-        status += ' Check!';
-      }
-      document.getElementById('status').innerText = status;
-    }
-
-    function onDragStart(source, piece) {
-      if (game.game_over() || piece[0] !== 'w') return false;
-    }
-
-    function onDrop(source, target) {
-      const move = game.move({ from: source, to: target, promotion: 'q' });
-      if (move === null) return 'snapback';
-      board.position(game.fen());
-      updateStatus();
-      window.setTimeout(engineMove, 200);
-    }
-
-    function engineMove() {
-      engine.postMessage('position fen ' + game.fen());
-      engine.postMessage('go depth ' + $('#difficulty').val());
-    }
-
     $(function() {
-      // Initialise game and board
-      game = new Chess(START_FEN);
-      board = Chessboard('board', {
-        draggable: true,
-        position: START_FEN,
-        onDragStart: onDragStart,
-        onDrop: onDrop,
-        onSnapEnd: () => board.position(game.fen())
-      });
-
-      // Initialise engine
-   //   engine = STOCKFISH();
-   //   engine.postMessage('uci');
-   //   engine.postMessage('isready');
-   //   engine.onmessage = function(event) {
-        const line = event.data || event;
-        if (line === 'readyok') {
-          engine.postMessage('ucinewgame');
-          updateStatus();
-        } else if (line.startsWith('bestmove')) {
-          const best = line.split(' ')[1];
-          game.move(best, { sloppy: true });
-          board.position(game.fen());
-          updateStatus();
-        }
-      };
-
-      // Difficulty control
-      $('#difficulty').on('input change', function() {
-        $('#depthLabel').text(this.value);
-      });
+      Chessboard('board', { position: 'start', draggable: true });
     });
   </script>
 </body>
