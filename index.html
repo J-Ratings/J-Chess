@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>J-Chess</title>
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" />
+  <!-- Cloudflare CDN for chessboard.js -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/css/chessboard.min.css"
+  />
   <style>
     #board { width: 400px; margin: 20px auto; }
   </style>
@@ -13,14 +16,23 @@
   <h1>J-Chess</h1>
   <div id="board"></div>
 
-  <!-- external libraries -->
+  <!-- 1) jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+  <!-- 2) chessboard.js -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/js/chessboard.min.js"
+    integrity="sha512-+N8uDhlz+qsu0X8ZFbsc5jKmU9V7D7GR3gAtV7Szt3f/DQqLPPCkWczmsKR2+zZ39/ruKmeBCmW76Xx1XGfvmg=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer">
+  </script>
 
-  <!-- inline init script -->
+  <!-- 3) Initialise the board -->
   <script>
     $(function() {
-      Chessboard('board', { position: 'start', draggable: true });
+      Chessboard('board', {
+        position: 'start',
+        draggable: true
+      });
     });
   </script>
 </body>
