@@ -4,33 +4,26 @@
   <meta charset="UTF-8">
   <title>J-Chess</title>
 
-  <!-- chessboard.js CSS -->
+  <!-- chessboard.js CSS (note the versioned filename) -->
   <link
     rel="stylesheet"
-    href="chessboardjs-1.0.0/css/chessboard.min.css"
+    href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css"
   />
 
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-    #board {
-      width: 400px;
-      margin: 20px auto;
-    }
+    body { font-family: sans-serif; text-align: center; margin: 20px; }
+    #board { width: 400px; margin: 20px auto; }
   </style>
 </head>
 <body>
   <h1>J-Chess</h1>
   <div id="board"></div>
 
-  <!-- jQuery (required by chessboard.js) -->
+  <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- chessboard.js (local copy) -->
-  <script src="chessboardjs-1.0.0/js/chessboard.min.js"></script>
-  <!-- Initialise the demo board -->
+  <!-- chessboard.js JS (versioned filename) -->
+  <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
+
   <script>
     $(function() {
       Chessboard('board', {
