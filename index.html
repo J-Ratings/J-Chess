@@ -42,7 +42,7 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chess.js@0.13.4/chess.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/niklasf/stockfish.js/stockfish.js"></script>
+#  <script src="https://cdn.jsdelivr.net/gh/niklasf/stockfish.js/stockfish.js"></script>
 
   <script>
     // Sample J-Chess position (bishops on opposite colours, no castling rights)
@@ -92,10 +92,10 @@
       });
 
       // Initialise engine
-      engine = STOCKFISH();
-      engine.postMessage('uci');
-      engine.postMessage('isready');
-      engine.onmessage = function(event) {
+   //   engine = STOCKFISH();
+   //   engine.postMessage('uci');
+   //   engine.postMessage('isready');
+   //   engine.onmessage = function(event) {
         const line = event.data || event;
         if (line === 'readyok') {
           engine.postMessage('ucinewgame');
