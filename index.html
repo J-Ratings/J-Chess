@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <title>J-Chess</title>
 
-  <!-- chessboard.js CSS (note the versioned filename) -->
+  <!-- chessboard.js CSS (we only need the styles, not the images) -->
   <link
     rel="stylesheet"
     href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css"
   />
 
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 20px; }
-    #board { width: 400px; margin: 20px auto; }
+    body { font-family: sans-serif; text-align: center; margin: 20px }
+    #board { width: 400px; margin: 20px auto }
   </style>
 </head>
 <body>
@@ -21,14 +21,15 @@
 
   <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- chessboard.js JS (versioned filename) -->
+  <!-- chessboard.js -->
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
 
   <script>
     $(function() {
       Chessboard('board', {
         position: 'start',
-        draggable: true
+        draggable: true,
+        pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
       });
     });
   </script>
