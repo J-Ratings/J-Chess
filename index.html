@@ -3,47 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <title>J-Chess</title>
-  <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard.css">
+
+  <!-- Board CSS -->
+  <link
+    rel="stylesheet"
+    href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css"
+  />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 50px;
-    }
+    body { font-family: sans-serif; text-align: center; margin: 20px }
+    #board { width: 400px; margin: 20px auto }
   </style>
 </head>
 <body>
   <h1>J-Chess</h1>
-  <div>
-    <label for="depth">Engine depth:</label>
-    <input type="range" id="depth" name="depth" min="1" max="20" value="10" onchange="updateDepth(this.value)">
-    <span id="depthValue">10</span>
-    <button onclick="startNewGame()">New game</button>
-  </div>
-  <div id="board" style="width: 400px; margin: 20px auto;"></div>
+  <div id="board"></div>
 
-  <script src="chessboardjs-1.0.0/js/chessboard.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-  <script src="engine/stockfish-17-single.js"></script> <!-- Use local engine file -->
+  <!-- 1) Load jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- 2) Load chessboard.js -->
+  <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
+  <!-- 3) Load UMD/browser build of chess.js (v0.12) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+
+  <!-- 4) Initialise with move legality -->
   <script>
-    let board;
-    let engine = new Worker('engine/stockfish-17-single.js'); // Use the correct path here
-    let depth = 10;
-
-    function updateDepth(val) {
-      depth = val;
-      document.getElementById("depthValue").textContent = val;
-    }
-
-    function startNewGame() {
-      board.start();
-      engine.postMessage('ucinewgame');
-    }
-
-    $(function () {
-      board = Chessboard('board', {
+    $(function() {
+      // Set up game logic and board
+      const game = new Chess();  
+      const board = Chessboard('board', {
+        position: 'start',
         draggable: true,
-        position: 'start'
+        pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+
+        onDragStart: function(source, piece) {
+          // only pick up pieces for the side to move
+          if (game.game_over() ||
+             (game.turn() === 'w' && piece[0] !== 'w') ||
+             (game.turn() === 'b' && piece[0] !== 'b')) {
+            return false;
+          }
+        },
+
+        onDrop: function(source, target) {
+          const move = game.move({ from: source, to: target, promotion: 'q' });
+          if (move === null) return 'snapback';
+          board.position(game.fen());
+        },
+
+        onSnapEnd: function() {
+          board.position(game.fen());
+        }
       });
     });
   </script>
