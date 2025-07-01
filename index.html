@@ -1,48 +1,60 @@
-  <!-- chess.js for move legality -->
-  <script src="https://cdn.jsdelivr.net/npm/chess.js@0.13.4/chess.min.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>J-Chess</title>
 
+  <!-- Board CSS -->
+  <link
+    rel="stylesheet"
+    href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css"
+  />
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 20px }
+    #board { width: 400px; margin: 20px auto }
+  </style>
+</head>
+<body>
+  <h1>J-Chess</h1>
+  <div id="board"></div>
+
+  <!-- 1) Load jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- 2) Load chessboard.js -->
+  <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
+  <!-- 3) Load UMD/browser build of chess.js (v0.12) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+
+  <!-- 4) Initialise with move legality -->
   <script>
-    let board, game;
-
-    function onDragStart(source, piece) {
-      // don't pick up pieces if the game is over or it's not White to move
-      if (game.game_over() || (game.turn() === 'w' && piece[0] !== 'w') || (game.turn() === 'b' && piece[0] !== 'b')) {
-        return false;
-      }
-    }
-
-    function onDrop(source, target) {
-      // see if the move is legal
-      const move = game.move({
-        from: source,
-        to: target,
-        promotion: 'q' // always promote to queen for simplicity
-      });
-
-      // illegal move
-      if (move === null) return 'snapback';
-
-      // legal: update board and status
-      board.position(game.fen());
-      return;
-    }
-
-    function onSnapEnd() {
-      // update the board to reflect the game state
-      board.position(game.fen());
-    }
-
     $(function() {
-      // initialise a new game from the standard start position
-      game = new Chess();  
-
-      board = Chessboard('board', {
+      // Set up game logic and board
+      const game = new Chess();  
+      const board = Chessboard('board', {
         position: 'start',
         draggable: true,
-        onDragStart: onDragStart,
-        onDrop:      onDrop,
-        onSnapEnd:   onSnapEnd,
-        pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
+        pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+
+        onDragStart: function(source, piece) {
+          // only pick up pieces for the side to move
+          if (game.game_over() ||
+             (game.turn() === 'w' && piece[0] !== 'w') ||
+             (game.turn() === 'b' && piece[0] !== 'b')) {
+            return false;
+          }
+        },
+
+        onDrop: function(source, target) {
+          const move = game.move({ from: source, to: target, promotion: 'q' });
+          if (move === null) return 'snapback';
+          board.position(game.fen());
+        },
+
+        onSnapEnd: function() {
+          board.position(game.fen());
+        }
       });
     });
   </script>
+</body>
+</html>
