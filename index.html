@@ -28,6 +28,12 @@
       font-size: 2em;
     }
 
+    h2 {
+      margin: 10px 0;
+      font-size: 1.2em;
+      color: #555;
+    }
+
     button {
       margin-top: 10px;
       padding: 10px 20px;
@@ -38,7 +44,8 @@
 </head>
 <body>
   <h1>J-Chess</h1>
-  <button id="randomiseBtn">Randomise J-Chess Start</button>
+  <h2>Over 8 million possible start positions!</h2>
+  <button id="randomiseBtn">Generate Position</button>
   <div id="board"></div>
 
   <!-- Libraries -->
@@ -46,11 +53,32 @@
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
-  <!-- Your main script -->
+  <!-- Main script -->
   <script>
-    const game = new Chess();
+    console.log('🟢 main script loaded');
+
+    // --- 1) Start Stockfish as a WebWorker ---
+    console.log('🟢 spawning Stockfish worker');
     const stockfish = new Worker('stockfish.js');
 
+    // Single handler: log everything + catch bestmove
+    stockfish.onmessage = event => {
+      const line = event.data.trim();
+      console.log('🖥️  Stockfish says:', line);
+      if (line.startsWith('bestmove')) {
+        const move = line.split(' ')[1];
+        console.log('🤖 Engine plays:', move);
+        game.move(move);
+        board.position(game.fen());
+      }
+    };
+
+    // UCI handshake
+    stockfish.postMessage('uci');
+    stockfish.postMessage('ucinewgame');
+
+    // --- 2) Init chess.js + chessboard.js ---
+    const game  = new Chess();
     const board = Chessboard('board', {
       draggable: true,
       position: 'start',
@@ -60,8 +88,21 @@
       onSnapEnd
     });
 
+    $(window).resize(board.resize);
+
+    // --- 3) Button to randomise J-Chess start ---
+    $('#randomiseBtn').on('click', () => {
+      const fen = generateJChessFEN();
+      console.log('🔀 randomise clicked; FEN =', fen);
+      game.load(fen);
+      board.position(fen);
+    });
+
+    // --- 4) Drag & drop handlers ---
+
     function onDragStart(source, piece) {
       if (game.game_over()) return false;
+      // only allow White by hand; Black is engine’s domain
       if (piece[0] !== 'w') return false;
     }
 
@@ -69,38 +110,27 @@
       const move = game.move({
         from: source,
         to: target,
-        promotion: 'q'
+        promotion: 'q' 
       });
+      if (!move) return 'snapback';
 
-      if (move === null) return 'snapback';
+      console.log('🤚 You played:', move.san, 'FEN:', game.fen());
 
-      // Let Stockfish respond
-      setTimeout(makeStockfishMove, 250);
+      // ask Stockfish to reply
+      setTimeout(() => {
+        const fen = game.fen();
+        console.log('⏳ Asking engine: position fen', fen);
+        stockfish.postMessage('position fen ' + fen);
+        stockfish.postMessage('go depth 10');
+      }, 250);
     }
 
     function onSnapEnd() {
       board.position(game.fen());
     }
 
-    function makeStockfishMove() {
-      const fen = game.fen();
-      stockfish.postMessage('position fen ' + fen);
-      stockfish.postMessage('go depth 10'); // Adjust depth as needed
-    }
+    // --- 5) Helpers for J-Chess randomisation ---
 
-    stockfish.onmessage = function (event) {
-      const message = event.data;
-      if (message.startsWith('bestmove')) {
-        const move = message.split(' ')[1];
-        game.move(move);
-        board.position(game.fen());
-      }
-    };
-
-    // Auto-resize board
-    $(window).resize(board.resize);
-
-    // Helper: Shuffle array
     function shuffle(array) {
       let arr = array.slice();
       for (let i = arr.length - 1; i > 0; i--) {
@@ -110,40 +140,27 @@
       return arr;
     }
 
-    // Generate valid back rank (bishops on opposite colours)
     function generateBackRank() {
-      const pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
-      let valid = false;
-      let backRank = [];
-
-      while (!valid) {
-        backRank = shuffle(pieces);
-        const bishopIndices = [
-          backRank.indexOf('b'),
-          backRank.lastIndexOf('b')
+      const pieces = ['r','n','b','q','k','b','n','r'];
+      let rank, bishops;
+      do {
+        rank = shuffle(pieces);
+        bishops = [
+          rank.indexOf('b'),
+          rank.lastIndexOf('b')
         ];
-        valid = (bishopIndices[0] % 2) !== (bishopIndices[1] % 2);
-      }
-
-      return backRank.join('');
+      } while ((bishops[0] % 2) === (bishops[1] % 2));
+      return rank.join('');
     }
 
-    // Generate full FEN for J-Chess
     function generateJChessFEN() {
-      const whiteBackRank = generateBackRank().toUpperCase();
-      const blackBackRank = generateBackRank().toLowerCase();
+      const whiteBR = generateBackRank().toUpperCase();
+      const blackBR = generateBackRank().toLowerCase();
       return (
-        blackBackRank + '/pppppppp/8/8/8/8/PPPPPPPP/' + whiteBackRank +
+        blackBR + '/pppppppp/8/8/8/8/PPPPPPPP/' + whiteBR +
         ' w - - 0 1'
       );
     }
-
-    // Randomise button
-    $('#randomiseBtn').on('click', function () {
-      const fen = generateJChessFEN();
-      game.load(fen);
-      board.position(fen);
-    });
   </script>
 </body>
 </html>
