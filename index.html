@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <title>J-Chess + Stockfish</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <!-- Chessboard.js CSS -->
-  <link
-    rel="stylesheet"
-    href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css"
-  >
+
+  <!-- 1) Chessboard.js CSS -->
+  <link rel="stylesheet"
+        href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css">
+
   <style>
     html, body {
       height: 100%;
@@ -57,17 +57,15 @@
 
   <div id="board"></div>
 
-  <!-- 1) UI libraries -->
+  <!-- 2) UI libraries -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
-  <!-- Stockfish from npm via unpkg; this one defines a global STOCKFISH() -->
-  <script src="https://unpkg.com/stockfish@16.0.0/stockfish.js"></script>
+  <!-- 3) Stockfish single-threaded WASM build from unpkg -->
+  <script src="https://unpkg.com/stockfish@16.0.0/stockfish-nnue-16-single.js"></script>
 
-
-
-  <!-- 3) Main script -->
+  <!-- 4) Main script -->
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     console.log('🟢 DOM ready, initializing…');
@@ -96,7 +94,7 @@
         board.position(game.fen());
       }
     };
-    engine.onerror = e => console.error('❌ Engine error:', e);
+    engine.onerror = err => console.error('❌ Engine error:', err);
     engine.postMessage('uci');
 
     // ---- Board & Game setup ----
@@ -120,7 +118,7 @@
     // ---- Handlers ----
     function onDragStart(src, piece) {
       if (game.game_over()) return false;
-      if (piece[0] !== 'w')    return false;
+      if (piece[0] !== 'w') return false; // white to move only
     }
     function onDrop(src, tgt) {
       const mv = game.move({ from: src, to: tgt, promotion: 'q' });
