@@ -41,50 +41,66 @@
   <button id="randomiseBtn">Randomise J-Chess Start</button>
   <div id="board"></div>
 
-  <!-- jQuery -->
+  <!-- Libraries -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- Chessboard.js -->
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
-  <!-- chess.js for legality -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
+  <!-- Your main script -->
   <script>
     const game = new Chess();
+    const stockfish = new Worker('stockfish.js');
 
-    const config = {
+    const board = Chessboard('board', {
       draggable: true,
       position: 'start',
       pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+      onDragStart,
+      onDrop,
+      onSnapEnd
+    });
 
-      onDragStart: function (source, piece) {
-        if (game.game_over() ||
-          (game.turn() === 'w' && piece[0] !== 'w') ||
-          (game.turn() === 'b' && piece[0] !== 'b')) {
-          return false;
-        }
-      },
+    function onDragStart(source, piece) {
+      if (game.game_over()) return false;
+      if (piece[0] !== 'w') return false;
+    }
 
-      onDrop: function (source, target) {
-        const move = game.move({
-          from: source,
-          to: target,
-          promotion: 'q'
-        });
+    function onDrop(source, target) {
+      const move = game.move({
+        from: source,
+        to: target,
+        promotion: 'q'
+      });
 
-        if (move === null) return 'snapback';
-      },
+      if (move === null) return 'snapback';
 
-      onSnapEnd: function () {
+      // Let Stockfish respond
+      setTimeout(makeStockfishMove, 250);
+    }
+
+    function onSnapEnd() {
+      board.position(game.fen());
+    }
+
+    function makeStockfishMove() {
+      const fen = game.fen();
+      stockfish.postMessage('position fen ' + fen);
+      stockfish.postMessage('go depth 10'); // Adjust depth as needed
+    }
+
+    stockfish.onmessage = function (event) {
+      const message = event.data;
+      if (message.startsWith('bestmove')) {
+        const move = message.split(' ')[1];
+        game.move(move);
         board.position(game.fen());
       }
     };
 
-    const board = Chessboard('board', config);
-
     // Auto-resize board
     $(window).resize(board.resize);
 
-    // Utility to shuffle an array
+    // Helper: Shuffle array
     function shuffle(array) {
       let arr = array.slice();
       for (let i = arr.length - 1; i > 0; i--) {
@@ -94,7 +110,7 @@
       return arr;
     }
 
-    // Generate a valid back rank with opposite-coloured bishops
+    // Generate valid back rank (bishops on opposite colours)
     function generateBackRank() {
       const pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
       let valid = false;
@@ -112,20 +128,17 @@
       return backRank.join('');
     }
 
-    // Generate full FEN with both sides randomised
+    // Generate full FEN for J-Chess
     function generateJChessFEN() {
       const whiteBackRank = generateBackRank().toUpperCase();
       const blackBackRank = generateBackRank().toLowerCase();
-      const whitePawns = 'PPPPPPPP';
-      const blackPawns = 'pppppppp';
-
       return (
         blackBackRank + '/pppppppp/8/8/8/8/PPPPPPPP/' + whiteBackRank +
         ' w - - 0 1'
       );
     }
 
-    // Button click handler
+    // Randomise button
     $('#randomiseBtn').on('click', function () {
       const fen = generateJChessFEN();
       game.load(fen);
