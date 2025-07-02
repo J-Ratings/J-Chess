@@ -3,39 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <title>J-Chess + Stockfish</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Chessboard.js CSS -->
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css">
   <style>
-    /* your existing styles… */
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: sans-serif;
+      text-align: center;
+      background-color: #f5f5f5;
+    }
+    #board {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto;
+    }
+    h1 {
+      margin-top: 20px;
+      font-size: 2em;
+    }
+    h2 {
+      margin: 10px 0;
+      font-size: 1.2em;
+      color: #555;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <h1>J-Chess</h1>
+  <h2>Over 8 million possible start positions!</h2>
   <button id="randomiseBtn">Generate Position</button>
   <div id="board"></div>
 
-  <!-- libs -->
+  <!-- Libraries -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
   <script>
-  (async function(){
+  (async function() {
     console.log('🟢 main script loaded');
 
-    // 1) Fetch the pure-JS Stockfish build from jsDelivr
-    console.log('⬇️  fetching Stockfish from CDN…');
-    const resp = await fetch('https://cdn.jsdelivr.net/npm/stockfish@15.1.0/stockfish.js');
-    const code = await resp.text();
+    // 1) Fetch pure-JS Stockfish from CDN and create a Worker from it
+    console.log('⬇️ fetching Stockfish engine…');
+    const response = await fetch('https://cdn.jsdelivr.net/npm/stockfish@15.1.0/stockfish.js');
+    const engineCode = await response.text();
+    const engineBlob = new Blob([engineCode], { type: 'application/javascript' });
+    const engineURL  = URL.createObjectURL(engineBlob);
+    const engine     = new Worker(engineURL);
 
-    // 2) Turn it into a Blob so we can spawn a Worker from it
-    const blob = new Blob([code], { type: 'application/javascript' });
-    const blobURL = URL.createObjectURL(blob);
-    const engine = new Worker(blobURL);
-
-    // 3) Wire up logging + handshake
+    // 2) Log all engine messages and handle UCI handshake + bestmove
     engine.onerror = e => console.error('❌ Engine worker error:', e);
-    engine.onmessage = ({ data }) => {
+    engine.addEventListener('message', ({ data }) => {
       const line = data.trim();
       console.log('🖥️ Stockfish says:', line);
 
@@ -50,11 +76,12 @@
         game.move(mv);
         board.position(game.fen());
       }
-    };
-    // kick off UCI
+    });
+
+    // Start UCI
     engine.postMessage('uci');
 
-    // 4) Set up chess.js + chessboard.js
+    // 3) Initialise chess.js + chessboard.js
     const game  = new Chess();
     const board = Chessboard('board', {
       draggable: true,
@@ -64,7 +91,7 @@
     });
     $(window).resize(board.resize);
 
-    // 5) Random-position button (your existing code)
+    // 4) Random J-Chess start button
     $('#randomiseBtn').on('click', () => {
       const fen = generateJChessFEN();
       console.log('🔀 randomise clicked; FEN =', fen);
@@ -72,10 +99,12 @@
       board.position(fen);
     });
 
-    // 6) Handlers: only White by hand, then ask engine
+    // 5) Drag/drop handlers (White by hand only)
     function onDragStart(source, piece) {
-      if (game.game_over() || piece[0] !== 'w') return false;
+      if (game.game_over()) return false;
+      if (piece[0] !== 'w')    return false;
     }
+
     function onDrop(source, target) {
       const mv = game.move({ from: source, to: target, promotion: 'q' });
       if (!mv) return 'snapback';
@@ -87,21 +116,35 @@
         engine.postMessage('go depth 10');
       }, 250);
     }
+
     function onSnapEnd() {
       board.position(game.fen());
     }
 
-    // 7) Your J-Chess randomiser helpers
-    function shuffle(a){let A=a.slice();for(let i=A.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[A[i],A[j]]=[A[j],A[i]];}return A;}
-    function generateBackRank(){
-      const P=['r','n','b','q','k','b','n','r'];
-      let R,b; do{R=shuffle(P); b=[R.indexOf('b'),R.lastIndexOf('b')]}while((b[0]%2)===(b[1]%2));
-      return R.join('');
+    // 6) Helpers for J-Chess randomisation
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
     }
-    function generateJChessFEN(){
-      const W=generateBackRank().toUpperCase();
-      const B=generateBackRank().toLowerCase();
-      return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+
+    function generateBackRank() {
+      const pieces = ['r','n','b','q','k','b','n','r'];
+      let rank, bishops;
+      do {
+        rank    = shuffle(pieces);
+        bishops = [ rank.indexOf('b'), rank.lastIndexOf('b') ];
+      } while ((bishops[0] % 2) === (bishops[1] % 2));
+      return rank.join('');
+    }
+
+    function generateJChessFEN() {
+      const whiteBR = generateBackRank().toUpperCase();
+      const blackBR = generateBackRank().toLowerCase();
+      return `${blackBR}/pppppppp/8/8/8/8/PPPPPPPP/${whiteBR} w - - 0 1`;
     }
 
   })();
