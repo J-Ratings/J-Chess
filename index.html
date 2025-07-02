@@ -4,8 +4,11 @@
   <meta charset="UTF-8">
   <title>J-Chess + Stockfish</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
+
   <!-- Chessboard.js CSS -->
-  <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css">
+  <link rel="stylesheet"
+        href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css">
+
   <style>
     html, body {
       height: 100%;
@@ -14,9 +17,7 @@
       text-align: center;
       background: #f5f5f5;
     }
-    #controls {
-      margin: 10px 0;
-    }
+    #controls { margin: 10px 0; }
     button, select {
       margin: 0 5px;
       padding: 8px 14px;
@@ -54,27 +55,27 @@
 
   <div id="board"></div>
 
-  <!-- 1) UI libraries -->
+  <!-- 1) UI libs -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
-  <!-- 2) Single-WASM Stockfish build -->
+  <!-- 2) Single‐WASM Stockfish build -->
   <script src="engine/stockfish-17-lite.js"></script>
 
-  <!-- 3) Main logic -->
+  <!-- 3) Main script -->
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     console.log('🟢 DOM ready, initializing…');
 
-    // — Level selector →
+    // read level → depth
     let currentDepth = parseInt($('#levelSelect').val(), 10);
     $('#levelSelect').on('change', function(){
       currentDepth = parseInt(this.value, 10);
       console.log('🎚 Engine level set to Lv.' + currentDepth);
     });
 
-    // — Engine setup —
+    // set up engine
     const engine = STOCKFISH();
     engine.onmessage = ({ data }) => {
       const line = data.trim();
@@ -94,7 +95,7 @@
     engine.onerror = e => console.error('❌ Engine error:', e);
     engine.postMessage('uci');
 
-    // — Board & game setup —
+    // board + game
     const game  = new Chess();
     const board = Chessboard('board', {
       draggable: true,
@@ -104,23 +105,23 @@
     });
     $(window).resize(board.resize);
 
-    // — Generate random J-Chess position —
+    // randomiser
     $('#randomiseBtn').on('click', () => {
       const fen = generateJChessFEN();
-      console.log('🔀 randomise clicked; FEN =', fen);
+      console.log('🔀 random FEN =', fen);
       game.load(fen);
       board.position(fen);
     });
 
-    // — Drag/drop handlers —
+    // move handlers
     function onDragStart(src, piece) {
       if (game.game_over()) return false;
-      if (piece[0] !== 'w') return false; // only white moves
+      if (piece[0] !== 'w')    return false;
     }
     function onDrop(src, tgt) {
       const mv = game.move({ from: src, to: tgt, promotion: 'q' });
       if (!mv) return 'snapback';
-      console.log('🤚 You played:', mv.san, 'FEN:', game.fen());
+      console.log('🤚 You played:', mv.san);
       setTimeout(() => {
         engine.postMessage('position fen ' + game.fen());
         engine.postMessage('go depth ' + currentDepth);
@@ -131,7 +132,7 @@
       board.position(game.fen());
     }
 
-    // — J-Chess randomiser helpers —
+    // helpers
     function shuffle(arr) {
       const a = arr.slice();
       for (let i = a.length - 1; i > 0; i--) {
