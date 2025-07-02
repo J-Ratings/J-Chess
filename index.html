@@ -8,11 +8,11 @@
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css">
   <style>
     html, body {
-      height:100%;
-      margin:0;
-      font-family:sans-serif;
-      text-align:center;
-      background:#f5f5f5;
+      height: 100%;
+      margin: 0;
+      font-family: sans-serif;
+      text-align: center;
+      background: #f5f5f5;
     }
     #controls {
       margin: 10px 0;
@@ -24,30 +24,21 @@
       cursor: pointer;
     }
     #board {
-      width:100%;
-      max-width:400px;
-      margin:20px auto;
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto;
     }
   </style>
-
-  <!-- 1) Load UI libraries -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
-
-  <!-- 2) Load your local Stockfish build -->
-  <script src="engine/stockfish-17-single.js"></script>
 </head>
 <body>
   <h1>J-Chess</h1>
   <h2>8.3 million start positions</h2>
-  <h2>2.5 million 'fair' start positions</h2>
+  <h2>2.5 million “fair” start positions</h2>
 
   <div id="controls">
     <button id="randomiseBtn">Generate Position</button>
     <label for="levelSelect">Level:</label>
     <select id="levelSelect">
-      <!-- Lv.1 through Lv.10 -->
       <option value="1">Lv.1</option>
       <option value="2">Lv.2</option>
       <option value="3">Lv.3</option>
@@ -63,48 +54,47 @@
 
   <div id="board"></div>
 
-  <!-- 3) Main script -->
+  <!-- 1) UI libraries -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+
+  <!-- 2) Single-WASM Stockfish build -->
+  <script src="engine/stockfish-17-lite.js"></script>
+
+  <!-- 3) Main logic -->
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     console.log('🟢 DOM ready, initializing…');
 
-    // Read selected level → depth
-    let currentDepth = parseInt(document.getElementById('levelSelect').value, 10);
+    // — Level selector →
+    let currentDepth = parseInt($('#levelSelect').val(), 10);
     $('#levelSelect').on('change', function(){
       currentDepth = parseInt(this.value, 10);
       console.log('🎚 Engine level set to Lv.' + currentDepth);
     });
 
-    // ---- Engine setup ----
-    let engine, haveEngine = true;
-    try {
-      engine = STOCKFISH();  // from stockfish-17-single.js
-    } catch (err) {
-      console.warn('⚠️ STOCKFISH() unavailable, continuing without engine:', err);
-      haveEngine = false;
-    }
+    // — Engine setup —
+    const engine = STOCKFISH();
+    engine.onmessage = ({ data }) => {
+      const line = data.trim();
+      console.log('🖥️ Stockfish says:', line);
+      if (line === 'uciok') {
+        engine.postMessage('ucinewgame');
+        engine.postMessage('isready');
+      } else if (line === 'readyok') {
+        console.log('✅ Engine ready');
+      } else if (line.startsWith('bestmove')) {
+        const mv = line.split(' ')[1];
+        console.log('🤖 Engine plays:', mv);
+        game.move(mv);
+        board.position(game.fen());
+      }
+    };
+    engine.onerror = e => console.error('❌ Engine error:', e);
+    engine.postMessage('uci');
 
-    if (haveEngine) {
-      engine.onmessage = ({ data }) => {
-        const line = data.trim();
-        console.log('🖥️ Stockfish says:', line);
-        if (line === 'uciok') {
-          engine.postMessage('ucinewgame');
-          engine.postMessage('isready');
-        } else if (line === 'readyok') {
-          console.log('✅ Engine ready');
-        } else if (line.startsWith('bestmove')) {
-          const mv = line.split(' ')[1];
-          console.log('🤖 Engine plays:', mv);
-          game.move(mv);
-          board.position(game.fen());
-        }
-      };
-      engine.onerror = e => console.error('❌ Engine error:', e);
-      engine.postMessage('uci');
-    }
-
-    // ---- Board setup ----
+    // — Board & game setup —
     const game  = new Chess();
     const board = Chessboard('board', {
       draggable: true,
@@ -114,7 +104,7 @@
     });
     $(window).resize(board.resize);
 
-    // ---- Randomise button ----
+    // — Generate random J-Chess position —
     $('#randomiseBtn').on('click', () => {
       const fen = generateJChessFEN();
       console.log('🔀 randomise clicked; FEN =', fen);
@@ -122,29 +112,26 @@
       board.position(fen);
     });
 
-    // ---- Handlers ----
+    // — Drag/drop handlers —
     function onDragStart(src, piece) {
       if (game.game_over()) return false;
-      if (piece[0] !== 'w')    return false;
+      if (piece[0] !== 'w') return false; // only white moves
     }
     function onDrop(src, tgt) {
       const mv = game.move({ from: src, to: tgt, promotion: 'q' });
       if (!mv) return 'snapback';
       console.log('🤚 You played:', mv.san, 'FEN:', game.fen());
-      if (haveEngine) {
-        setTimeout(() => {
-          const fen = game.fen();
-          console.log(`⏳ Asking engine (depth ${currentDepth})…`);
-          engine.postMessage('position fen ' + fen);
-          engine.postMessage('go depth ' + currentDepth);
-        }, 250);
-      }
+      setTimeout(() => {
+        engine.postMessage('position fen ' + game.fen());
+        engine.postMessage('go depth ' + currentDepth);
+        console.log(`⏳ Asking engine (depth ${currentDepth})…`);
+      }, 250);
     }
     function onSnapEnd() {
       board.position(game.fen());
     }
 
-    // ---- Randomiser helpers ----
+    // — J-Chess randomiser helpers —
     function shuffle(arr) {
       const a = arr.slice();
       for (let i = a.length - 1; i > 0; i--) {
