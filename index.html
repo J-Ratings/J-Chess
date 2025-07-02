@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>J-Chess + Stockfish (ASM.js CDN)</title>
+  <title>J-Chess + Stockfish</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet"
         href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css">
@@ -44,15 +44,15 @@
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
-  <!-- 2) Stockfish ASM.js build via jsDelivr -->
-  <script src="https://cdn.jsdelivr.net/gh/nmrugg/stockfish.js@master/src/stockfish-17-asm.js"></script>
+  <!-- 2) Stockfish single-threaded WASM build -->
+  <script src="https://cdn.jsdelivr.net/npm/stockfish@16.0.0/stockfish-nnue-16-single.js"></script>
 
   <!-- 3) Main logic -->
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     console.log('🟢 DOM ready, initializing…');
 
-    // ---- Engine setup ----
+    // Engine
     const engine = STOCKFISH();
     engine.onmessage = ({data}) => {
       const line = data.trim();
@@ -72,14 +72,14 @@
     engine.onerror = e => console.error('❌ Engine error:', e);
     engine.postMessage('uci');
 
-    // ---- Level selection ----
+    // Depth selector
     let currentDepth = parseInt($('#levelSelect').val(), 10);
     $('#levelSelect').on('change', function(){
       currentDepth = parseInt(this.value, 10);
       console.log('🎚 Engine level set to Lv.' + currentDepth);
     });
 
-    // ---- Board & Game setup ----
+    // Board & Game
     const game  = new Chess();
     const board = Chessboard('board', {
       draggable: true,
@@ -89,7 +89,7 @@
     });
     $(window).resize(board.resize);
 
-    // ---- Randomise button ----
+    // New position
     $('#randomiseBtn').on('click', () => {
       const fen = generateJChessFEN();
       console.log('🔀 Random FEN =', fen);
@@ -97,10 +97,10 @@
       board.position(fen);
     });
 
-    // ---- Drag & drop handlers ----
+    // Handlers
     function onDragStart(src, piece) {
       if (game.game_over()) return false;
-      if (piece[0] !== 'w')    return false;
+      if (piece[0] !== 'w') return false;
     }
     function onDrop(src, tgt) {
       const mv = game.move({ from: src, to: tgt, promotion: 'q' });
@@ -116,7 +116,7 @@
       board.position(game.fen());
     }
 
-    // ---- Randomiser helpers ----
+    // Helpers
     function shuffle(arr) {
       const a = arr.slice();
       for (let i = a.length - 1; i > 0; i--) {
