@@ -27,10 +27,18 @@
       margin-top: 20px;
       font-size: 2em;
     }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <h1>J-Chess</h1>
+  <button id="randomiseBtn">Randomise J-Chess Start</button>
   <div id="board"></div>
 
   <!-- jQuery -->
@@ -41,41 +49,87 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
   <script>
-    $(function () {
-      const game = new Chess();
+    const game = new Chess();
 
-      const config = {
-        draggable: true,
-        position: 'start',
-        pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+    const config = {
+      draggable: true,
+      position: 'start',
+      pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
 
-        onDragStart: function (source, piece) {
-          if (game.game_over() ||
-            (game.turn() === 'w' && piece[0] !== 'w') ||
-            (game.turn() === 'b' && piece[0] !== 'b')) {
-            return false;
-          }
-        },
-
-        onDrop: function (source, target) {
-          const move = game.move({
-            from: source,
-            to: target,
-            promotion: 'q'
-          });
-
-          if (move === null) return 'snapback';
-        },
-
-        onSnapEnd: function () {
-          board.position(game.fen());
+      onDragStart: function (source, piece) {
+        if (game.game_over() ||
+          (game.turn() === 'w' && piece[0] !== 'w') ||
+          (game.turn() === 'b' && piece[0] !== 'b')) {
+          return false;
         }
-      };
+      },
 
-      const board = Chessboard('board', config);
+      onDrop: function (source, target) {
+        const move = game.move({
+          from: source,
+          to: target,
+          promotion: 'q'
+        });
 
-      // Auto-resize board
-      $(window).resize(board.resize);
+        if (move === null) return 'snapback';
+      },
+
+      onSnapEnd: function () {
+        board.position(game.fen());
+      }
+    };
+
+    const board = Chessboard('board', config);
+
+    // Auto-resize board
+    $(window).resize(board.resize);
+
+    // Utility to shuffle an array
+    function shuffle(array) {
+      let arr = array.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // Generate a valid back rank with opposite-coloured bishops
+    function generateBackRank() {
+      const pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
+      let valid = false;
+      let backRank = [];
+
+      while (!valid) {
+        backRank = shuffle(pieces);
+        const bishopIndices = [
+          backRank.indexOf('b'),
+          backRank.lastIndexOf('b')
+        ];
+        valid = (bishopIndices[0] % 2) !== (bishopIndices[1] % 2);
+      }
+
+      return backRank.join('');
+    }
+
+    // Generate full FEN with both sides randomised
+    function generateJChessFEN() {
+      const whiteBackRank = generateBackRank().toUpperCase();
+      const blackBackRank = generateBackRank().toLowerCase();
+      const whitePawns = 'PPPPPPPP';
+      const blackPawns = 'pppppppp';
+
+      return (
+        blackBackRank + '/pppppppp/8/8/8/8/PPPPPPPP/' + whiteBackRank +
+        ' w - - 0 1'
+      );
+    }
+
+    // Button click handler
+    $('#randomiseBtn').on('click', function () {
+      const fen = generateJChessFEN();
+      game.load(fen);
+      board.position(fen);
     });
   </script>
 </body>
