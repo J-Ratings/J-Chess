@@ -1,58 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>J-Chess + Stockfish (cdnjs)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>J-Chess + Stockfish</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <!-- Chessboard.js CSS -->
-  <link rel="stylesheet"
-        href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css">
+  <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
-    html, body { height:100%; margin:0; font-family:sans-serif; text-align:center; background:#f5f5f5 }
-    #controls { margin:10px 0 }
-    button, select { margin:0 5px; padding:8px 14px; font-size:1em; cursor:pointer }
-    #board { width:100%; max-width:400px; margin:20px auto }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: sans-serif;
+      background: #f5f5f5;
+      text-align: center;
+    }
+    #controls {
+      margin: 15px 0;
+    }
+    #controls > * {
+      margin: 0 8px;
+      padding: 8px 16px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    #board {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto 20px;
+    }
   </style>
+  <!-- UI libs -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+  <!-- Stockfish engine (lite single build) -->
+  <script>
+    // nothing here—engine is loaded as a Worker below
+  </script>
 </head>
 <body>
   <h1>J-Chess</h1>
-  <h2>8.3 million start positions</h2>
-  <h2>2.5 million “fair” start positions</h2>
-
+  <h2>Over 8 million possible start positions!</h2>
   <div id="controls">
     <button id="randomiseBtn">Generate Position</button>
     <label for="levelSelect">Level:</label>
     <select id="levelSelect">
-      <option value="1">Lv.1</option>
-      <option value="2">Lv.2</option>
-      <option value="3">Lv.3</option>
-      <option value="4">Lv.4</option>
-      <option value="5" selected>Lv.5</option>
-      <option value="6">Lv.6</option>
-      <option value="7">Lv.7</option>
-      <option value="8">Lv.8</option>
-      <option value="9">Lv.9</option>
-      <option value="10">Lv.10</option>
+      <option value="2">Lv. 1</option>
+      <option value="4">Lv. 2</option>
+      <option value="6">Lv. 3</option>
+      <option value="8">Lv. 4</option>
+      <option value="10" selected>Lv. 5</option>
+      <option value="12">Lv. 6</option>
+      <option value="14">Lv. 7</option>
+      <option value="16">Lv. 8</option>
+      <option value="18">Lv. 9</option>
+      <option value="20">Lv. 10</option>
     </select>
   </div>
-
   <div id="board"></div>
 
-  <!-- 1) UI libraries -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
-
-  <!-- 2) Stockfish engine from cdnjs (fully global STOCKFISH) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/stockfish/15.1/stockfish.min.js"></script>
-
-  <!-- 3) Main logic -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('🟢 DOM ready, initializing…');
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('🟢 DOM ready, initializing…');
 
-      // ---- Engine setup ----
-      const engine = STOCKFISH();
+    // 0) Read initial engine level
+    let currentDepth = parseInt($('#levelSelect').val(), 10);
+    $('#levelSelect').on('change', function(){
+      currentDepth = parseInt(this.value, 10);
+      console.log('🎚 Engine depth set to', currentDepth);
+    });
+
+    // 1) Spawn Stockfish as a Worker
+    let engine, haveEngine = true;
+    try {
+      engine = new Worker('engine/stockfish-17-lite-single.js');
+    } catch (err) {
+      console.warn('⚠️ Unable to create engine Worker, playing without engine.', err);
+      haveEngine = false;
+    }
+
+    // 2) UCI handshake & bestmove handler
+    if (haveEngine) {
       engine.onmessage = ({ data }) => {
         const line = data.trim();
         console.log('🖥️ Stockfish says:', line);
@@ -68,77 +96,74 @@
           board.position(game.fen());
         }
       };
-      engine.onerror = e => console.error('❌ Engine error:', e);
+      engine.onerror = (e) => console.error('❌ Engine error:', e);
       engine.postMessage('uci');
+    }
 
-      // ---- Level selection ----
-      let currentDepth = parseInt($('#levelSelect').val(), 10);
-      $('#levelSelect').on('change', function(){
-        currentDepth = parseInt(this.value, 10);
-        console.log('🎚 Engine level set to Lv.' + currentDepth);
-      });
+    // 3) Set up chess.js + chessboard.js
+    const game = new Chess();
+    const board = Chessboard('board', {
+      draggable: true,
+      position: 'start',
+      pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+      onDragStart, onDrop, onSnapEnd
+    });
+    $(window).resize(board.resize);
 
-      // ---- Board & Game setup ----
-      const game  = new Chess();
-      const board = Chessboard('board', {
-        draggable: true,
-        position: 'start',
-        pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-        onDragStart, onDrop, onSnapEnd
-      });
-      $(window).resize(board.resize);
+    // 4) Randomise button
+    $('#randomiseBtn').click(() => {
+      const fen = generateJChessFEN();
+      console.log('🔀 randomise clicked; FEN =', fen);
+      game.load(fen);
+      board.position(fen);
+    });
 
-      // ---- Random position button ----
-      $('#randomiseBtn').on('click', () => {
-        const fen = generateJChessFEN();
-        console.log('🔀 Random FEN =', fen);
-        game.load(fen);
-        board.position(fen);
-      });
-
-      // ---- Move handlers ----
-      function onDragStart(src, piece) {
-        if (game.game_over()) return false;
-        if (piece[0] !== 'w')    return false;
-      }
-      function onDrop(src, tgt) {
-        const mv = game.move({ from: src, to: tgt, promotion: 'q' });
-        if (!mv) return 'snapback';
-        console.log('🤚 You played:', mv.san);
+    // 5) Interaction handlers
+    function onDragStart(source, piece) {
+      if (game.game_over()) return false;
+      if (piece[0] !== 'w')    return false;  // only let White move by hand
+    }
+    function onDrop(source, target) {
+      const move = game.move({ from: source, to: target, promotion: 'q' });
+      if (!move) return 'snapback';
+      console.log('🤚 You played:', move.san, 'FEN:', game.fen());
+      if (haveEngine) {
         setTimeout(() => {
-          engine.postMessage('position fen ' + game.fen());
+          const fen = game.fen();
+          console.log(`⏳ Asking engine: position fen + go depth ${currentDepth}`);
+          engine.postMessage('position fen ' + fen);
           engine.postMessage('go depth ' + currentDepth);
-          console.log(`⏳ Asking engine (depth ${currentDepth})…`);
         }, 250);
       }
-      function onSnapEnd() {
-        board.position(game.fen());
-      }
+    }
+    function onSnapEnd() {
+      board.position(game.fen());
+    }
 
-      // ---- Helpers for random FEN ----
-      function shuffle(arr) {
-        const a = arr.slice();
-        for (let i = a.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [a[i], a[j]] = [a[j], a[i]];
-        }
-        return a;
+    // 6) J-Chess randomiser helpers
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
       }
-      function generateBackRank() {
-        const P = ['r','n','b','q','k','b','n','r'];
-        let R, b;
-        do {
-          R = shuffle(P);
-          b = [ R.indexOf('b'), R.lastIndexOf('b') ];
-        } while ((b[0] % 2) === (b[1] % 2));
-        return R.join('');
-      }
-      function generateJChessFEN() {
-        const W = generateBackRank().toUpperCase();
-        const B = generateBackRank().toLowerCase();
-        return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
-      }
-    });
+      return a;
+    }
+    function generateBackRank() {
+      const P = ['r','n','b','q','k','b','n','r'];
+      let R, b;
+      do {
+        R = shuffle(P);
+        b = [ R.indexOf('b'), R.lastIndexOf('b') ];
+      } while ((b[0] % 2) === (b[1] % 2));
+      return R.join('');
+    }
+    function generateJChessFEN() {
+      const W = generateBackRank().toUpperCase();
+      const B = generateBackRank().toLowerCase();
+      return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+    }
+  });
   </script>
 </body>
 </html>
