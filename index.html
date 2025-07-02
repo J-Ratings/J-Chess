@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <title>J-Chess + Stockfish</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-
   <!-- Chessboard.js CSS -->
-  <link rel="stylesheet"
-        href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css">
-
+  <link
+    rel="stylesheet"
+    href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css"
+  >
   <style>
     html, body {
       height: 100%;
@@ -17,7 +17,9 @@
       text-align: center;
       background: #f5f5f5;
     }
-    #controls { margin: 10px 0; }
+    #controls {
+      margin: 10px 0;
+    }
     button, select {
       margin: 0 5px;
       padding: 8px 14px;
@@ -55,27 +57,27 @@
 
   <div id="board"></div>
 
-  <!-- 1) UI libs -->
+  <!-- 1) UI libraries -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
-  <!-- 2) Single‐WASM Stockfish build -->
-  <script src="engine/stockfish-17-lite.js"></script>
+  <!-- 2) Stockfish: lite-single build -->
+  <script src="engine/stockfish-17-lite-single.js"></script>
 
   <!-- 3) Main script -->
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     console.log('🟢 DOM ready, initializing…');
 
-    // read level → depth
+    // Read selected level → depth
     let currentDepth = parseInt($('#levelSelect').val(), 10);
     $('#levelSelect').on('change', function(){
       currentDepth = parseInt(this.value, 10);
       console.log('🎚 Engine level set to Lv.' + currentDepth);
     });
 
-    // set up engine
+    // ---- Engine setup ----
     const engine = STOCKFISH();
     engine.onmessage = ({ data }) => {
       const line = data.trim();
@@ -95,7 +97,7 @@
     engine.onerror = e => console.error('❌ Engine error:', e);
     engine.postMessage('uci');
 
-    // board + game
+    // ---- Board & Game setup ----
     const game  = new Chess();
     const board = Chessboard('board', {
       draggable: true,
@@ -105,15 +107,15 @@
     });
     $(window).resize(board.resize);
 
-    // randomiser
+    // ---- Randomise button ----
     $('#randomiseBtn').on('click', () => {
       const fen = generateJChessFEN();
-      console.log('🔀 random FEN =', fen);
+      console.log('🔀 Random FEN =', fen);
       game.load(fen);
       board.position(fen);
     });
 
-    // move handlers
+    // ---- Handlers ----
     function onDragStart(src, piece) {
       if (game.game_over()) return false;
       if (piece[0] !== 'w')    return false;
@@ -132,7 +134,7 @@
       board.position(game.fen());
     }
 
-    // helpers
+    // ---- Randomiser helpers ----
     function shuffle(arr) {
       const a = arr.slice();
       for (let i = a.length - 1; i > 0; i--) {
