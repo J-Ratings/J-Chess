@@ -4,29 +4,14 @@
   <meta charset="UTF-8" />
   <title>J-Chess + Stockfish</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- load Stockfish from CDN so the .wasm is auto-handled -->
+  <script src="https://cdn.jsdelivr.net/npm/stockfish@15.1/stockfish.js"></script>
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: sans-serif;
-      background: #f5f5f5;
-      text-align: center;
-    }
-    #controls {
-      margin: 15px 0;
-    }
-    #controls > * {
-      margin: 0 8px;
-      padding: 8px 16px;
-      font-size: 1em;
-      cursor: pointer;
-    }
-    #board {
-      width: 100%;
-      max-width: 400px;
-      margin: 0 auto 20px;
-    }
+    html, body { height:100%; margin:0; font-family:sans-serif; background:#f5f5f5; text-align:center }
+    #controls { margin:15px 0 }
+    #controls > * { margin:0 8px; padding:8px 16px; font-size:1em; cursor:pointer }
+    #board { width:100%; max-width:400px; margin:0 auto 20px }
   </style>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
@@ -56,25 +41,14 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('🟢 DOM ready, initializing…');
-
-    // Map levels to UCI_Elo
     const levelToElo = {
-      1: 1350,
-      2: 1450,
-      3: 1550,
-      4: 1650,
-      5: 1800,
-      6: 2000,
-      7: 2200,
-      8: 2400,
-      9: 2600,
-      10: 2850
+      1: 1350, 2: 1450, 3: 1550, 4: 1650, 5: 1800,
+      6: 2000, 7: 2200, 8: 2400, 9: 2600, 10: 2850
     };
-
-    let currentLevel = parseInt($('#levelSelect').val(), 10);
+    let currentLevel = +$('#levelSelect').val();
     let engine;
-    const game = new Chess();
+
+    const game  = new Chess();
     const board = Chessboard('board', {
       draggable: true,
       position: 'start',
@@ -83,101 +57,77 @@
     });
     $(window).resize(board.resize);
 
-    // Initialize or reinitialize the engine at a given level
-    function initEngine(level) {
-      if (engine) engine.terminate();
-      engine = new Worker('engine/stockfish.js');
+    function onEngineMsg({ data }) {
+      const line = data.trim();
+      if (line === 'uciok') {
+        engine.postMessage('setoption name UCI_LimitStrength value true');
+        engine.postMessage('setoption name UCI_Elo value ' + levelToElo[currentLevel]);
+        engine.postMessage('ucinewgame');
+        engine.postMessage('isready');
+      }
+      if (line.startsWith('bestmove')) {
+        const [ , uci ] = line.split(' ');
+        const from = uci.slice(0,2), to = uci.slice(2,4);
+        game.move({ from, to, promotion:'q' });
+        board.position(game.fen());
+      }
+    }
 
-      engine.onmessage = ({ data }) => {
-        const line = data.trim();
-        if (line === 'uciok') {
-          engine.postMessage('setoption name UCI_LimitStrength value true');
-          engine.postMessage(`setoption name UCI_Elo value ${levelToElo[level]}`);
-          engine.postMessage('ucinewgame');
-          engine.postMessage('isready');
-        }
-        else if (line.startsWith('bestmove')) {
-          const uci = line.split(' ')[1];
-          const from = uci.substring(0,2);
-          const to   = uci.substring(2,4);
-          const move = { from, to, promotion: 'q' };
-          const result = game.move(move);
-          if (!result) {
-            console.error('⛔ Illegal engine move:', move);
-          } else {
-            board.position(game.fen());
-          }
-        }
-      };
-
-      engine.onerror = e => console.error('❌ Engine error:', e);
+    function initEngine() {
+      if (engine && engine.terminate) engine.terminate();
+      engine = STOCKFISH();             // ← factory from the CDN build
+      engine.onmessage = onEngineMsg;
+      engine.onerror   = e => console.error('Engine error', e);
       engine.postMessage('uci');
     }
 
-    // Handle level changes
-    $('#levelSelect').on('change', function () {
-      currentLevel = parseInt(this.value, 10);
-      console.log(`🎚 Level set to ${currentLevel} (Elo ${levelToElo[currentLevel]})`);
-      initEngine(currentLevel);
+    $('#levelSelect').on('change', () => {
+      currentLevel = +$('#levelSelect').val();
+      console.log('🎚 Level → ELO', levelToElo[currentLevel]);
+      initEngine();
     });
 
-    // Randomize the starting position
     $('#randomiseBtn').click(() => {
       const fen = generateJChessFEN();
-      console.log('🔀 Generated FEN:', fen);
       game.load(fen);
       board.position(fen);
     });
 
-    // User move handlers
-    function onDragStart(source, piece) {
-      if (game.game_over() || piece[0] !== 'w') return false;
+    function onDragStart(s, p) {
+      if (game.game_over() || p[0] !== 'w') return false;
     }
-
-    function onDrop(source, target) {
-      const move = game.move({ from: source, to: target, promotion: 'q' });
-      if (!move) return 'snapback';
-      console.log('🤚 You played:', move.san);
-
-      setTimeout(() => {
-        const fen = game.fen();
-        engine.postMessage('position fen ' + fen);
+    function onDrop(s, t) {
+      const m = game.move({ from:s, to:t, promotion:'q' });
+      if (!m) return 'snapback';
+      setTimeout(()=>{
+        engine.postMessage('position fen ' + game.fen());
         engine.postMessage('go movetime 1000');
       }, 200);
     }
+    function onSnapEnd() { board.position(game.fen()); }
 
-    function onSnapEnd() {
-      board.position(game.fen());
-    }
-
-    // Helpers to generate random J-Chess FEN
-    function shuffle(arr) {
-      const a = arr.slice();
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
+    function shuffle(a) {
+      for (let i=a.length-1; i>0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]]=[a[j],a[i]];
       }
       return a;
     }
-
     function generateBackRank() {
-      const pieces = ['r','n','b','q','k','b','n','r'];
-      let perm, bishops;
-      do {
-        perm = shuffle(pieces);
-        bishops = [perm.indexOf('b'), perm.lastIndexOf('b')];
-      } while ((bishops[0] % 2) === (bishops[1] % 2));
-      return perm.join('');
+      const P=['r','n','b','q','k','b','n','r'];
+      let R, b;
+      do { R=shuffle(P); b=[R.indexOf('b'),R.lastIndexOf('b')]; }
+      while ((b[0]%2)===(b[1]%2));
+      return R.join('');
     }
-
     function generateJChessFEN() {
-      const white = generateBackRank().toUpperCase();
-      const black = generateBackRank().toLowerCase();
-      return `${black}/pppppppp/8/8/8/8/PPPPPPPP/${white} w - - 0 1`;
+      const W=generateBackRank().toUpperCase();
+      const B=generateBackRank().toLowerCase();
+      return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
     }
 
-    // Start the engine on page load
-    initEngine(currentLevel);
+    // kick off the engine
+    initEngine();
   });
   </script>
 </body>
