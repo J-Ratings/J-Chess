@@ -40,6 +40,7 @@
   <h2>2.5 million fair starting positions</h2>
   <div id="controls">
     <button id="randomiseBtn">Generate Position</button>
+    <button id="fairBtn">Generate Fair Position</button>
     <label for="levelSelect">Level:</label>
     <select id="levelSelect">
       <option value="1">Lv. 1</option>
@@ -119,14 +120,11 @@
         draggable: true,
         position: 'start',
         pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-
-        // Disable all animation
         moveSpeed:     0,
         snapbackSpeed: 0,
         snapSpeed:     0,
         appearSpeed:   0,
         trashSpeed:    0,
-
         onDragStart,
         onDrop,
         onSnapEnd
@@ -141,6 +139,48 @@
         board.position(fen, false);
       });
 
+      // Fair position button
+      let searchingFair = false;
+      $('#fairBtn').click(() => {
+        if (!haveEngine || searchingFair) return;
+        searchingFair = true;
+        console.log('🎯 Starting fair position search…');
+        tryNextFairPosition();
+      });
+
+      function tryNextFairPosition() {
+        const fen = generateJChessFEN();
+        engine.postMessage('position fen ' + fen);
+        engine.postMessage('go nodes 10000');
+
+        const onEval = ({ data }) => {
+          const line = data.trim();
+          if (line.startsWith('info') && line.includes('score cp')) {
+            const match = line.match(/score cp (-?\d+)/);
+            if (match) {
+              const evalCp = parseInt(match[1], 10);
+              const evalPawns = evalCp / 100;
+              console.log(`📈 Eval for FEN: ${evalPawns}`);
+              if (Math.abs(evalPawns) <= 0.5) {
+                console.log('✅ Fair position found:', fen);
+                game.load(fen);
+                board.position(fen, false);
+                engine.removeEventListener('message', onEval);
+                searchingFair = false;
+              }
+            }
+          }
+          if (line.startsWith('bestmove')) {
+            if (searchingFair) {
+              engine.removeEventListener('message', onEval);
+              setTimeout(tryNextFairPosition, 50);
+            }
+          }
+        };
+
+        engine.addEventListener('message', onEval);
+      }
+
       // Move handlers
       function onDragStart(src, piece) {
         if (game.game_over()) return false;
@@ -151,7 +191,6 @@
         const mv = game.move({ from: src, to: tgt, promotion: 'q' });
         if (!mv) return 'snapback';
         console.log('🤚 You played:', mv.san, 'FEN:', game.fen());
-
         if (haveEngine) {
           setTimeout(() => {
             const fen = game.fen();
