@@ -43,11 +43,11 @@
     <button id="fairBtn">Generate Fair Position</button>
     <label for="levelSelect">Level:</label>
     <select id="levelSelect">
-      <option value="1">Lv. 1</option>
+      <option value="1" selected>Lv. 1</option>
       <option value="2">Lv. 2</option>
       <option value="3">Lv. 3</option>
       <option value="4">Lv. 4</option>
-      <option value="5" selected>Lv. 5</option>
+      <option value="5">Lv. 5</option>
       <option value="6">Lv. 6</option>
       <option value="7">Lv. 7</option>
       <option value="8">Lv. 8</option>
@@ -166,7 +166,7 @@
         const fen = generateJChessFEN();
         console.log('Checking FEN:', fen);
         evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go nodes 10000');
+        evalEngine.postMessage('go nodes 500000');
 
         const onEval = ({ data }) => {
           const line = data.trim();
