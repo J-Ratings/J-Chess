@@ -4,13 +4,32 @@
   <meta charset="UTF-8" />
   <title>J-Chess + Stockfish</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Chessboard.js CSS -->
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
-    html, body { height:100%; margin:0; font-family:sans-serif; background:#f5f5f5; text-align:center }
-    #controls { margin:15px 0 }
-    #controls > * { margin:0 8px; padding:8px 16px; font-size:1em; cursor:pointer }
-    #board { width:100%; max-width:400px; margin:0 auto 20px }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: sans-serif;
+      background: #f5f5f5;
+      text-align: center;
+    }
+    #controls {
+      margin: 15px 0;
+    }
+    #controls > * {
+      margin: 0 8px;
+      padding: 8px 16px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    #board {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto 20px;
+    }
   </style>
+  <!-- UI libs -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
@@ -39,7 +58,9 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // Map levels to node counts
+    console.log('🟢 DOM ready, initializing…');
+
+    // Node limits per level
     const nodeCounts = {
       1: 100,
       2: 200,
@@ -53,9 +74,54 @@
       10: 1000000
     };
 
-    let currentLevel = +$('#levelSelect').val();
-    let engine;
-    const game  = new Chess();
+    // Track current level
+    let currentLevel = parseInt($('#levelSelect').val(), 10);
+    $('#levelSelect').on('change', function() {
+      currentLevel = parseInt(this.value, 10);
+      console.log('🎚 Engine level set to', currentLevel, '(', nodeCounts[currentLevel], 'nodes )');
+    });
+
+    // Start Stockfish engine
+    let engine, haveEngine = true;
+    try {
+      engine = new Worker('engine/stockfish-17-lite-single.js');
+    } catch (err) {
+      console.warn('⚠️ Cannot create engine Worker—continuing without engine', err);
+      haveEngine = false;
+    }
+
+    if (haveEngine) {
+      engine.onmessage = ({ data }) => {
+        const line = data.trim();
+        console.log('🖥️ Stockfish says:', line);
+
+        if (line === 'uciok') {
+          engine.postMessage('ucinewgame');
+          engine.postMessage('isready');
+        } else if (line === 'readyok') {
+          console.log('✅ Engine ready');
+        } else if (line.startsWith('bestmove')) {
+          const uci = line.split(' ')[1];
+          const from = uci.substring(0, 2);
+          const to = uci.substring(2, 4);
+          console.log('🤖 Engine plays UCI:', uci);
+
+          const moveObj = { from, to, promotion: 'q' };
+          const result = game.move(moveObj);
+          if (!result) {
+            console.error('⛔ Illegal engine move:', moveObj, 'FEN:', game.fen());
+          } else {
+            board.position(game.fen());
+          }
+        }
+      };
+
+      engine.onerror = e => console.error('❌ Engine error:', e);
+      engine.postMessage('uci');
+    }
+
+    // Setup board and game
+    const game = new Chess();
     const board = Chessboard('board', {
       draggable: true,
       position: 'start',
@@ -64,47 +130,50 @@
     });
     $(window).resize(board.resize);
 
-    // Initialize/reinitialize engine as a Worker
-    function initEngine() {
-      if (engine) engine.terminate();
-      engine = new Worker('engine/stockfish.js');
-      engine.onmessage = onEngineMessage;
-      engine.onerror   = e => console.error('❌ Engine error:', e);
-      engine.postMessage('uci');
-    }
-
-    function onEngineMessage({ data }) {
-      const line = data.trim();
-      if (line === 'uciok') {
-        engine.postMessage('ucinewgame');
-        engine.postMessage('isready');
-      }
-      else if (line.startsWith('readyok')) {
-        console.log(`✅ Engine ready (Lv ${currentLevel} = ${nodeCounts[currentLevel]} nodes)`);
-      }
-      else if (line.startsWith('bestmove')) {
-        const uci = line.split(' ')[1];
-        const from = uci.slice(0,2), to = uci.slice(2,4);
-        game.move({ from, to, promotion: 'q' });
-        board.position(game.fen());
-      }
-    }
-
-    // When level changes, restart engine
-    $('#levelSelect').on('change', function() {
-      currentLevel = +this.value;
-      console.log(`🎚 Level → ${currentLevel} (${nodeCounts[currentLevel]} nodes)`);
-      initEngine();
+    // Randomise button
+    $('#randomiseBtn').click(() => {
+      const fen = generateJChessFEN();
+      console.log('🔀 randomise clicked; FEN =', fen);
+      game.load(fen);
+      board.position(fen);
     });
 
-    // Generate random J-Chess position
-    function shuffle(a) {
+    // Move handlers
+    function onDragStart(src, piece) {
+      if (game.game_over()) return false;
+      if (piece[0] !== 'w') return false;
+    }
+
+    function onDrop(src, tgt) {
+      const mv = game.move({ from: src, to: tgt, promotion: 'q' });
+      if (!mv) return 'snapback';
+      console.log('🤚 You played:', mv.san, 'FEN:', game.fen());
+
+      if (haveEngine) {
+        setTimeout(() => {
+          const fen = game.fen();
+          const nodeLimit = nodeCounts[currentLevel];
+          console.log(`⏳ Asking engine: position fen + go nodes ${nodeLimit}`);
+          engine.postMessage('position fen ' + fen);
+          engine.postMessage('go nodes ' + nodeLimit);
+        }, 250);
+      }
+    }
+
+    function onSnapEnd() {
+      board.position(game.fen());
+    }
+
+    // J-Chess randomiser helpers
+    function shuffle(arr) {
+      const a = arr.slice();
       for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [a[i], a[j]] = [a[j], a[i]];
       }
       return a;
     }
+
     function generateBackRank() {
       const P = ['r','n','b','q','k','b','n','r'];
       let R, b;
@@ -114,39 +183,12 @@
       } while ((b[0] % 2) === (b[1] % 2));
       return R.join('');
     }
+
     function generateJChessFEN() {
       const W = generateBackRank().toUpperCase();
       const B = generateBackRank().toLowerCase();
       return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
     }
-
-    // Handlers for user moves
-    function onDragStart(src, piece) {
-      if (game.game_over() || piece[0] !== 'w') return false;
-    }
-    function onDrop(src, tgt) {
-      const mv = game.move({ from: src, to: tgt, promotion: 'q' });
-      if (!mv) return 'snapback';
-      console.log('🤚 You played:', mv.san);
-      setTimeout(() => {
-        engine.postMessage('position fen ' + game.fen());
-        engine.postMessage('go nodes ' + nodeCounts[currentLevel]);
-      }, 200);
-    }
-    function onSnapEnd() {
-      board.position(game.fen());
-    }
-
-    // Button: randomise
-    $('#randomiseBtn').click(() => {
-      const fen = generateJChessFEN();
-      console.log('🔀 Generated FEN:', fen);
-      game.load(fen);
-      board.position(fen);
-    });
-
-    // Start it up
-    initEngine();
   });
   </script>
 </body>
