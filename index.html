@@ -39,9 +39,18 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const levelToElo = {
-      1: 1350,  2: 1450,  3: 1550,  4: 1650,  5: 1800,
-      6: 2000,  7: 2200,  8: 2400,  9: 2600, 10: 2850
+    // Map levels to node counts
+    const nodeCounts = {
+      1: 100,
+      2: 200,
+      3: 500,
+      4: 1000,
+      5: 5000,
+      6: 10000,
+      7: 50000,
+      8: 100000,
+      9: 500000,
+      10: 1000000
     };
 
     let currentLevel = +$('#levelSelect').val();
@@ -55,7 +64,7 @@
     });
     $(window).resize(board.resize);
 
-    // (Re)start the engine Worker at the selected Elo
+    // Initialize/reinitialize engine as a Worker
     function initEngine() {
       if (engine) engine.terminate();
       engine = new Worker('engine/stockfish.js');
@@ -67,30 +76,31 @@
     function onEngineMessage({ data }) {
       const line = data.trim();
       if (line === 'uciok') {
-        engine.postMessage('setoption name UCI_LimitStrength value true');
-        engine.postMessage(`setoption name UCI_Elo value ${levelToElo[currentLevel]}`);
         engine.postMessage('ucinewgame');
         engine.postMessage('isready');
       }
+      else if (line.startsWith('readyok')) {
+        console.log(`✅ Engine ready (Lv ${currentLevel} = ${nodeCounts[currentLevel]} nodes)`);
+      }
       else if (line.startsWith('bestmove')) {
-        const uci  = line.split(' ')[1];
+        const uci = line.split(' ')[1];
         const from = uci.slice(0,2), to = uci.slice(2,4);
         game.move({ from, to, promotion: 'q' });
         board.position(game.fen());
       }
     }
 
-    // When user picks a new level, re-init engine
+    // When level changes, restart engine
     $('#levelSelect').on('change', function() {
       currentLevel = +this.value;
-      console.log(`🎚 Level ${currentLevel} → Elo ${levelToElo[currentLevel]}`);
+      console.log(`🎚 Level → ${currentLevel} (${nodeCounts[currentLevel]} nodes)`);
       initEngine();
     });
 
-    // Generate a random J-Chess back-rank
+    // Generate random J-Chess position
     function shuffle(a) {
       for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i+1));
+        const j = Math.floor(Math.random() * (i + 1));
         [a[i], a[j]] = [a[j], a[i]];
       }
       return a;
@@ -105,35 +115,37 @@
       return R.join('');
     }
     function generateJChessFEN() {
-      const W = generateBackRank().toUpperCase(),
-            B = generateBackRank().toLowerCase();
+      const W = generateBackRank().toUpperCase();
+      const B = generateBackRank().toLowerCase();
       return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
     }
 
-    // Handlers for your moves
-    function onDragStart(s, p) {
-      if (game.game_over() || p[0] !== 'w') return false;
+    // Handlers for user moves
+    function onDragStart(src, piece) {
+      if (game.game_over() || piece[0] !== 'w') return false;
     }
-    function onDrop(s, t) {
-      const mv = game.move({ from: s, to: t, promotion: 'q' });
+    function onDrop(src, tgt) {
+      const mv = game.move({ from: src, to: tgt, promotion: 'q' });
       if (!mv) return 'snapback';
+      console.log('🤚 You played:', mv.san);
       setTimeout(() => {
         engine.postMessage('position fen ' + game.fen());
-        engine.postMessage('go movetime 1000');
+        engine.postMessage('go nodes ' + nodeCounts[currentLevel]);
       }, 200);
     }
     function onSnapEnd() {
       board.position(game.fen());
     }
 
-    // Random-position button
+    // Button: randomise
     $('#randomiseBtn').click(() => {
       const fen = generateJChessFEN();
+      console.log('🔀 Generated FEN:', fen);
       game.load(fen);
       board.position(fen);
     });
 
-    // kick everything off
+    // Start it up
     initEngine();
   });
   </script>
