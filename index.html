@@ -57,33 +57,38 @@
   </style>
 </head>
 <body>
-  <h1>J-Chess</h1>
+<h1>J-Chess</h1>
 
+<div id="controls">
+  <button id="randomiseBtn">Generate Position</button>
+  <button id="fairBtn">Generate Fair Position</button>
+  <label for="levelSelect">Level:</label>
+  <select id="levelSelect">
+    <option value="1">Lv. 1</option>
+    <option value="2">Lv. 2</option>
+    <option value="3">Lv. 3</option>
+    <option value="4">Lv. 4</option>
+    <option value="5" selected>Lv. 5</option>
+    <option value="6">Lv. 6</option>
+    <option value="7">Lv. 7</option>
+    <option value="8">Lv. 8</option>
+    <option value="9">Lv. 9</option>
+    <option value="10">Lv. 10</option>
+  </select>
+</div>
 
-  <div id="controls">
-    <button id="randomiseBtn">Generate Position</button>
-    <button id="fairBtn">Generate Fair Position</button>
-    <label for="levelSelect">Level:</label>
-    <select id="levelSelect">
-      <option value="1">Lv. 1</option>
-      <option value="2">Lv. 2</option>
-      <option value="3">Lv. 3</option>
-      <option value="4">Lv. 4</option>
-      <option value="5" selected>Lv. 5</option>
-      <option value="6">Lv. 6</option>
-      <option value="7">Lv. 7</option>
-      <option value="8">Lv. 8</option>
-      <option value="9">Lv. 9</option>
-      <option value="10">Lv. 10</option>
-    </select>
-  </div>
+<div id="board-container">
+  <div id="board"></div>
+  <div id="loadingSpinner"></div>
+</div>
 
-  <div id="board-container">
-    <div id="board"></div>
-    <div id="loadingSpinner"></div>
-  </div>
+<!-- Moved these below -->
+<div id="stats">
   <h2>8.3 million starting positions</h2>
   <h2>2.5 million fair starting positions</h2>
+</div>
+
+
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
