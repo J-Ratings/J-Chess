@@ -59,38 +59,41 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🟢 DOM ready, starting…');
 
-      const moveTime = 1000;
-      let currentLevel = 5;
+      const moveTime = 1000;    // engine think time after your move
+      let currentLevel = 5;     // default skill
       let searchingFair = false;
 
+      // --- start two separate Stockfish instances ---
       let engine, evalEngine;
       try {
-        engine = new Worker('engine/stockfish-17-lite-single.js');
+        engine     = new Worker('engine/stockfish-17-lite-single.js');
         evalEngine = new Worker('engine/stockfish-17-lite-single.js');
-      } catch (err) {
-        console.warn('⚠️ Failed to load Stockfish:', err);
+      } catch (e) {
+        console.warn('⚠️ Stockfish failed to load', e);
         return;
       }
 
-      function initUCI(wrk, label) {
-        wrk.postMessage('uci');
-        wrk.addEventListener('message', ({ data }) => {
+      // ---- UCI init helper ----
+      function initEngine(w, name) {
+        w.postMessage('uci');
+        w.addEventListener('message', ({ data }) => {
           const line = data.trim();
           if (line === 'uciok') {
-            wrk.postMessage('ucinewgame');
-            wrk.postMessage('setoption name UCI_LimitStrength value true');
-            wrk.postMessage('setoption name Skill Level value ' + currentLevel);
-            wrk.postMessage('isready');
-          } else if (line === 'readyok') {
-            console.log(`✅ ${label} ready`);
+            w.postMessage('ucinewgame');
+            w.postMessage('setoption name UCI_LimitStrength value true');
+            w.postMessage('setoption name Skill Level value ' + currentLevel);
+            w.postMessage('isready');
+          }
+          if (line === 'readyok') {
+            console.log(`✅ ${name} ready`);
           }
         });
       }
+      initEngine(engine,     'Play-engine');
+      initEngine(evalEngine, 'Eval-engine');
 
-      initUCI(engine, 'Play-engine');
-      initUCI(evalEngine, 'Eval-engine');
-
-      $('#levelSelect').on('change', function () {
+      // ---- update both engines when level changes ----
+      $('#levelSelect').on('change', function() {
         currentLevel = parseInt(this.value, 10);
         [engine, evalEngine].forEach(w => {
           w.postMessage('setoption name UCI_LimitStrength value true');
@@ -99,16 +102,17 @@
         console.log('🎚 Skill Level →', currentLevel);
       });
 
+      // ---- board & game setup ----
       const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
         position: 'start',
         pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-        moveSpeed: 0,
+        moveSpeed:     0,
         snapbackSpeed: 0,
-        snapSpeed: 0,
-        appearSpeed: 0,
-        trashSpeed: 0,
+        snapSpeed:     0,
+        appearSpeed:   0,
+        trashSpeed:    0,
         onDragStart,
         onDrop,
         onSnapEnd
@@ -116,39 +120,34 @@
       $(window).resize(board.resize);
 
       function onDragStart(src, piece) {
-        if (game.game_over()) return false;
-        if (piece[0] !== 'w') return false;
+        if (game.game_over() || piece[0] !== 'w') return false;
       }
-
       function onDrop(src, tgt) {
-        const move = game.move({ from: src, to: tgt, promotion: 'q' });
-        if (!move) return 'snapback';
-        console.log('🤚 You played:', move.san);
+        const mv = game.move({ from: src, to: tgt, promotion: 'q' });
+        if (!mv) return 'snapback';
+        console.log('🤚 You played:', mv.san);
         setTimeout(() => {
           engine.postMessage('position fen ' + game.fen());
           engine.postMessage('go movetime ' + moveTime);
         }, 250);
       }
-
       function onSnapEnd() {
         board.position(game.fen(), false);
       }
 
+      // ---- handle engine replies for your moves ----
       engine.addEventListener('message', ({ data }) => {
         const line = data.trim();
         if (line.startsWith('bestmove') && !searchingFair) {
           const uci = line.split(' ')[1];
-          const from = uci.substring(0, 2);
-          const to = uci.substring(2, 4);
-          const result = game.move({ from, to, promotion: 'q' });
-          if (!result) {
-            console.error('Illegal engine move:', uci);
-          } else {
-            board.position(game.fen(), false);
-          }
+          const from = uci.substring(0,2), to = uci.substring(2,4);
+          const res = game.move({ from, to, promotion: 'q' });
+          if (!res) console.error('Illegal engine move:', uci);
+          else      board.position(game.fen(), false);
         }
       });
 
+      // ---- Random position button ----
       $('#randomiseBtn').click(() => {
         const fen = generateJChessFEN();
         console.log('🔀 New random FEN:', fen);
@@ -156,66 +155,71 @@
         board.position(fen, false);
       });
 
+      // ---- Fair position button ----
       $('#fairBtn').click(() => {
         if (searchingFair) return;
         searchingFair = true;
         console.log('🎯 Starting fair search…');
-        tryNextFair(); // kicks off the first FEN
+        tryNextFair();
       });
 
+      // ---- FAIR SEARCH LOOP ----
       function tryNextFair() {
         const fen = generateJChessFEN();
         console.log('Checking FEN:', fen);
 
+        let lastCp = null;
         evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go nodes 20000000');
+        evalEngine.postMessage('go nodes 500000');
 
-        const onEval = ({ data }) => {
+        function onEval({ data }) {
           const line = data.trim();
-
+          // capture every cp score to lastCp
           if (line.startsWith('info') && line.includes('score cp')) {
-            const match = line.match(/score cp (-?\d+)/);
-            if (match) {
-              const cp = parseInt(match[1], 10);
-              const pawns = cp / 100;
-              const fair = Math.abs(pawns) <= 0.5;
-              console.log(`Eval ${pawns.toFixed(2)} – ${fair ? 'Fair' : 'Not Fair'}`);
-              if (fair) {
-                console.log('✅ Loaded fair FEN:', fen);
-                game.load(fen);
-                board.position(fen, false);
-                searchingFair = false;
-                evalEngine.removeEventListener('message', onEval);
-              }
+            const m = line.match(/score cp (-?\d+)/);
+            if (m) lastCp = parseInt(m[1], 10);
+          }
+          // once engine finishes, bestmove arrives
+          if (line.startsWith('bestmove')) {
+            const pawns = (lastCp || 0) / 100;
+            const isFair = Math.abs(pawns) <= 0.5;
+            console.log(`Eval ${pawns.toFixed(2)} – ${isFair ? 'Fair' : 'Not Fair'}`);
+
+            evalEngine.removeEventListener('message', onEval);
+
+            if (isFair) {
+              console.log('✅ Loaded fair FEN:', fen);
+              game.load(fen);
+              board.position(fen, false);
+              searchingFair = false;
+            } else {
+              // try a completely new FEN
+              setTimeout(tryNextFair, 30);
             }
           }
-
-          if (line.startsWith('bestmove')) {
-            evalEngine.removeEventListener('message', onEval);
-            if (searchingFair) setTimeout(tryNextFair, 30); // try new FEN
-          }
-        };
+        }
 
         evalEngine.addEventListener('message', onEval);
       }
 
-      function shuffle(arr) {
-        const a = arr.slice();
-        for (let i = a.length - 1; i > 0; i--) {
+      // ---- J-Chess helpers ----
+      function shuffle(a) {
+        const arr = a.slice();
+        for (let i = arr.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [a[i], a[j]] = [a[j], a[i]];
+          [arr[i], arr[j]] = [arr[j], arr[i]];
         }
-        return a;
+        return arr;
       }
 
       function generateBackRank() {
-        const pieces = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
-        let shuffled, b;
+        const P = ['r','n','b','q','k','b','n','r'];
+        let R, b;
         do {
-          shuffled = shuffle(pieces);
-          b = [shuffled.indexOf('b'), shuffled.lastIndexOf('b')];
+          R = shuffle(P);
+          b = [R.indexOf('b'), R.lastIndexOf('b')];
         } while ((b[0] % 2) === (b[1] % 2));
-        return shuffled.join('');
+        return R.join('');
       }
 
       function generateJChessFEN() {
