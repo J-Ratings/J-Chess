@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>J-Chess + Stockfish</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- Chessboard.js CSS -->
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
     html, body {
@@ -30,14 +29,12 @@
       width: 100%;
       max-width: 400px;
       margin: 0 auto 20px;
-      aspect-ratio: 1;           /* keep square */
+      aspect-ratio: 1;
     }
-    /* actual chessboard */
     #board {
       width: 100%;
       height: 100%;
     }
-    /* spinner overlay centered over board */
     #loadingSpinner {
       position: absolute;
       top: 50%;
@@ -87,17 +84,17 @@
     <div id="loadingSpinner"></div>
   </div>
 
-  <!-- Libraries -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('🟢 DOM ready, starting…');
+
       const moveTime = 1000;
       let currentLevel = 5, searchingFair = false;
-
-      // two Stockfish workers
       let engine, evalEngine;
+
       try {
         engine     = new Worker('engine/stockfish-17-lite-single.js');
         evalEngine = new Worker('engine/stockfish-17-lite-single.js');
@@ -106,7 +103,6 @@
         return;
       }
 
-      // UCI init helper
       function initEngine(w, name) {
         w.postMessage('uci');
         w.addEventListener('message', ({ data }) => {
@@ -122,19 +118,18 @@
           }
         });
       }
-      initEngine(engine, 'Play-engine');
+      initEngine(engine,     'Play-engine');
       initEngine(evalEngine, 'Eval-engine');
 
-      // change level
       $('#levelSelect').on('change', function() {
-        currentLevel = +this.value;
+        currentLevel = parseInt(this.value, 10);
         [engine, evalEngine].forEach(w => {
           w.postMessage('setoption name UCI_LimitStrength value true');
           w.postMessage('setoption name Skill Level value ' + currentLevel);
         });
+        console.log('🎚 Skill Level →', currentLevel);
       });
 
-      // chessboard setup
       const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
@@ -152,6 +147,7 @@
       function onDrop(src, tgt) {
         const mv = game.move({ from: src, to: tgt, promotion: 'q' });
         if (!mv) return 'snapback';
+        console.log('🤚 You played:', mv.san);
         setTimeout(() => {
           engine.postMessage('position fen ' + game.fen());
           engine.postMessage('go movetime ' + moveTime);
@@ -161,7 +157,6 @@
         board.position(game.fen(), false);
       }
 
-      // engine response (normal play)
       engine.addEventListener('message', ({ data }) => {
         const line = data.trim();
         if (line.startsWith('bestmove') && !searchingFair) {
@@ -172,23 +167,25 @@
         }
       });
 
-      // Generate Position
       $('#randomiseBtn').click(() => {
         const fen = generateJChessFEN();
+        console.log('🔀 New random FEN:', fen);
         game.load(fen);
         board.position(fen, false);
       });
 
-      // Generate Fair Position
       $('#fairBtn').click(() => {
         if (searchingFair) return;
         searchingFair = true;
+        console.log('🎯 Starting fair search…');
         $('#loadingSpinner').show();
         tryNextFair();
       });
 
       function tryNextFair() {
         const fen = generateJChessFEN();
+        console.log('Checking FEN:', fen);
+
         let lastCp = null;
         evalEngine.postMessage('position fen ' + fen);
         evalEngine.postMessage('go depth 13');
@@ -197,13 +194,16 @@
           const line = data.trim();
           if (line.startsWith('info') && line.includes('score cp')) {
             const m = line.match(/score cp (-?\d+)/);
-            if (m) lastCp = +m[1];
+            if (m) lastCp = parseInt(m[1], 10);
           }
           if (line.startsWith('bestmove')) {
             evalEngine.removeEventListener('message', onEval);
-            const pawns = (lastCp || 0)/100;
-            const fair = Math.abs(pawns) <= 0.4;
-            if (fair) {
+            const pawns = (lastCp || 0) / 100;
+            const isFair = Math.abs(pawns) <= 0.4;
+            console.log(`Eval ${pawns.toFixed(2)} – ${isFair ? 'Fair' : 'Not Fair'}`);
+
+            if (isFair) {
+              console.log('✅ Loaded fair FEN:', fen);
               game.load(fen);
               board.position(fen, false);
               searchingFair = false;
@@ -217,12 +217,12 @@
         evalEngine.addEventListener('message', onEval);
       }
 
-      // J-Chess FEN helpers
+      // Helpers to generate a random J-Chess FEN
       function shuffle(a) {
         const arr = a.slice();
-        for (let i = arr.length-1; i > 0; i--) {
-          const j = Math.floor(Math.random()*(i+1));
-          [arr[i],arr[j]] = [arr[j],arr[i]];
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
         }
         return arr;
       }
@@ -232,7 +232,7 @@
         do {
           R = shuffle(P);
           b = [R.indexOf('b'), R.lastIndexOf('b')];
-        } while ((b[0]%2) === (b[1]%2));
+        } while ((b[0] % 2) === (b[1] % 2));
         return R.join('');
       }
       function generateJChessFEN() {
