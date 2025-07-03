@@ -36,21 +36,22 @@
 </head>
 <body>
   <h1>J-Chess</h1>
-  <h2>Over 8 million possible start positions!</h2>
+  <h2>8.3 million starting positions</h2>
+  <h2>2.5 million fair starting positions</h2>
   <div id="controls">
     <button id="randomiseBtn">Generate Position</button>
     <label for="levelSelect">Level:</label>
     <select id="levelSelect">
-      <option value="2">Lv. 1</option>
-      <option value="4">Lv. 2</option>
-      <option value="6">Lv. 3</option>
-      <option value="8">Lv. 4</option>
-      <option value="10" selected>Lv. 5</option>
-      <option value="12">Lv. 6</option>
-      <option value="14">Lv. 7</option>
-      <option value="16">Lv. 8</option>
-      <option value="18">Lv. 9</option>
-      <option value="20">Lv. 10</option>
+      <option value="1">Lv. 1</option>
+      <option value="2">Lv. 2</option>
+      <option value="3">Lv. 3</option>
+      <option value="4">Lv. 4</option>
+      <option value="5" selected>Lv. 5</option>
+      <option value="6">Lv. 6</option>
+      <option value="7">Lv. 7</option>
+      <option value="8">Lv. 8</option>
+      <option value="9">Lv. 9</option>
+      <option value="10">Lv. 10</option>
     </select>
   </div>
   <div id="board"></div>
@@ -59,14 +60,28 @@
   document.addEventListener('DOMContentLoaded', () => {
     console.log('🟢 DOM ready, initializing…');
 
-    // 0) Engine depth from dropdown
-    let currentDepth = parseInt($('#levelSelect').val(), 10);
-    $('#levelSelect').on('change', function(){
-      currentDepth = parseInt(this.value, 10);
-      console.log('🎚 Engine depth set to', currentDepth);
+    // Node limits per level
+    const nodeCounts = {
+      1: 100,
+      2: 200,
+      3: 500,
+      4: 1000,
+      5: 5000,
+      6: 10000,
+      7: 50000,
+      8: 100000,
+      9: 500000,
+      10: 1000000
+    };
+
+    // Track current level
+    let currentLevel = parseInt($('#levelSelect').val(), 10);
+    $('#levelSelect').on('change', function() {
+      currentLevel = parseInt(this.value, 10);
+      console.log('🎚 Engine level set to', currentLevel, '(', nodeCounts[currentLevel], 'nodes )');
     });
 
-    // 1) Spawn Stockfish Worker
+    // Start Stockfish engine
     let engine, haveEngine = true;
     try {
       engine = new Worker('engine/stockfish-17-lite-single.js');
@@ -75,7 +90,6 @@
       haveEngine = false;
     }
 
-    // 2) UCI handshake + bestmove handler
     if (haveEngine) {
       engine.onmessage = ({ data }) => {
         const line = data.trim();
@@ -84,19 +98,16 @@
         if (line === 'uciok') {
           engine.postMessage('ucinewgame');
           engine.postMessage('isready');
-        }
-        else if (line === 'readyok') {
+        } else if (line === 'readyok') {
           console.log('✅ Engine ready');
-        }
-        else if (line.startsWith('bestmove')) {
-          const uci  = line.split(' ')[1];       // e.g. "e7e5"
-          const from = uci.substring(0,2);       // "e7"
-          const to   = uci.substring(2,4);       // "e5"
+        } else if (line.startsWith('bestmove')) {
+          const uci = line.split(' ')[1];
+          const from = uci.substring(0, 2);
+          const to = uci.substring(2, 4);
           console.log('🤖 Engine plays UCI:', uci);
 
-          // apply via chess.js
           const moveObj = { from, to, promotion: 'q' };
-          const result  = game.move(moveObj);
+          const result = game.move(moveObj);
           if (!result) {
             console.error('⛔ Illegal engine move:', moveObj, 'FEN:', game.fen());
           } else {
@@ -104,14 +115,13 @@
           }
         }
       };
-      engine.onerror = e => console.error('❌ Engine error:', e);
 
-      // start UCI
+      engine.onerror = e => console.error('❌ Engine error:', e);
       engine.postMessage('uci');
     }
 
-    // 3) Setup board & game
-    const game  = new Chess();
+    // Setup board and game
+    const game = new Chess();
     const board = Chessboard('board', {
       draggable: true,
       position: 'start',
@@ -120,7 +130,7 @@
     });
     $(window).resize(board.resize);
 
-    // 4) Randomise start position
+    // Randomise button
     $('#randomiseBtn').click(() => {
       const fen = generateJChessFEN();
       console.log('🔀 randomise clicked; FEN =', fen);
@@ -128,29 +138,33 @@
       board.position(fen);
     });
 
-    // 5) Handlers for user move
+    // Move handlers
     function onDragStart(src, piece) {
       if (game.game_over()) return false;
-      if (piece[0] !== 'w')    return false;
+      if (piece[0] !== 'w') return false;
     }
+
     function onDrop(src, tgt) {
       const mv = game.move({ from: src, to: tgt, promotion: 'q' });
       if (!mv) return 'snapback';
       console.log('🤚 You played:', mv.san, 'FEN:', game.fen());
+
       if (haveEngine) {
         setTimeout(() => {
           const fen = game.fen();
-          console.log(`⏳ Asking engine: position fen + go depth ${currentDepth}`);
+          const nodeLimit = nodeCounts[currentLevel];
+          console.log(`⏳ Asking engine: position fen + go nodes ${nodeLimit}`);
           engine.postMessage('position fen ' + fen);
-          engine.postMessage('go depth ' + currentDepth);
+          engine.postMessage('go nodes ' + nodeLimit);
         }, 250);
       }
     }
+
     function onSnapEnd() {
       board.position(game.fen());
     }
 
-    // 6) J-Chess randomiser helpers
+    // J-Chess randomiser helpers
     function shuffle(arr) {
       const a = arr.slice();
       for (let i = a.length - 1; i > 0; i--) {
@@ -159,15 +173,17 @@
       }
       return a;
     }
+
     function generateBackRank() {
       const P = ['r','n','b','q','k','b','n','r'];
       let R, b;
       do {
         R = shuffle(P);
-        b = [ R.indexOf('b'), R.lastIndexOf('b') ];
+        b = [R.indexOf('b'), R.lastIndexOf('b')];
       } while ((b[0] % 2) === (b[1] % 2));
       return R.join('');
     }
+
     function generateJChessFEN() {
       const W = generateBackRank().toUpperCase();
       const B = generateBackRank().toLowerCase();
