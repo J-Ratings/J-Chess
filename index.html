@@ -61,60 +61,50 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🟢 DOM ready, starting…');
 
-      // Time per move in milliseconds
-      const moveTime = 1000;
+      const moveTime = 1000;              // engine think time after your move
+      let currentLevel = 5;               // 1–10
+      let searchingFair = false;          // flag while fair-button is active
 
-      // Track current Stockfish skill level (1–10)
-      let currentLevel = parseInt($('#levelSelect').val(), 10);
+      // --- instantiate two engines ---
+      let engine, evalEngine;
+      try {
+        engine     = new Worker('engine/stockfish-17-lite-single.js');
+        evalEngine = new Worker('engine/stockfish-17-lite-single.js');
+      } catch (err) {
+        console.warn('⚠️ Could not start Stockfish worker:', err);
+        return;
+      }
+
+      // --- common helper to init a UCI engine ---
+      function initUCI(wrk) {
+        wrk.postMessage('uci');
+        wrk.addEventListener('message', ({ data }) => {
+          const line = data.trim();
+          if (line === 'uciok') {
+            wrk.postMessage('ucinewgame');
+            wrk.postMessage('setoption name UCI_LimitStrength value true');
+            wrk.postMessage('setoption name Skill Level value ' + currentLevel);
+            wrk.postMessage('isready');
+          } else if (line === 'readyok') {
+            console.log(wrk === engine ? '✅ Play-engine ready' : '✅ Eval-engine ready');
+          }
+        });
+      }
+
+      initUCI(engine);
+      initUCI(evalEngine);
+
+      // --- update both engines when level changes ---
       $('#levelSelect').on('change', function() {
         currentLevel = parseInt(this.value, 10);
-        console.log('🎚 Engine skill level set to', currentLevel);
-        engine.postMessage('setoption name UCI_LimitStrength value true');
-        engine.postMessage('setoption name Skill Level value ' + currentLevel);
+        console.log('🎚 Skill Level →', currentLevel);
+        [engine, evalEngine].forEach(w => {
+          w.postMessage('setoption name UCI_LimitStrength value true');
+          w.postMessage('setoption name Skill Level value ' + currentLevel);
+        });
       });
 
-      // Start Stockfish engine
-      let engine, haveEngine = true;
-      try {
-        engine = new Worker('engine/stockfish-17-lite-single.js');
-      } catch (err) {
-        console.warn('⚠️ Cannot create engine Worker—continuing without engine', err);
-        haveEngine = false;
-      }
-
-      if (haveEngine) {
-        engine.onmessage = ({ data }) => {
-          const line = data.trim();
-          console.log('🖥️ Stockfish says:', line);
-
-          if (line === 'uciok') {
-            engine.postMessage('ucinewgame');
-            engine.postMessage('setoption name UCI_LimitStrength value true');
-            engine.postMessage('setoption name Skill Level value ' + currentLevel);
-            engine.postMessage('isready');
-          } else if (line === 'readyok') {
-            console.log('✅ Engine ready');
-          } else if (line.startsWith('bestmove')) {
-            const uci = line.split(' ')[1];
-            const from = uci.substring(0, 2);
-            const to = uci.substring(2, 4);
-            console.log('🤖 Engine plays UCI:', uci);
-
-            const moveObj = { from, to, promotion: 'q' };
-            const result = game.move(moveObj);
-            if (!result) {
-              console.error('⛔ Illegal engine move:', moveObj, 'FEN:', game.fen());
-            } else {
-              board.position(game.fen(), false);
-            }
-          }
-        };
-
-        engine.onerror = e => console.error('❌ Engine error:', e);
-        engine.postMessage('uci');
-      }
-
-      // Setup board and game
+      // --- set up board & game ---
       const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
@@ -131,90 +121,92 @@
       });
       $(window).resize(board.resize);
 
-      // Randomise button
-      $('#randomiseBtn').click(() => {
-        const fen = generateJChessFEN();
-        console.log('🔀 Randomise clicked; FEN =', fen);
-        game.load(fen);
-        board.position(fen, false);
+      // --- main engine move handler (only when you're playing) ---
+      engine.addEventListener('message', ({ data }) => {
+        const line = data.trim();
+        if (line.startsWith('bestmove') && !searchingFair) {
+          const uci  = line.split(' ')[1];
+          const from = uci.slice(0, 2), to = uci.slice(2, 4);
+          console.log('🤖 Engine plays:', uci);
+          const result = game.move({ from, to, promotion: 'q' });
+          if (!result) console.error('Illegal engine move', uci);
+          else        board.position(game.fen(), false);
+        }
       });
 
-      // Fair position button
-      let searchingFair = false;
-      $('#fairBtn').click(() => {
-        if (!haveEngine || searchingFair) return;
-        searchingFair = true;
-        console.log('🎯 Starting fair position search…');
-        tryNextFairPosition();
-      });
-
-      function tryNextFairPosition() {
-        const fen = generateJChessFEN();
-        engine.postMessage('position fen ' + fen);
-        engine.postMessage('go nodes 10000');
-
-        const onEval = ({ data }) => {
-          const line = data.trim();
-          if (line.startsWith('info') && line.includes('score cp')) {
-            const match = line.match(/score cp (-?\d+)/);
-            if (match) {
-              const evalCp = parseInt(match[1], 10);
-              const evalPawns = evalCp / 100;
-              console.log(`📈 Eval for FEN: ${evalPawns}`);
-              if (Math.abs(evalPawns) <= 0.5) {
-                console.log('✅ Fair position found:', fen);
-                game.load(fen);
-                board.position(fen, false);
-                engine.removeEventListener('message', onEval);
-                searchingFair = false;
-              }
-            }
-          }
-          if (line.startsWith('bestmove')) {
-            if (searchingFair) {
-              engine.removeEventListener('message', onEval);
-              setTimeout(tryNextFairPosition, 50);
-            }
-          }
-        };
-
-        engine.addEventListener('message', onEval);
-      }
-
-      // Move handlers
+      // --- move handlers for user dragging/dropping ---
       function onDragStart(src, piece) {
-        if (game.game_over()) return false;
-        if (piece[0] !== 'w') return false;
+        if (game.game_over() || piece[0] !== 'w') return false;
       }
-
       function onDrop(src, tgt) {
         const mv = game.move({ from: src, to: tgt, promotion: 'q' });
         if (!mv) return 'snapback';
-        console.log('🤚 You played:', mv.san, 'FEN:', game.fen());
-        if (haveEngine) {
-          setTimeout(() => {
-            const fen = game.fen();
-            console.log(`⏳ Asking engine: position fen + go movetime ${moveTime}ms`);
-            engine.postMessage('position fen ' + fen);
-            engine.postMessage('go movetime ' + moveTime);
-          }, 250);
-        }
+        console.log('You played:', mv.san);
+        setTimeout(() => {
+          engine.postMessage('position fen ' + game.fen());
+          engine.postMessage('go movetime ' + moveTime);
+        }, 250);
       }
-
       function onSnapEnd() {
         board.position(game.fen(), false);
       }
 
-      // J-Chess randomiser helpers
-      function shuffle(arr) {
-        const a = arr.slice();
-        for (let i = a.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [a[i], a[j]] = [a[j], a[i]];
-        }
-        return a;
+      // --- “Generate Position” button ---
+      $('#randomiseBtn').click(() => {
+        const fen = generateJChessFEN();
+        console.log('🔀 New random FEN:', fen);
+        game.load(fen);
+        board.position(fen, false);
+      });
+
+      // --- “Generate Fair Position” button ---
+      $('#fairBtn').click(() => {
+        if (searchingFair) return;
+        searchingFair = true;
+        console.log('🎯 Searching for fair position…');
+        tryNextFair();
+      });
+
+      function tryNextFair() {
+        const fen = generateJChessFEN();
+        evalEngine.postMessage('position fen ' + fen);
+        evalEngine.postMessage('go nodes 10000');
+
+        const onEval = ({ data }) => {
+          const line = data.trim();
+          if (line.startsWith('info') && line.includes('score cp')) {
+            const m = line.match(/score cp (-?\d+)/);
+            if (m) {
+              const cp = parseInt(m[1], 10);
+              const pawns = cp / 100;
+              if (Math.abs(pawns) <= 0.5) {
+                console.log('✅ Found fair FEN:', fen);
+                game.load(fen);
+                board.position(fen, false);
+                searchingFair = false;
+                evalEngine.removeEventListener('message', onEval);
+              }
+            }
+          }
+          if (line.startsWith('bestmove') && searchingFair) {
+            // finished this eval—try another
+            evalEngine.removeEventListener('message', onEval);
+            setTimeout(tryNextFair, 30);
+          }
+        };
+
+        evalEngine.addEventListener('message', onEval);
       }
 
+      // --- J-Chess helpers ---
+      function shuffle(a) {
+        const arr = a.slice();
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
       function generateBackRank() {
         const P = ['r','n','b','q','k','b','n','r'];
         let R, b;
@@ -224,7 +216,6 @@
         } while ((b[0] % 2) === (b[1] % 2));
         return R.join('');
       }
-
       function generateJChessFEN() {
         const W = generateBackRank().toUpperCase();
         const B = generateBackRank().toLowerCase();
