@@ -178,7 +178,7 @@
 
         let lastCp = null;
         evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go depth 15');
+        evalEngine.postMessage('go depth 13');
 
         function onEval({ data }) {
           const line = data.trim();
