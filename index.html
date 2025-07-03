@@ -58,27 +58,18 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('🟢 DOM ready, initializing…');
+    console.log('🟢 DOM ready, initialising…');
 
-    // Node limits per level
-    const nodeCounts = {
-      1: 100,
-      2: 200,
-      3: 500,
-      4: 1000,
-      5: 5000,
-      6: 10000,
-      7: 50000,
-      8: 100000,
-      9: 500000,
-      10: 1000000
-    };
+    // Time per move in milliseconds
+    const moveTime = 1000;
 
-    // Track current level
+    // Track current Stockfish skill level (1–10)
     let currentLevel = parseInt($('#levelSelect').val(), 10);
     $('#levelSelect').on('change', function() {
       currentLevel = parseInt(this.value, 10);
-      console.log('🎚 Engine level set to', currentLevel, '(', nodeCounts[currentLevel], 'nodes )');
+      console.log('🎚 Engine skill level set to', currentLevel);
+      engine.postMessage('setoption name UCI_LimitStrength value true');
+      engine.postMessage('setoption name Skill Level value ' + currentLevel);
     });
 
     // Start Stockfish engine
@@ -97,6 +88,8 @@
 
         if (line === 'uciok') {
           engine.postMessage('ucinewgame');
+          engine.postMessage('setoption name UCI_LimitStrength value true');
+          engine.postMessage('setoption name Skill Level value ' + currentLevel);
           engine.postMessage('isready');
         } else if (line === 'readyok') {
           console.log('✅ Engine ready');
@@ -133,7 +126,7 @@
     // Randomise button
     $('#randomiseBtn').click(() => {
       const fen = generateJChessFEN();
-      console.log('🔀 randomise clicked; FEN =', fen);
+      console.log('🔀 Randomise clicked; FEN =', fen);
       game.load(fen);
       board.position(fen);
     });
@@ -152,10 +145,9 @@
       if (haveEngine) {
         setTimeout(() => {
           const fen = game.fen();
-          const nodeLimit = nodeCounts[currentLevel];
-          console.log(`⏳ Asking engine: position fen + go nodes ${nodeLimit}`);
+          console.log(`⏳ Asking engine: position fen + go movetime ${moveTime}ms`);
           engine.postMessage('position fen ' + fen);
-          engine.postMessage('go nodes ' + nodeLimit);
+          engine.postMessage('go movetime ' + moveTime);
         }, 250);
       }
     }
