@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <title>J-Chess + Stockfish</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- load Stockfish from CDN so the .wasm is auto-handled -->
-  <script src="https://cdn.jsdelivr.net/npm/stockfish@15.1/stockfish.js"></script>
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
     html, body { height:100%; margin:0; font-family:sans-serif; background:#f5f5f5; text-align:center }
@@ -42,12 +40,12 @@
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     const levelToElo = {
-      1: 1350, 2: 1450, 3: 1550, 4: 1650, 5: 1800,
-      6: 2000, 7: 2200, 8: 2400, 9: 2600, 10: 2850
+      1: 1350,  2: 1450,  3: 1550,  4: 1650,  5: 1800,
+      6: 2000,  7: 2200,  8: 2400,  9: 2600, 10: 2850
     };
+
     let currentLevel = +$('#levelSelect').val();
     let engine;
-
     const game  = new Chess();
     const board = Chessboard('board', {
       draggable: true,
@@ -57,76 +55,85 @@
     });
     $(window).resize(board.resize);
 
-    function onEngineMsg({ data }) {
+    // (Re)start the engine Worker at the selected Elo
+    function initEngine() {
+      if (engine) engine.terminate();
+      engine = new Worker('engine/stockfish.js');
+      engine.onmessage = onEngineMessage;
+      engine.onerror   = e => console.error('❌ Engine error:', e);
+      engine.postMessage('uci');
+    }
+
+    function onEngineMessage({ data }) {
       const line = data.trim();
       if (line === 'uciok') {
         engine.postMessage('setoption name UCI_LimitStrength value true');
-        engine.postMessage('setoption name UCI_Elo value ' + levelToElo[currentLevel]);
+        engine.postMessage(`setoption name UCI_Elo value ${levelToElo[currentLevel]}`);
         engine.postMessage('ucinewgame');
         engine.postMessage('isready');
       }
-      if (line.startsWith('bestmove')) {
-        const [ , uci ] = line.split(' ');
+      else if (line.startsWith('bestmove')) {
+        const uci  = line.split(' ')[1];
         const from = uci.slice(0,2), to = uci.slice(2,4);
-        game.move({ from, to, promotion:'q' });
+        game.move({ from, to, promotion: 'q' });
         board.position(game.fen());
       }
     }
 
-    function initEngine() {
-      if (engine && engine.terminate) engine.terminate();
-      engine = STOCKFISH();             // ← factory from the CDN build
-      engine.onmessage = onEngineMsg;
-      engine.onerror   = e => console.error('Engine error', e);
-      engine.postMessage('uci');
-    }
-
-    $('#levelSelect').on('change', () => {
-      currentLevel = +$('#levelSelect').val();
-      console.log('🎚 Level → ELO', levelToElo[currentLevel]);
+    // When user picks a new level, re-init engine
+    $('#levelSelect').on('change', function() {
+      currentLevel = +this.value;
+      console.log(`🎚 Level ${currentLevel} → Elo ${levelToElo[currentLevel]}`);
       initEngine();
     });
 
+    // Generate a random J-Chess back-rank
+    function shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i+1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function generateBackRank() {
+      const P = ['r','n','b','q','k','b','n','r'];
+      let R, b;
+      do {
+        R = shuffle(P);
+        b = [R.indexOf('b'), R.lastIndexOf('b')];
+      } while ((b[0] % 2) === (b[1] % 2));
+      return R.join('');
+    }
+    function generateJChessFEN() {
+      const W = generateBackRank().toUpperCase(),
+            B = generateBackRank().toLowerCase();
+      return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+    }
+
+    // Handlers for your moves
+    function onDragStart(s, p) {
+      if (game.game_over() || p[0] !== 'w') return false;
+    }
+    function onDrop(s, t) {
+      const mv = game.move({ from: s, to: t, promotion: 'q' });
+      if (!mv) return 'snapback';
+      setTimeout(() => {
+        engine.postMessage('position fen ' + game.fen());
+        engine.postMessage('go movetime 1000');
+      }, 200);
+    }
+    function onSnapEnd() {
+      board.position(game.fen());
+    }
+
+    // Random-position button
     $('#randomiseBtn').click(() => {
       const fen = generateJChessFEN();
       game.load(fen);
       board.position(fen);
     });
 
-    function onDragStart(s, p) {
-      if (game.game_over() || p[0] !== 'w') return false;
-    }
-    function onDrop(s, t) {
-      const m = game.move({ from:s, to:t, promotion:'q' });
-      if (!m) return 'snapback';
-      setTimeout(()=>{
-        engine.postMessage('position fen ' + game.fen());
-        engine.postMessage('go movetime 1000');
-      }, 200);
-    }
-    function onSnapEnd() { board.position(game.fen()); }
-
-    function shuffle(a) {
-      for (let i=a.length-1; i>0; i--) {
-        const j = Math.floor(Math.random()*(i+1));
-        [a[i],a[j]]=[a[j],a[i]];
-      }
-      return a;
-    }
-    function generateBackRank() {
-      const P=['r','n','b','q','k','b','n','r'];
-      let R, b;
-      do { R=shuffle(P); b=[R.indexOf('b'),R.lastIndexOf('b')]; }
-      while ((b[0]%2)===(b[1]%2));
-      return R.join('');
-    }
-    function generateJChessFEN() {
-      const W=generateBackRank().toUpperCase();
-      const B=generateBackRank().toLowerCase();
-      return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
-    }
-
-    // kick off the engine
+    // kick everything off
     initEngine();
   });
   </script>
