@@ -170,7 +170,7 @@
 
         let lastCp = null;
         evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go depth 15');
+        evalEngine.postMessage('go depth 14');
 
         function onEval({ data }) {
           const line = data.trim();
@@ -182,7 +182,7 @@
           // once engine finishes, bestmove arrives
           if (line.startsWith('bestmove')) {
             const pawns = (lastCp || 0) / 100;
-            const isFair = Math.abs(pawns) <= 0.5;
+            const isFair = Math.abs(pawns) <= 0.4;
             console.log(`Eval ${pawns.toFixed(2)} – ${isFair ? 'Fair' : 'Not Fair'}`);
 
             evalEngine.removeEventListener('message', onEval);
