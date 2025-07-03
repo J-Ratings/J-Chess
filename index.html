@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>J-Chess + Stockfish</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- Chessboard.js CSS -->
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
     html, body {
@@ -29,7 +28,6 @@
       margin: 0 auto 20px;
     }
   </style>
-  <!-- UI libs -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
@@ -60,67 +58,21 @@
   document.addEventListener('DOMContentLoaded', () => {
     console.log('🟢 DOM ready, initializing…');
 
-    // Node limits per level
-    const nodeCounts = {
-      1: 1,
-      2: 10,
-      3: 50,
-      4: 100,
-      5: 500,
-      6: 1000,
-      7: 5000,
-      8: 10000,
-      9: 50000,
-      10: 100000
+    const levelToElo = {
+      1: 1350,
+      2: 1450,
+      3: 1550,
+      4: 1650,
+      5: 1800,
+      6: 2000,
+      7: 2200,
+      8: 2400,
+      9: 2600,
+      10: 2850
     };
 
-    // Track current level
     let currentLevel = parseInt($('#levelSelect').val(), 10);
-    $('#levelSelect').on('change', function() {
-      currentLevel = parseInt(this.value, 10);
-      console.log('🎚 Engine level set to', currentLevel, '(', nodeCounts[currentLevel], 'nodes )');
-    });
-
-    // Start Stockfish engine
-    let engine, haveEngine = true;
-    try {
-      engine = new Worker('engine/stockfish-17-lite-single.js');
-    } catch (err) {
-      console.warn('⚠️ Cannot create engine Worker—continuing without engine', err);
-      haveEngine = false;
-    }
-
-    if (haveEngine) {
-      engine.onmessage = ({ data }) => {
-        const line = data.trim();
-        console.log('🖥️ Stockfish says:', line);
-
-        if (line === 'uciok') {
-          engine.postMessage('ucinewgame');
-          engine.postMessage('isready');
-        } else if (line === 'readyok') {
-          console.log('✅ Engine ready');
-        } else if (line.startsWith('bestmove')) {
-          const uci = line.split(' ')[1];
-          const from = uci.substring(0, 2);
-          const to = uci.substring(2, 4);
-          console.log('🤖 Engine plays UCI:', uci);
-
-          const moveObj = { from, to, promotion: 'q' };
-          const result = game.move(moveObj);
-          if (!result) {
-            console.error('⛔ Illegal engine move:', moveObj, 'FEN:', game.fen());
-          } else {
-            board.position(game.fen());
-          }
-        }
-      };
-
-      engine.onerror = e => console.error('❌ Engine error:', e);
-      engine.postMessage('uci');
-    }
-
-    // Setup board and game
+    let engine;
     const game = new Chess();
     const board = Chessboard('board', {
       draggable: true,
@@ -130,32 +82,67 @@
     });
     $(window).resize(board.resize);
 
-    // Randomise button
+    // Initialize engine
+    function initEngine(level) {
+      if (engine) engine.terminate();
+      engine = new Worker('engine/stockfish.js');
+
+      engine.onmessage = ({ data }) => {
+        const line = data.trim();
+        console.log('🖥️ Stockfish:', line);
+        if (line === 'uciok') {
+          engine.postMessage('setoption name UCI_LimitStrength value true');
+          engine.postMessage('setoption name UCI_Elo value ' + levelToElo[level]);
+          engine.postMessage('ucinewgame');
+          engine.postMessage('isready');
+        } else if (line.startsWith('bestmove')) {
+          const uci = line.split(' ')[1];
+          const from = uci.substring(0, 2);
+          const to = uci.substring(2, 4);
+          const move = { from, to, promotion: 'q' };
+          const result = game.move(move);
+          if (!result) {
+            console.error('⛔ Illegal engine move:', move);
+          } else {
+            board.position(game.fen());
+          }
+        }
+      };
+
+      engine.postMessage('uci');
+    }
+
+    // Set level change handler
+    $('#levelSelect').on('change', function () {
+      currentLevel = parseInt(this.value, 10);
+      console.log('🎚 Changing level to Lv.', currentLevel, '→ ELO', levelToElo[currentLevel]);
+      initEngine(currentLevel);
+    });
+
+    // Random position
     $('#randomiseBtn').click(() => {
       const fen = generateJChessFEN();
-      console.log('🔀 randomise clicked; FEN =', fen);
+      console.log('🔀 New J-Chess FEN:', fen);
       game.load(fen);
       board.position(fen);
     });
 
-    // Move handlers
+    // User move logic
     function onDragStart(src, piece) {
       if (game.game_over()) return false;
       if (piece[0] !== 'w') return false;
     }
 
     function onDrop(src, tgt) {
-      const mv = game.move({ from: src, to: tgt, promotion: 'q' });
-      if (!mv) return 'snapback';
-      console.log('🤚 You played:', mv.san, 'FEN:', game.fen());
+      const move = game.move({ from: src, to: tgt, promotion: 'q' });
+      if (!move) return 'snapback';
+      console.log('🤚 You played:', move.san);
 
-      if (haveEngine) {
+      if (engine) {
         setTimeout(() => {
           const fen = game.fen();
-          const nodeLimit = nodeCounts[currentLevel];
-          console.log(`⏳ Asking engine: position fen + go nodes ${nodeLimit}`);
           engine.postMessage('position fen ' + fen);
-          engine.postMessage('go nodes ' + nodeLimit);
+          engine.postMessage('go movetime 1000');
         }, 250);
       }
     }
@@ -164,7 +151,7 @@
       board.position(game.fen());
     }
 
-    // J-Chess randomiser helpers
+    // FEN randomiser
     function shuffle(arr) {
       const a = arr.slice();
       for (let i = a.length - 1; i > 0; i--) {
@@ -175,7 +162,7 @@
     }
 
     function generateBackRank() {
-      const P = ['r','n','b','q','k','b','n','r'];
+      const P = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
       let R, b;
       do {
         R = shuffle(P);
@@ -189,6 +176,9 @@
       const B = generateBackRank().toLowerCase();
       return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
     }
+
+    // Start engine on page load
+    initEngine(currentLevel);
   });
   </script>
 </body>
