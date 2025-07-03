@@ -170,7 +170,7 @@
 
         let lastCp = null;
         evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go nodes 1000000');
+        evalEngine.postMessage('go depth 15');
 
         function onEval({ data }) {
           const line = data.trim();
