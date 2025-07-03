@@ -58,6 +58,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     console.log('🟢 DOM ready, initializing…');
 
+    // Map levels to UCI_Elo
     const levelToElo = {
       1: 1350,
       2: 1450,
@@ -82,23 +83,23 @@
     });
     $(window).resize(board.resize);
 
-    // Initialize engine
+    // Initialize or reinitialize the engine at a given level
     function initEngine(level) {
       if (engine) engine.terminate();
       engine = new Worker('engine/stockfish.js');
 
       engine.onmessage = ({ data }) => {
         const line = data.trim();
-        console.log('🖥️ Stockfish:', line);
         if (line === 'uciok') {
           engine.postMessage('setoption name UCI_LimitStrength value true');
-          engine.postMessage('setoption name UCI_Elo value ' + levelToElo[level]);
+          engine.postMessage(`setoption name UCI_Elo value ${levelToElo[level]}`);
           engine.postMessage('ucinewgame');
           engine.postMessage('isready');
-        } else if (line.startsWith('bestmove')) {
+        }
+        else if (line.startsWith('bestmove')) {
           const uci = line.split(' ')[1];
-          const from = uci.substring(0, 2);
-          const to = uci.substring(2, 4);
+          const from = uci.substring(0,2);
+          const to   = uci.substring(2,4);
           const move = { from, to, promotion: 'q' };
           const result = game.move(move);
           if (!result) {
@@ -109,49 +110,47 @@
         }
       };
 
+      engine.onerror = e => console.error('❌ Engine error:', e);
       engine.postMessage('uci');
     }
 
-    // Set level change handler
+    // Handle level changes
     $('#levelSelect').on('change', function () {
       currentLevel = parseInt(this.value, 10);
-      console.log('🎚 Changing level to Lv.', currentLevel, '→ ELO', levelToElo[currentLevel]);
+      console.log(`🎚 Level set to ${currentLevel} (Elo ${levelToElo[currentLevel]})`);
       initEngine(currentLevel);
     });
 
-    // Random position
+    // Randomize the starting position
     $('#randomiseBtn').click(() => {
       const fen = generateJChessFEN();
-      console.log('🔀 New J-Chess FEN:', fen);
+      console.log('🔀 Generated FEN:', fen);
       game.load(fen);
       board.position(fen);
     });
 
-    // User move logic
-    function onDragStart(src, piece) {
-      if (game.game_over()) return false;
-      if (piece[0] !== 'w') return false;
+    // User move handlers
+    function onDragStart(source, piece) {
+      if (game.game_over() || piece[0] !== 'w') return false;
     }
 
-    function onDrop(src, tgt) {
-      const move = game.move({ from: src, to: tgt, promotion: 'q' });
+    function onDrop(source, target) {
+      const move = game.move({ from: source, to: target, promotion: 'q' });
       if (!move) return 'snapback';
       console.log('🤚 You played:', move.san);
 
-      if (engine) {
-        setTimeout(() => {
-          const fen = game.fen();
-          engine.postMessage('position fen ' + fen);
-          engine.postMessage('go movetime 1000');
-        }, 250);
-      }
+      setTimeout(() => {
+        const fen = game.fen();
+        engine.postMessage('position fen ' + fen);
+        engine.postMessage('go movetime 1000');
+      }, 200);
     }
 
     function onSnapEnd() {
       board.position(game.fen());
     }
 
-    // FEN randomiser
+    // Helpers to generate random J-Chess FEN
     function shuffle(arr) {
       const a = arr.slice();
       for (let i = a.length - 1; i > 0; i--) {
@@ -162,22 +161,22 @@
     }
 
     function generateBackRank() {
-      const P = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
-      let R, b;
+      const pieces = ['r','n','b','q','k','b','n','r'];
+      let perm, bishops;
       do {
-        R = shuffle(P);
-        b = [R.indexOf('b'), R.lastIndexOf('b')];
-      } while ((b[0] % 2) === (b[1] % 2));
-      return R.join('');
+        perm = shuffle(pieces);
+        bishops = [perm.indexOf('b'), perm.lastIndexOf('b')];
+      } while ((bishops[0] % 2) === (bishops[1] % 2));
+      return perm.join('');
     }
 
     function generateJChessFEN() {
-      const W = generateBackRank().toUpperCase();
-      const B = generateBackRank().toLowerCase();
-      return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+      const white = generateBackRank().toUpperCase();
+      const black = generateBackRank().toLowerCase();
+      return `${black}/pppppppp/8/8/8/8/PPPPPPPP/${white} w - - 0 1`;
     }
 
-    // Start engine on page load
+    // Start the engine on page load
     initEngine(currentLevel);
   });
   </script>
