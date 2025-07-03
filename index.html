@@ -23,12 +23,12 @@
       cursor: pointer;
     }
 
-    /* container for board + spinner */
+    /* Board container & spinner overlay */
     #board-container {
       position: relative;
       width: 100%;
       max-width: 400px;
-      margin: 0 auto 20px;
+      margin: 0 auto;
       aspect-ratio: 1;
     }
     #board {
@@ -54,40 +54,49 @@
       0%   { transform: translate(-50%, -50%) rotate(0deg); }
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
+
+    /* Stats below board */
+    #stats {
+      margin-top: 12px;
+      text-align: center;
+    }
+    #stats h2 {
+      margin: 6px 0;
+      font-size: 1.2em;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
-<h1>J-Chess</h1>
+  <h1>J-Chess</h1>
 
-<div id="controls">
-  <button id="randomiseBtn">Generate Position</button>
-  <button id="fairBtn">Generate Fair Position</button>
-  <label for="levelSelect">Level:</label>
-  <select id="levelSelect">
-    <option value="1">Lv. 1</option>
-    <option value="2">Lv. 2</option>
-    <option value="3">Lv. 3</option>
-    <option value="4">Lv. 4</option>
-    <option value="5" selected>Lv. 5</option>
-    <option value="6">Lv. 6</option>
-    <option value="7">Lv. 7</option>
-    <option value="8">Lv. 8</option>
-    <option value="9">Lv. 9</option>
-    <option value="10">Lv. 10</option>
-  </select>
-</div>
+  <div id="controls">
+    <button id="randomiseBtn">Generate Position</button>
+    <button id="fairBtn">Generate Fair Position</button>
+    <label for="levelSelect">Level:</label>
+    <select id="levelSelect">
+      <option value="1">Lv. 1</option>
+      <option value="2">Lv. 2</option>
+      <option value="3">Lv. 3</option>
+      <option value="4">Lv. 4</option>
+      <option value="5" selected>Lv. 5</option>
+      <option value="6">Lv. 6</option>
+      <option value="7">Lv. 7</option>
+      <option value="8">Lv. 8</option>
+      <option value="9">Lv. 9</option>
+      <option value="10">Lv. 10</option>
+    </select>
+  </div>
 
-<div id="board-container">
-  <div id="board"></div>
-  <div id="loadingSpinner"></div>
-</div>
+  <div id="board-container">
+    <div id="board"></div>
+    <div id="loadingSpinner"></div>
+  </div>
 
-<!-- Moved these below -->
-<div id="stats">
-  <h2>8.3 million starting positions</h2>
-  <h2>2.5 million fair starting positions</h2>
-</div>
-
+  <div id="stats">
+    <h2>8.3 million starting positions</h2>
+    <h2>2.5 million fair starting positions</h2>
+  </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
@@ -127,7 +136,7 @@
       initEngine(evalEngine, 'Eval-engine');
 
       $('#levelSelect').on('change', function() {
-        currentLevel = parseInt(this.value, 10);
+        currentLevel = +this.value;
         [engine, evalEngine].forEach(w => {
           w.postMessage('setoption name UCI_LimitStrength value true');
           w.postMessage('setoption name Skill Level value ' + currentLevel);
@@ -193,13 +202,13 @@
 
         let lastCp = null;
         evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go depth 13');
+        evalEngine.postMessage('go depth 15');
 
         function onEval({ data }) {
           const line = data.trim();
           if (line.startsWith('info') && line.includes('score cp')) {
             const m = line.match(/score cp (-?\d+)/);
-            if (m) lastCp = parseInt(m[1], 10);
+            if (m) lastCp = +m[1];
           }
           if (line.startsWith('bestmove')) {
             evalEngine.removeEventListener('message', onEval);
@@ -218,11 +227,9 @@
             }
           }
         }
-
         evalEngine.addEventListener('message', onEval);
       }
 
-      // Helpers to generate a random J-Chess FEN
       function shuffle(a) {
         const arr = a.slice();
         for (let i = arr.length - 1; i > 0; i--) {
