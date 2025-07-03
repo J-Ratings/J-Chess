@@ -27,6 +27,20 @@
       max-width: 400px;
       margin: 0 auto 20px;
     }
+    #loadingSpinner {
+      display: none;
+      margin: 20px auto;
+      border: 8px solid #eee;
+      border-top: 8px solid #0077cc;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
@@ -53,17 +67,17 @@
       <option value="10">Lv. 10</option>
     </select>
   </div>
+  <div id="loadingSpinner"></div>
   <div id="board"></div>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🟢 DOM ready, starting…');
 
-      const moveTime = 1000;    // engine think time after your move
-      let currentLevel = 5;     // default skill
+      const moveTime = 1000;
+      let currentLevel = 5;
       let searchingFair = false;
 
-      // --- start two separate Stockfish instances ---
       let engine, evalEngine;
       try {
         engine     = new Worker('engine/stockfish-17-lite-single.js');
@@ -73,7 +87,6 @@
         return;
       }
 
-      // ---- UCI init helper ----
       function initEngine(w, name) {
         w.postMessage('uci');
         w.addEventListener('message', ({ data }) => {
@@ -92,7 +105,6 @@
       initEngine(engine,     'Play-engine');
       initEngine(evalEngine, 'Eval-engine');
 
-      // ---- update both engines when level changes ----
       $('#levelSelect').on('change', function() {
         currentLevel = parseInt(this.value, 10);
         [engine, evalEngine].forEach(w => {
@@ -102,7 +114,6 @@
         console.log('🎚 Skill Level →', currentLevel);
       });
 
-      // ---- board & game setup ----
       const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
@@ -135,7 +146,6 @@
         board.position(game.fen(), false);
       }
 
-      // ---- handle engine replies for your moves ----
       engine.addEventListener('message', ({ data }) => {
         const line = data.trim();
         if (line.startsWith('bestmove') && !searchingFair) {
@@ -147,7 +157,6 @@
         }
       });
 
-      // ---- Random position button ----
       $('#randomiseBtn').click(() => {
         const fen = generateJChessFEN();
         console.log('🔀 New random FEN:', fen);
@@ -155,31 +164,28 @@
         board.position(fen, false);
       });
 
-      // ---- Fair position button ----
       $('#fairBtn').click(() => {
         if (searchingFair) return;
         searchingFair = true;
+        $('#loadingSpinner').show();
         console.log('🎯 Starting fair search…');
         tryNextFair();
       });
 
-      // ---- FAIR SEARCH LOOP ----
       function tryNextFair() {
         const fen = generateJChessFEN();
         console.log('Checking FEN:', fen);
 
         let lastCp = null;
         evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go depth 14');
+        evalEngine.postMessage('go depth 15');
 
         function onEval({ data }) {
           const line = data.trim();
-          // capture every cp score to lastCp
           if (line.startsWith('info') && line.includes('score cp')) {
             const m = line.match(/score cp (-?\d+)/);
             if (m) lastCp = parseInt(m[1], 10);
           }
-          // once engine finishes, bestmove arrives
           if (line.startsWith('bestmove')) {
             const pawns = (lastCp || 0) / 100;
             const isFair = Math.abs(pawns) <= 0.4;
@@ -192,8 +198,8 @@
               game.load(fen);
               board.position(fen, false);
               searchingFair = false;
+              $('#loadingSpinner').hide();
             } else {
-              // try a completely new FEN
               setTimeout(tryNextFair, 30);
             }
           }
@@ -202,7 +208,6 @@
         evalEngine.addEventListener('message', onEval);
       }
 
-      // ---- J-Chess helpers ----
       function shuffle(a) {
         const arr = a.slice();
         for (let i = arr.length - 1; i > 0; i--) {
