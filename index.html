@@ -103,22 +103,20 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('🟢 DOM ready, starting…');
+      console.log('🟢 DOM ready');
 
-      // Node count for fair search remains unchanged
-      const nodesForFair = 500000;
-      // movetime per level, max 1000ms
-      const moveTimesByLevel = {
-        1: 100,
-        2: 150,
-        3: 200,
-        4: 300,
-        5: 400,
-        6: 600,
-        7: 800,
-        8: 1000,
-        9: 1000,
-        10: 1000
+      // how many nodes to search for each level when playing
+      const nodesByLevel = {
+        1:    200,
+        2:    400,
+        3:    800,
+        4:   1500,
+        5:   3000,
+        6:   6000,
+        7:  10000,
+        8:  20000,
+        9:  40000,
+        10: 80000
       };
 
       let currentLevel = 5,
@@ -133,15 +131,15 @@
         return;
       }
 
+      // map level → Elo for levels 1–9; level 10 = full strength
       function eloForLevel(level) {
-        const minElo = 1350,
-              maxElo9 = 2999;
-        if (level < 10) {
-          return Math.round(minElo + ((level - 1) / 8) * (maxElo9 - minElo));
-        }
-        return null;
+        const minElo = 1350, maxElo9 = 2999;
+        return level < 10
+          ? Math.round(minElo + ((level - 1) / 8) * (maxElo9 - minElo))
+          : null;
       }
 
+      // initialize a Stockfish instance with UCI options
       function initEngine(w, name) {
         w.postMessage('uci');
         w.addEventListener('message', ({ data }) => {
@@ -162,10 +160,10 @@
           }
         });
       }
-
       initEngine(engine,     'Play-engine');
       initEngine(evalEngine, 'Eval-engine');
 
+      // when user changes level, update both engines
       $('#levelSelect').on('change', function() {
         currentLevel = +this.value;
         const elo = eloForLevel(currentLevel);
@@ -179,15 +177,15 @@
           }
         });
         console.log(
-          `🎚 Skill Level → Lv. ${currentLevel}` +
+          `🎚 Level → ${currentLevel}` +
           (elo ? ` (Elo ≈ ${elo})` : ' (Full strength)')
         );
       });
 
+      // set up chessboard & game
       const game = new Chess();
       const board = Chessboard('board', {
-        draggable: true,
-        position: 'start',
+        draggable: true, position: 'start',
         pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
         moveSpeed: 0, snapbackSpeed: 0, snapSpeed: 0,
         appearSpeed: 0, trashSpeed: 0,
@@ -203,10 +201,10 @@
         const mv = game.move({ from: src, to: tgt, promotion: 'q' });
         if (!mv) return 'snapback';
         console.log('🤚 You played:', mv.san);
-        const mt = moveTimesByLevel[currentLevel] || 1000;
+        const nodes = nodesByLevel[currentLevel] || 10000;
         setTimeout(() => {
           engine.postMessage('position fen ' + game.fen());
-          engine.postMessage('go movetime ' + mt);
+          engine.postMessage('go nodes ' + nodes);
         }, 250);
       }
 
@@ -214,6 +212,7 @@
         board.position(game.fen(), false);
       }
 
+      // engine move handler (normal play)
       engine.addEventListener('message', ({ data }) => {
         const line = data.trim();
         if (line.startsWith('bestmove') && !searchingFair) {
@@ -225,6 +224,7 @@
         }
       });
 
+      // randomise
       $('#randomiseBtn').click(() => {
         const fen = generateJChessFEN();
         console.log('🔀 New random FEN:', fen);
@@ -232,6 +232,7 @@
         board.position(fen, false);
       });
 
+      // fair search
       $('#fairBtn').click(() => {
         if (searchingFair) return;
         searchingFair = true;
@@ -244,10 +245,8 @@
         const fen = generateJChessFEN();
         console.log('Checking FEN:', fen);
         let lastCp = null;
-
         evalEngine.postMessage('position fen ' + fen);
         evalEngine.postMessage('go depth 15');
-
         function onEval({ data }) {
           const line = data.trim();
           if (line.startsWith('info') && line.includes('score cp')) {
@@ -256,7 +255,7 @@
           }
           if (line.startsWith('bestmove')) {
             evalEngine.removeEventListener('message', onEval);
-            const pawns = (lastCp || 0) / 100;
+            const pawns = (lastCp || 0)/100;
             const isFair = Math.abs(pawns) <= 0.4;
             console.log(`Eval ${pawns.toFixed(2)} – ${isFair ? 'Fair' : 'Not Fair'}`);
             if (isFair) {
@@ -270,10 +269,10 @@
             }
           }
         }
-
         evalEngine.addEventListener('message', onEval);
       }
 
+      // helpers to generate FEN
       function shuffle(a) {
         const arr = a.slice();
         for (let i = arr.length - 1; i > 0; i--) {
