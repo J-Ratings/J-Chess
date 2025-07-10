@@ -106,7 +106,8 @@
       console.log('🟢 DOM ready, starting…');
 
       const moveTime = 1000;
-      let currentLevel = 5, searchingFair = false;
+      let currentLevel = 5,
+          searchingFair = false;
       let engine, evalEngine;
 
       try {
@@ -117,6 +118,12 @@
         return;
       }
 
+      // Compute Elo from skill level
+      function eloForLevel(level) {
+        return Math.round(1320 + (3190 - 1320) / 20 * level);
+      }
+
+      // Initialize a Stockfish Worker with UCI options
       function initEngine(w, name) {
         w.postMessage('uci');
         w.addEventListener('message', ({ data }) => {
@@ -124,6 +131,7 @@
           if (line === 'uciok') {
             w.postMessage('ucinewgame');
             w.postMessage('setoption name UCI_LimitStrength value true');
+            w.postMessage('setoption name UCI_Elo value ' + eloForLevel(currentLevel));
             w.postMessage('setoption name Skill Level value ' + currentLevel);
             w.postMessage('isready');
           }
@@ -135,15 +143,19 @@
       initEngine(engine,     'Play-engine');
       initEngine(evalEngine, 'Eval-engine');
 
+      // Update both engines when level changes
       $('#levelSelect').on('change', function() {
         currentLevel = +this.value;
+        const elo = eloForLevel(currentLevel);
         [engine, evalEngine].forEach(w => {
           w.postMessage('setoption name UCI_LimitStrength value true');
+          w.postMessage('setoption name UCI_Elo value ' + elo);
           w.postMessage('setoption name Skill Level value ' + currentLevel);
         });
-        console.log('🎚 Skill Level →', currentLevel);
+        console.log(`🎚 Skill Level → Lv. ${currentLevel} (Elo ${elo})`);
       });
 
+      // Set up chessboard & game
       const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
@@ -171,16 +183,19 @@
         board.position(game.fen(), false);
       }
 
+      // Engine responds (normal play)
       engine.addEventListener('message', ({ data }) => {
         const line = data.trim();
         if (line.startsWith('bestmove') && !searchingFair) {
-          const uci = line.split(' ')[1];
-          const from = uci.slice(0,2), to = uci.slice(2,4);
+          const uci = line.split(' ')[1],
+                from = uci.slice(0,2),
+                to   = uci.slice(2,4);
           const res = game.move({ from, to, promotion: 'q' });
           if (res) board.position(game.fen(), false);
         }
       });
 
+      // Generate random J-Chess position
       $('#randomiseBtn').click(() => {
         const fen = generateJChessFEN();
         console.log('🔀 New random FEN:', fen);
@@ -188,6 +203,7 @@
         board.position(fen, false);
       });
 
+      // Generate fair position
       $('#fairBtn').click(() => {
         if (searchingFair) return;
         searchingFair = true;
@@ -196,13 +212,14 @@
         tryNextFair();
       });
 
+      // Fair-search loop
       function tryNextFair() {
         const fen = generateJChessFEN();
         console.log('Checking FEN:', fen);
-
         let lastCp = null;
+
         evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go depth 13');
+        evalEngine.postMessage('go depth 15');
 
         function onEval({ data }) {
           const line = data.trim();
@@ -227,9 +244,11 @@
             }
           }
         }
+
         evalEngine.addEventListener('message', onEval);
       }
 
+      // Helpers to generate a random J-Chess FEN
       function shuffle(a) {
         const arr = a.slice();
         for (let i = arr.length - 1; i > 0; i--) {
