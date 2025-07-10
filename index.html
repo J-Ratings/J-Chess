@@ -118,21 +118,32 @@
         return;
       }
 
-      // Compute Elo from skill level
+      // Map levels 1–9 to Elo [1350…2999]; level 10 → full strength.
       function eloForLevel(level) {
-        return Math.round(1320 + (3190 - 1320) / 20 * level);
+        const minElo = 1350,
+              maxElo9 = 2999;
+        if (level < 10) {
+          return Math.round(
+            minElo + ((level - 1) / 8) * (maxElo9 - minElo)
+          );
+        }
+        return null;
       }
 
-      // Initialize a Stockfish Worker with UCI options
+      // Init UCI on an engine worker
       function initEngine(w, name) {
         w.postMessage('uci');
         w.addEventListener('message', ({ data }) => {
           const line = data.trim();
           if (line === 'uciok') {
             w.postMessage('ucinewgame');
-            w.postMessage('setoption name UCI_LimitStrength value true');
-            w.postMessage('setoption name UCI_Elo value ' + eloForLevel(currentLevel));
-            w.postMessage('setoption name Skill Level value ' + currentLevel);
+            if (currentLevel < 10) {
+              w.postMessage('setoption name UCI_LimitStrength value true');
+              w.postMessage('setoption name UCI_Elo value ' + eloForLevel(currentLevel));
+              w.postMessage('setoption name Skill Level value ' + currentLevel);
+            } else {
+              w.postMessage('setoption name UCI_LimitStrength value false');
+            }
             w.postMessage('isready');
           }
           if (line === 'readyok') {
@@ -143,19 +154,26 @@
       initEngine(engine,     'Play-engine');
       initEngine(evalEngine, 'Eval-engine');
 
-      // Update both engines when level changes
+      // Update on level change
       $('#levelSelect').on('change', function() {
         currentLevel = +this.value;
         const elo = eloForLevel(currentLevel);
         [engine, evalEngine].forEach(w => {
-          w.postMessage('setoption name UCI_LimitStrength value true');
-          w.postMessage('setoption name UCI_Elo value ' + elo);
-          w.postMessage('setoption name Skill Level value ' + currentLevel);
+          if (currentLevel < 10) {
+            w.postMessage('setoption name UCI_LimitStrength value true');
+            w.postMessage('setoption name UCI_Elo value ' + elo);
+            w.postMessage('setoption name Skill Level value ' + currentLevel);
+          } else {
+            w.postMessage('setoption name UCI_LimitStrength value false');
+          }
         });
-        console.log(`🎚 Skill Level → Lv. ${currentLevel} (Elo ${elo})`);
+        console.log(
+          `🎚 Skill Level → Lv. ${currentLevel}` +
+          (elo ? ` (Elo ≈ ${elo})` : ' (Full strength)')
+        );
       });
 
-      // Set up chessboard & game
+      // Setup board & game
       const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
@@ -168,7 +186,7 @@
       $(window).resize(board.resize);
 
       function onDragStart(src, piece) {
-        if (game.game_over() || piece[0] !== 'w') return false;
+        return !(game.game_over() || piece[0] !== 'w');
       }
       function onDrop(src, tgt) {
         const mv = game.move({ from: src, to: tgt, promotion: 'q' });
@@ -183,7 +201,7 @@
         board.position(game.fen(), false);
       }
 
-      // Engine responds (normal play)
+      // Engine response (normal play)
       engine.addEventListener('message', ({ data }) => {
         const line = data.trim();
         if (line.startsWith('bestmove') && !searchingFair) {
@@ -195,7 +213,7 @@
         }
       });
 
-      // Generate random J-Chess position
+      // Random J-Chess
       $('#randomiseBtn').click(() => {
         const fen = generateJChessFEN();
         console.log('🔀 New random FEN:', fen);
@@ -203,7 +221,7 @@
         board.position(fen, false);
       });
 
-      // Generate fair position
+      // Fair J-Chess
       $('#fairBtn').click(() => {
         if (searchingFair) return;
         searchingFair = true;
@@ -212,7 +230,6 @@
         tryNextFair();
       });
 
-      // Fair-search loop
       function tryNextFair() {
         const fen = generateJChessFEN();
         console.log('Checking FEN:', fen);
@@ -232,7 +249,6 @@
             const pawns = (lastCp || 0) / 100;
             const isFair = Math.abs(pawns) <= 0.4;
             console.log(`Eval ${pawns.toFixed(2)} – ${isFair ? 'Fair' : 'Not Fair'}`);
-
             if (isFair) {
               console.log('✅ Loaded fair FEN:', fen);
               game.load(fen);
@@ -248,7 +264,7 @@
         evalEngine.addEventListener('message', onEval);
       }
 
-      // Helpers to generate a random J-Chess FEN
+      // J-Chess FEN helpers
       function shuffle(a) {
         const arr = a.slice();
         for (let i = arr.length - 1; i > 0; i--) {
