@@ -105,7 +105,22 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🟢 DOM ready, starting…');
 
-      const moveTime = 1000;
+      // Node count for fair search remains unchanged
+      const nodesForFair = 500000;
+      // movetime per level, max 1000ms
+      const moveTimesByLevel = {
+        1: 100,
+        2: 150,
+        3: 200,
+        4: 300,
+        5: 400,
+        6: 600,
+        7: 800,
+        8: 1000,
+        9: 1000,
+        10: 1000
+      };
+
       let currentLevel = 5,
           searchingFair = false;
       let engine, evalEngine;
@@ -118,19 +133,15 @@
         return;
       }
 
-      // Map levels 1–9 to Elo [1350…2999]; level 10 → full strength.
       function eloForLevel(level) {
         const minElo = 1350,
               maxElo9 = 2999;
         if (level < 10) {
-          return Math.round(
-            minElo + ((level - 1) / 8) * (maxElo9 - minElo)
-          );
+          return Math.round(minElo + ((level - 1) / 8) * (maxElo9 - minElo));
         }
         return null;
       }
 
-      // Init UCI on an engine worker
       function initEngine(w, name) {
         w.postMessage('uci');
         w.addEventListener('message', ({ data }) => {
@@ -151,10 +162,10 @@
           }
         });
       }
+
       initEngine(engine,     'Play-engine');
       initEngine(evalEngine, 'Eval-engine');
 
-      // Update on level change
       $('#levelSelect').on('change', function() {
         currentLevel = +this.value;
         const elo = eloForLevel(currentLevel);
@@ -173,7 +184,6 @@
         );
       });
 
-      // Setup board & game
       const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
@@ -188,20 +198,22 @@
       function onDragStart(src, piece) {
         return !(game.game_over() || piece[0] !== 'w');
       }
+
       function onDrop(src, tgt) {
         const mv = game.move({ from: src, to: tgt, promotion: 'q' });
         if (!mv) return 'snapback';
         console.log('🤚 You played:', mv.san);
+        const mt = moveTimesByLevel[currentLevel] || 1000;
         setTimeout(() => {
           engine.postMessage('position fen ' + game.fen());
-          engine.postMessage('go movetime ' + moveTime);
+          engine.postMessage('go movetime ' + mt);
         }, 250);
       }
+
       function onSnapEnd() {
         board.position(game.fen(), false);
       }
 
-      // Engine response (normal play)
       engine.addEventListener('message', ({ data }) => {
         const line = data.trim();
         if (line.startsWith('bestmove') && !searchingFair) {
@@ -213,7 +225,6 @@
         }
       });
 
-      // Random J-Chess
       $('#randomiseBtn').click(() => {
         const fen = generateJChessFEN();
         console.log('🔀 New random FEN:', fen);
@@ -221,7 +232,6 @@
         board.position(fen, false);
       });
 
-      // Fair J-Chess
       $('#fairBtn').click(() => {
         if (searchingFair) return;
         searchingFair = true;
@@ -264,7 +274,6 @@
         evalEngine.addEventListener('message', onEval);
       }
 
-      // J-Chess FEN helpers
       function shuffle(a) {
         const arr = a.slice();
         for (let i = arr.length - 1; i > 0; i--) {
