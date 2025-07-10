@@ -119,6 +119,20 @@
         10: 1000000
       };
 
+      // map UI 1–10 to Stockfish UCI Skill Level 1–20
+      const levelToSkill = {
+        1:  1,
+        2:  3,
+        3:  5,
+        4:  7,
+        5:  9,
+        6: 11,
+        7: 13,
+        8: 15,
+        9: 17,
+        10: 20
+      };
+
       let currentLevel = 5,
           searchingFair = false;
       let engine, evalEngine;
@@ -131,7 +145,7 @@
         return;
       }
 
-      // map level → Elo for levels 1–9; level 10 = full strength
+      // map level to Elo 1350…2999 ; level 10 = full strength
       function eloForLevel(level) {
         const minElo = 1350, maxElo9 = 2999;
         return level < 10
@@ -139,7 +153,7 @@
           : null;
       }
 
-      // initialize a Stockfish instance with UCI options
+      // initialize UCI engine
       function initEngine(w, name) {
         w.postMessage('uci');
         w.addEventListener('message', ({ data }) => {
@@ -149,7 +163,7 @@
             if (currentLevel < 10) {
               w.postMessage('setoption name UCI_LimitStrength value true');
               w.postMessage('setoption name UCI_Elo value ' + eloForLevel(currentLevel));
-              w.postMessage('setoption name Skill Level value ' + currentLevel);
+              w.postMessage('setoption name Skill Level value ' + levelToSkill[currentLevel]);
             } else {
               w.postMessage('setoption name UCI_LimitStrength value false');
             }
@@ -163,21 +177,22 @@
       initEngine(engine,     'Play-engine');
       initEngine(evalEngine, 'Eval-engine');
 
-      // when user changes level, update both engines
+      // when level changes in UI
       $('#levelSelect').on('change', function() {
         currentLevel = +this.value;
         const elo = eloForLevel(currentLevel);
+        const skill = levelToSkill[currentLevel];
         [engine, evalEngine].forEach(w => {
           if (currentLevel < 10) {
             w.postMessage('setoption name UCI_LimitStrength value true');
             w.postMessage('setoption name UCI_Elo value ' + elo);
-            w.postMessage('setoption name Skill Level value ' + currentLevel);
+            w.postMessage('setoption name Skill Level value ' + skill);
           } else {
             w.postMessage('setoption name UCI_LimitStrength value false');
           }
         });
         console.log(
-          `🎚 Level → ${currentLevel}` +
+          `🎚 UI Level ${currentLevel} → UCI Skill ${skill}` +
           (elo ? ` (Elo ≈ ${elo})` : ' (Full strength)')
         );
       });
@@ -185,7 +200,8 @@
       // set up chessboard & game
       const game = new Chess();
       const board = Chessboard('board', {
-        draggable: true, position: 'start',
+        draggable: true,
+        position: 'start',
         pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
         moveSpeed: 0, snapbackSpeed: 0, snapSpeed: 0,
         appearSpeed: 0, trashSpeed: 0,
@@ -212,7 +228,7 @@
         board.position(game.fen(), false);
       }
 
-      // engine move handler (normal play)
+      // engine move handler
       engine.addEventListener('message', ({ data }) => {
         const line = data.trim();
         if (line.startsWith('bestmove') && !searchingFair) {
@@ -272,7 +288,7 @@
         evalEngine.addEventListener('message', onEval);
       }
 
-      // helpers to generate FEN
+      // helpers
       function shuffle(a) {
         const arr = a.slice();
         for (let i = arr.length - 1; i > 0; i--) {
