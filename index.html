@@ -68,10 +68,10 @@
 
     /* Highlight styles */
     .highlight-white {
-      box-shadow: inset 0 0 3px 3px yellow;
+      box-shadow: inset 0 0 3px 3px yellow !important;
     }
     .highlight-black {
-      box-shadow: inset 0 0 3px 3px blue;
+      box-shadow: inset 0 0 3px 3px blue !important;
     }
   </style>
 </head>
@@ -113,20 +113,28 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🟢 DOM ready');
 
-      // Node limits
+      // Node limits for play
       const nodesByLevel = {
-        1:    1,    2:   10,   3:  1000,  4:  5000,
-        5:10000,   6:50000,  7:100000, 8:250000,
-        9:500000, 10:1000000
+        1:       1,
+        2:      10,
+        3:    1000,
+        4:    5000,
+        5:   10000,
+        6:   50000,
+        7:  100000,
+        8:  250000,
+        9:  500000,
+        10: 1000000
       };
 
-      // Skill‐level mapping
+      // Map UI 1–10 to UCI Skill Level 1–20
       const levelToSkill = {
-        1:1,2:3,3:5,4:10,5:12,
-        6:14,7:16,8:18,9:20,10:20
+        1:  1, 2:  3, 3:  5, 4: 10, 5: 12,
+        6: 14, 7: 16, 8: 18, 9: 20, 10: 20
       };
 
-      let currentLevel = 5, searchingFair = false;
+      let currentLevel = 5,
+          searchingFair = false;
       let engine, evalEngine;
 
       try {
@@ -138,33 +146,36 @@
       }
 
       // Elo cap helper
-      function eloForLevel(l) {
-        const min=1350, max9=2999;
-        return l<10
-          ? Math.round(min + ((l-1)/8)*(max9-min))
+      function eloForLevel(level) {
+        const minElo = 1350, maxElo9 = 2999;
+        return level < 10
+          ? Math.round(minElo + ((level - 1) / 8) * (maxElo9 - minElo))
           : null;
       }
 
       // Highlight helpers
       const $board = $('#board');
       const squareClass = 'square-55d63';
-      let squareToHighlight = null, colorToHighlight = null;
-      function onMoveEnd() {
-        if (squareToHighlight && colorToHighlight) {
-          $board
-            .find('.square-' + squareToHighlight)
-            .addClass('highlight-' + colorToHighlight);
-        }
+      function clearHighlights() {
+        $board.find(`.${squareClass}`)
+              .removeClass('highlight-white highlight-black');
+      }
+      function highlightMove(from, to, color) {
+        clearHighlights();
+        $board.find(`.square-${from}`)
+              .addClass(`highlight-${color}`);
+        $board.find(`.square-${to}`)
+              .addClass(`highlight-${color}`);
       }
 
-      // Init UCI
+      // Initialize engines
       function initEngine(w, name) {
         w.postMessage('uci');
-        w.addEventListener('message', ({data}) => {
+        w.addEventListener('message', ({ data }) => {
           const line = data.trim();
-          if (line==='uciok') {
+          if (line === 'uciok') {
             w.postMessage('ucinewgame');
-            if (currentLevel<10) {
+            if (currentLevel < 10) {
               w.postMessage('setoption name UCI_LimitStrength value true');
               w.postMessage('setoption name UCI_Elo value ' + eloForLevel(currentLevel));
               w.postMessage('setoption name Skill Level value ' + levelToSkill[currentLevel]);
@@ -173,18 +184,21 @@
             }
             w.postMessage('isready');
           }
-          if (line==='readyok') console.log(`✅ ${name} ready`);
+          if (line === 'readyok') {
+            console.log(`✅ ${name} ready`);
+          }
         });
       }
-      initEngine(engine, 'Play-engine');
+      initEngine(engine,     'Play-engine');
       initEngine(evalEngine, 'Eval-engine');
 
-      $('#levelSelect').on('change', function(){
+      // Level change handler
+      $('#levelSelect').on('change', function() {
         currentLevel = +this.value;
-        const elo = eloForLevel(currentLevel);
+        const elo   = eloForLevel(currentLevel);
         const skill = levelToSkill[currentLevel];
-        [engine,evalEngine].forEach(w=>{
-          if(currentLevel<10){
+        [engine, evalEngine].forEach(w => {
+          if (currentLevel < 10) {
             w.postMessage('setoption name UCI_LimitStrength value true');
             w.postMessage('setoption name UCI_Elo value ' + elo);
             w.postMessage('setoption name Skill Level value ' + skill);
@@ -192,63 +206,133 @@
             w.postMessage('setoption name UCI_LimitStrength value false');
           }
         });
-        console.log(`🎚 Level ${currentLevel} → Skill ${skill}` + (elo?` (Elo≈${elo})`:' (Full)'));
+        console.log(
+          `🎚 UI Lv.${currentLevel} → Skill ${skill}` +
+          (elo ? ` (Elo≈${elo})` : ' (Full)')
+        );
       });
 
-      // Board & game
+      // Setup chessboard & game
       const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
         position: 'start',
         pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-        onDragStart, onDrop, onSnapEnd, onMoveEnd
+        onDragStart, onDrop, onSnapEnd
       });
       $(window).resize(board.resize);
 
-      function onDragStart(src,piece){
-        return !(game.game_over()||piece[0]!=='w');
+      function onDragStart(src, piece) {
+        return !(game.game_over() || piece[0] !== 'w');
       }
-      function onSnapEnd(){
+
+      function onSnapEnd() {
         board.position(game.fen(), false);
       }
 
-      function onDrop(src,tgt){
-        // highlight from-square
-        $board.find('.'+squareClass).removeClass('highlight-white highlight-black');
-        $board.find('.square-'+src).addClass('highlight-white');
-        squareToHighlight = tgt;
-        colorToHighlight = 'white';
+      function onDrop(src, tgt) {
+        const mv = game.move({ from: src, to: tgt, promotion: 'q' });
+        if (!mv) return 'snapback';
 
-        const mv = game.move({from:src,to:tgt,promotion:'q'});
-        if(!mv) return 'snapback';
         console.log('🤚 You played:', mv.san);
+        highlightMove(src, tgt, 'white');
 
-        setTimeout(()=>{
-          engine.postMessage('position fen '+game.fen());
-          const nodes = nodesByLevel[currentLevel];
-          engine.postMessage('go nodes '+nodes);
-        },250);
+        setTimeout(() => {
+          engine.postMessage('position fen ' + game.fen());
+          const nodes = nodesByLevel[currentLevel] || 10000;
+          engine.postMessage('go nodes ' + nodes);
+        }, 250);
       }
 
-      engine.addEventListener('message',({data})=>{
+      // Engine move handler
+      engine.addEventListener('message', ({ data }) => {
         const line = data.trim();
-        if(line.startsWith('bestmove') && !searchingFair){
+        if (line.startsWith('bestmove') && !searchingFair) {
           const uci = line.split(' ')[1],
                 from = uci.slice(0,2),
                 to   = uci.slice(2,4);
-          // highlight engine move
-          $board.find('.'+squareClass).removeClass('highlight-white highlight-black');
-          $board.find('.square-'+from).addClass('highlight-black');
-          squareToHighlight = to;
-          colorToHighlight = 'black';
 
-          const res = game.move({from,to,promotion:'q'});
-          if(res) board.position(game.fen(), false);
+          highlightMove(from, to, 'black');
+
+          const res = game.move({ from, to, promotion: 'q' });
+          if (res) board.position(game.fen(), false);
         }
       });
 
-      // Other controls unchanged...
-      // ...fair search, randomise, etc., as before, omitted for brevity...
+      // Random position
+      $('#randomiseBtn').click(() => {
+        const fen = generateJChessFEN();
+        console.log('🔀 New random FEN:', fen);
+        game.load(fen);
+        board.position(fen, false);
+      });
+
+      // Fair position search
+      $('#fairBtn').click(() => {
+        if (searchingFair) return;
+        searchingFair = true;
+        console.log('🎯 Starting fair search…');
+        $('#loadingSpinner').show();
+        tryNextFair();
+      });
+
+      function tryNextFair() {
+        const fen = generateJChessFEN();
+        console.log('Checking FEN:', fen);
+        let lastCp = null;
+
+        evalEngine.postMessage('position fen ' + fen);
+        evalEngine.postMessage('go depth 15');
+
+        function onEval({ data }) {
+          const line = data.trim();
+          if (line.startsWith('info') && line.includes('score cp')) {
+            const m = line.match(/score cp (-?\d+)/);
+            if (m) lastCp = +m[1];
+          }
+          if (line.startsWith('bestmove')) {
+            evalEngine.removeEventListener('message', onEval);
+            const pawns = (lastCp || 0) / 100;
+            const isFair = Math.abs(pawns) <= 0.4;
+            console.log(`Eval ${pawns.toFixed(2)} – ${isFair ? 'Fair' : 'Not Fair'}`);
+            if (isFair) {
+              console.log('✅ Loaded fair FEN:', fen);
+              game.load(fen);
+              board.position(fen, false);
+              searchingFair = false;
+              $('#loadingSpinner').hide();
+            } else {
+              setTimeout(tryNextFair, 30);
+            }
+          }
+        }
+
+        evalEngine.addEventListener('message', onEval);
+      }
+
+      // J-Chess helpers
+      function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+      function generateBackRank() {
+        const P = ['r','n','b','q','k','b','n','r'];
+        let R, b;
+        do {
+          R = shuffle(P);
+          b = [R.indexOf('b'), R.lastIndexOf('b')];
+        } while ((b[0] % 2) === (b[1] % 2));
+        return R.join('');
+      }
+      function generateJChessFEN() {
+        const W = generateBackRank().toUpperCase();
+        const B = generateBackRank().toLowerCase();
+        return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+      }
     });
   </script>
 </body>
