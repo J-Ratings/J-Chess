@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>J-Chess + Stockfish</title>
+  <title>J-Chess + Stockfish (MultiPV)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
@@ -22,8 +22,6 @@
       font-size: 1em;
       cursor: pointer;
     }
-
-    /* Board container & spinner overlay */
     #board-container {
       position: relative;
       width: 100%;
@@ -31,16 +29,11 @@
       margin: 0 auto;
       aspect-ratio: 1;
     }
-    #board {
-      width: 100%;
-      height: 100%;
-    }
+    #board { width: 100%; height: 100%; }
     #loadingSpinner {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 50px;
-      height: 50px;
+      top: 50%; left: 50%;
+      width: 50px; height: 50px;
       border: 6px solid #eee;
       border-top: 6px solid #0077cc;
       border-radius: 50%;
@@ -51,44 +44,25 @@
       pointer-events: none;
     }
     @keyframes spin {
-      0%   { transform: translate(-50%, -50%) rotate(0deg); }
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
-
-    /* FEN output */
     #fenContainer {
-      margin: 12px auto;
-      max-width: 400px;
-      display: none;
+      margin: 12px auto; max-width: 400px; display: none;
     }
     #fenOutput {
-      width: 100%;
-      padding: 8px;
-      font-family: monospace;
-      rows: 2;
+      width: 100%; padding: 8px; font-family: monospace;
     }
-
-    /* Status text */
     #fairStatus {
-      margin: 12px auto;
-      max-width: 400px;
-      text-align: left;
-      font-family: monospace;
-      white-space: pre-wrap;
+      margin: 12px auto; max-width: 400px;
+      text-align: left; font-family: monospace; white-space: pre-wrap;
     }
-
-    /* Stats below board */
     #stats {
-      margin-top: 12px;
-      text-align: center;
+      margin-top: 12px; text-align: center;
     }
     #stats h2 {
-      margin: 6px 0;
-      font-size: 1.2em;
-      font-weight: 600;
+      margin: 6px 0; font-size: 1.2em; font-weight: 600;
     }
-
-    /* Highlight styles */
     .highlight-white {
       box-shadow: inset 0 0 3px 3px yellow !important;
     }
@@ -98,7 +72,7 @@
   </style>
 </head>
 <body>
-  <h1>J-Chess</h1>
+  <h1>J–Chess</h1>
 
   <div id="controls">
     <button id="randomiseBtn">Generate Position</button>
@@ -147,202 +121,248 @@
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const nodesByLevel = {
-        1:1,2:10,3:1000,4:10000,5:25000,
-        6:50000,7:100000,8:250000,9:250000,10:500000
-      };
-      const levelToSkill = {1:1,2:3,3:5,4:8,5:10,6:12,7:14,8:16,9:18,10:20};
-      let currentLevel  = 5;
-      let searchingFair = false;
-      let engine, evalEngine;
+  document.addEventListener('DOMContentLoaded', () => {
+    // Nodes for play (unchanged)
+    const nodesByLevel = {
+      1: 1,    2: 10,   3: 1000, 4: 10000, 5: 25000,
+      6: 50000,7:100000,8:250000,9:250000,10:500000
+    };
+    // Elo→Skill mapping (unchanged)
+    const levelToSkill = {
+      1:1,2:3,3:5,4:8,5:10,
+      6:12,7:14,8:16,9:18,10:20
+    };
+    // How much inaccuracy per level (in centipawns)
+    const thresholdByLevel = {
+      1:200, 2:180, 3:160, 4:140, 5:120,
+      6:100, 7:80,  8:60,  9:40,  10:0
+    };
 
-      try {
-        engine     = new Worker('engine/stockfish-17-lite-single.js');
-        evalEngine = new Worker('engine/stockfish-17-lite-single.js');
-      } catch (e) {
-        console.warn('⚠️ Stockfish failed to load', e);
-        return;
+    let currentLevel = 5;
+    let searchingFair = false;
+
+    // Create engines
+    let engine, evalEngine;
+    try {
+      engine     = new Worker('engine/stockfish-17-lite-single.js');
+      evalEngine = new Worker('engine/stockfish-17-lite-single.js');
+    } catch (e) {
+      console.warn('⚠️ Stockfish failed to load', e);
+      return;
+    }
+
+    // Helper: map level → Elo
+    function eloForLevel(lv) {
+      const min = 1350, max9 = 2999;
+      return lv < 10
+        ? Math.round(min + ((lv - 1)/8)*(max9 - min))
+        : null;
+    }
+
+    // Highlight helpers
+    const $board = $('#board');
+    function clearHighlights() {
+      $board.find('.square-55d63')
+            .removeClass('highlight-white highlight-black');
+    }
+    function highlightMove(from, to, colour) {
+      clearHighlights();
+      $board.find(`.square-${from}`).addClass(`highlight-${colour}`);
+      $board.find(`.square-${to}`).addClass(`highlight-${colour}`);
+    }
+
+    // Initialise play‐engine with MultiPV=10
+    engine.postMessage('uci');
+    engine.addEventListener('message', function setupPlay({data}) {
+      const line = data.trim();
+      if (line === 'uciok') {
+        engine.postMessage('setoption name MultiPV value 10');
+        engine.postMessage('ucinewgame');
+        engine.postMessage('setoption name UCI_LimitStrength value true');
+        engine.postMessage('setoption name UCI_Elo value ' + eloForLevel(currentLevel));
+        engine.postMessage('setoption name Skill Level value ' + levelToSkill[currentLevel]);
+        engine.postMessage('isready');
       }
-
-      function eloForLevel(lv) {
-        const min=1350, max9=2999;
-        return lv<10
-          ? Math.round(min + ((lv-1)/8)*(max9-min))
-          : null;
+      if (line === 'readyok') {
+        console.log('✅ Play‑engine ready');
+        engine.removeEventListener('message', setupPlay);
       }
-
-      const $board = $('#board');
-      function clearHighlights(){
-        $board.find('.square-55d63')
-              .removeClass('highlight-white highlight-black');
-      }
-      function highlightMove(f,t,col){
-        clearHighlights();
-        $board.find(`.square-${f}`)
-              .addClass(`highlight-${col}`);
-        $board.find(`.square-${t}`)
-              .addClass(`highlight-${col}`);
-      }
-
-      function createEngine(w,name){
-        w.postMessage('uci');
-        w.addEventListener('message', ({data})=>{
-          const line = data.trim();
-          if(line==='uciok'){
-            w.postMessage('ucinewgame');
-            if(currentLevel<10){
-              w.postMessage('setoption name UCI_LimitStrength value true');
-              w.postMessage('setoption name UCI_Elo value '+ eloForLevel(currentLevel));
-              w.postMessage('setoption name Skill Level value '+ levelToSkill[currentLevel]);
-            } else {
-              w.postMessage('setoption name UCI_LimitStrength value false');
-            }
-            w.postMessage('isready');
-          }
-          if(line==='readyok'){
-            console.log(`✅ ${name} ready`);
-          }
-        });
-      }
-      createEngine(engine, 'Play-engine');
-      createEngine(evalEngine, 'Eval-engine');
-
-      $('#levelSelect').on('change', function(){
-        currentLevel = +this.value;
-        const elo = eloForLevel(currentLevel);
-        const skill = levelToSkill[currentLevel];
-        [engine, evalEngine].forEach(w=>{
-          if(currentLevel<10){
-            w.postMessage('setoption name UCI_LimitStrength value true');
-            w.postMessage('setoption name UCI_Elo value '+ elo);
-            w.postMessage('setoption name Skill Level value '+ skill);
-          } else {
-            w.postMessage('setoption name UCI_LimitStrength value false');
-          }
-        });
-      });
-
-      const game = new Chess();
-      const board = Chessboard('board',{
-        draggable: true,
-        position: 'start',
-        pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-        onDragStart, onDrop, onSnapEnd
-      });
-      $(window).resize(board.resize);
-
-      function onDragStart(src,piece){
-        return !(game.game_over()||piece[0]!=='w');
-      }
-      function onSnapEnd(){
-        board.position(game.fen(), false);
-      }
-      function onDrop(src,tgt){
-        const mv = game.move({from:src,to:tgt,promotion:'q'});
-        if(!mv) return 'snapback';
-        highlightMove(src,tgt,'white');
-        setTimeout(()=>{
-          engine.postMessage('position fen '+game.fen());
-          engine.postMessage('go nodes '+ (nodesByLevel[currentLevel]||10000));
-        },250);
-      }
-
-      engine.addEventListener('message', ({data})=>{
-        const line = data.trim();
-        if(line.startsWith('bestmove') && !searchingFair){
-          const uci = line.split(' ')[1],
-                f = uci.slice(0,2),
-                t = uci.slice(2,4);
-          highlightMove(f,t,'black');
-          const r = game.move({from:f,to:t,promotion:'q'});
-          if(r) board.position(game.fen(), false);
-        }
-      });
-
-      const statusDiv = document.getElementById('fairStatus');
-      const fenDiv    = document.getElementById('fenContainer');
-
-      $('#randomiseBtn').click(()=>{
-        fenDiv.style.display = 'none';
-        statusDiv.textContent = '';
-        const fen = generateJChessFEN();
-        game.load(fen);
-        board.position(fen,false);
-      });
-
-      $('#fairBtn').click(() => {
-        if(searchingFair) return;
-        fenDiv.style.display = 'none';
-        statusDiv.textContent = '';
-        searchingFair = true;
-        document.getElementById('loadingSpinner').style.display = 'block';
-        tryNextFair();
-      });
-
-      function tryNextFair(){
-        const fen = generateJChessFEN();
-        statusDiv.textContent += fen + '\n';
-        let lastCp = null;
-        const ms = +document.getElementById('timeSelect').value;
-
-        evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go movetime ' + ms);
-
-        function onEval({data}){
-          const line = data.trim();
-          if(line.startsWith('info') && line.includes('score cp')){
-            const m = line.match(/score cp (-?\d+)/);
-            if(m) lastCp = +m[1];
-          }
-          if(line.startsWith('bestmove')){
-            evalEngine.removeEventListener('message', onEval);
-            const score = ((lastCp||0)/100).toFixed(2);
-            const isFair = Math.abs(lastCp/100) <= 0.4;
-            statusDiv.textContent += `${score} => ${isFair ? 'Fair' : 'Unfair'}\n\n`;
-            if(isFair){
-              game.load(fen);
-              board.position(game.fen(),false);
-              searchingFair = false;
-              document.getElementById('loadingSpinner').style.display = 'none';
-            } else {
-              setTimeout(tryNextFair,30);
-            }
-          }
-        }
-        evalEngine.addEventListener('message', onEval);
-      }
-
-      function shuffle(arr){
-        const a = arr.slice();
-        for(let i=a.length-1;i>0;i--){
-          const j = Math.floor(Math.random()*(i+1));
-          [a[i],a[j]] = [a[j],a[i]];
-        }
-        return a;
-      }
-      function generateBackRank(){
-        const P = ['r','n','b','q','k','b','n','r'];
-        let R,b;
-        do{
-          R = shuffle(P);
-          b = [R.indexOf('b'), R.lastIndexOf('b')];
-        } while((b[0]%2)===(b[1]%2));
-        return R.join('');
-      }
-      function generateJChessFEN(){
-        const W = generateBackRank().toUpperCase();
-        const B = generateBackRank().toLowerCase();
-        return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
-      }
-
-      document.getElementById('getFenBtn').addEventListener('click',()=>{
-        const out = document.getElementById('fenOutput');
-        out.value = game.fen();
-        fenDiv.style.display = 'block';
-        out.select();
-      });
     });
+
+    // Initialise eval‐engine (for fair positions) unchanged
+    evalEngine.postMessage('uci');
+    evalEngine.addEventListener('message', function setupEval({data}) {
+      const line = data.trim();
+      if (line === 'uciok') {
+        evalEngine.postMessage('ucinewgame');
+        evalEngine.postMessage('setoption name UCI_LimitStrength value false');
+        evalEngine.postMessage('isready');
+      }
+      if (line === 'readyok') {
+        console.log('✅ Eval‑engine ready');
+        evalEngine.removeEventListener('message', setupEval);
+      }
+    });
+
+    // Handle Level selector
+    $('#levelSelect').on('change', function() {
+      currentLevel = +this.value;
+      const elo   = eloForLevel(currentLevel);
+      const skill = levelToSkill[currentLevel];
+      engine.postMessage('setoption name UCI_LimitStrength value true');
+      engine.postMessage('setoption name UCI_Elo value ' + elo);
+      engine.postMessage('setoption name Skill Level value ' + skill);
+    });
+
+    // Set up board & game
+    const game = new Chess();
+    const board = Chessboard('board', {
+      draggable: true,
+      position: 'start',
+      pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+      onDragStart, onDrop, onSnapEnd
+    });
+    $(window).resize(board.resize);
+
+    function onDragStart(src, piece) {
+      return !(game.game_over() || piece[0] !== 'w');
+    }
+    function onSnapEnd() {
+      board.position(game.fen(), false);
+    }
+
+    // Play back with MultiPV filtering
+    function onDrop(src, tgt) {
+      const move = game.move({ from: src, to: tgt, promotion: 'q' });
+      if (!move) return 'snapback';
+
+      highlightMove(src, tgt, 'white');
+      fenDiv.style.display   = 'none';
+      statusDiv.textContent  = '';
+
+      const threshold = thresholdByLevel[currentLevel];
+      const nodes     = nodesByLevel[currentLevel] || 10000;
+      let candidates  = [];
+
+      function playHandler({data}) {
+        const line = data.trim();
+        // collect multipv scores & pv moves
+        if (line.startsWith('info') && line.includes('multipv') && line.includes('score cp')) {
+          const mpvMatch = line.match(/multipv\s+(\d+)\s+score cp\s+(-?\d+)/);
+          const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+          if (mpvMatch && pvMatch) {
+            const idx   = parseInt(mpvMatch[1], 10) - 1;
+            const score = parseInt(mpvMatch[2], 10);
+            const uci   = pvMatch[1];
+            candidates[idx] = { move: uci, score: score };
+          }
+        }
+        // once bestmove arrives, pick randomly within threshold
+        if (line.startsWith('bestmove')) {
+          engine.removeEventListener('message', playHandler);
+          if (!candidates.length) return;
+          const bestScore = candidates[0].score;
+          const pool = candidates.filter(c => c && c.score >= bestScore - threshold);
+          const choice = pool[Math.floor(Math.random() * pool.length)];
+          const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
+          highlightMove(f, t, 'black');
+          game.move({ from: f, to: t, promotion: 'q' });
+          board.position(game.fen(), false);
+        }
+      }
+
+      engine.addEventListener('message', playHandler);
+      engine.postMessage('position fen ' + game.fen());
+      engine.postMessage('go nodes ' + nodes);
+    }
+
+    // Generate random J-Chess position
+    $('#randomiseBtn').click(() => {
+      fenDiv.style.display  = 'none';
+      statusDiv.textContent = '';
+      const fen = generateJChessFEN();
+      game.load(fen);
+      board.position(fen, false);
+    });
+
+    // Generate fair J-Chess position (unchanged)
+    $('#fairBtn').click(() => {
+      if (searchingFair) return;
+      fenDiv.style.display  = 'none';
+      statusDiv.textContent = '';
+      searchingFair = true;
+      $('#loadingSpinner').show();
+      tryNextFair();
+    });
+
+    function tryNextFair() {
+      const fen = generateJChessFEN();
+      statusDiv.textContent += fen + '\n';
+      let lastCp = null;
+      const ms   = +$('#timeSelect').val();
+
+      evalEngine.postMessage('position fen ' + fen);
+      evalEngine.postMessage('go movetime ' + ms);
+
+      function onEval({data}) {
+        const line = data.trim();
+        if (line.startsWith('info') && line.includes('score cp')) {
+          const m = line.match(/score cp (-?\d+)/);
+          if (m) lastCp = +m[1];
+        }
+        if (line.startsWith('bestmove')) {
+          evalEngine.removeEventListener('message', onEval);
+          const score  = ((lastCp||0)/100).toFixed(2);
+          const fair   = Math.abs(lastCp/100) <= 0.4;
+          statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
+          if (fair) {
+            game.load(fen);
+            board.position(fen, false);
+            searchingFair = false;
+            $('#loadingSpinner').hide();
+          } else {
+            setTimeout(tryNextFair, 30);
+          }
+        }
+      }
+      evalEngine.addEventListener('message', onEval);
+    }
+
+    // J‑Chess FEN helpers
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i+1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function generateBackRank() {
+      const P = ['r','n','b','q','k','b','n','r'];
+      let R, pos;
+      do {
+        R   = shuffle(P);
+        pos = [R.indexOf('b'), R.lastIndexOf('b')];
+      } while ((pos[0] % 2) === (pos[1] % 2));
+      return R.join('');
+    }
+    function generateJChessFEN() {
+      const W = generateBackRank().toUpperCase();
+      const B = generateBackRank().toLowerCase();
+      return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+    }
+
+    // Get FEN button
+    const fenDiv   = document.getElementById('fenContainer');
+    const statusDiv = document.getElementById('fairStatus');
+    document.getElementById('getFenBtn').addEventListener('click', () => {
+      const out = document.getElementById('fenOutput');
+      out.value = game.fen();
+      fenDiv.style.display = 'block';
+      out.select();
+    });
+
+  });
   </script>
 </body>
 </html>
