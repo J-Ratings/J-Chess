@@ -55,6 +55,19 @@
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
 
+    /* FEN output */
+    #fenContainer {
+      margin: 12px auto;
+      max-width: 400px;
+      display: none;
+    }
+    #fenOutput {
+      width: 100%;
+      padding: 8px;
+      font-family: monospace;
+      rows: 2;
+    }
+
     /* Stats below board */
     #stats {
       margin-top: 12px;
@@ -94,11 +107,16 @@
       <option value="9">Lv. 9</option>
       <option value="10">Lv. 10</option>
     </select>
+    <button id="getFenBtn">Get FEN</button>
   </div>
 
   <div id="board-container">
     <div id="board"></div>
     <div id="loadingSpinner"></div>
+  </div>
+
+  <div id="fenContainer">
+    <textarea id="fenOutput" readonly rows="2"></textarea>
   </div>
 
   <div id="stats">
@@ -113,7 +131,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🟢 DOM ready');
 
-      // Node limits for play
       const nodesByLevel = {
         1:       1,
         2:      10,
@@ -127,7 +144,6 @@
         10: 500000
       };
 
-      // Map UI 1–10 to UCI Skill Level 1–20
       const levelToSkill = {
         1:  1, 2:  3, 3:  5, 4: 8, 5: 10,
         6: 12, 7: 14, 8: 16, 9: 18, 10: 20
@@ -145,7 +161,6 @@
         return;
       }
 
-      // Elo cap helper
       function eloForLevel(level) {
         const minElo = 1350, maxElo9 = 2999;
         return level < 10
@@ -153,7 +168,6 @@
           : null;
       }
 
-      // Highlight helpers
       const $board = $('#board');
       const squareClass = 'square-55d63';
       function clearHighlights() {
@@ -168,7 +182,6 @@
               .addClass(`highlight-${color}`);
       }
 
-      // Initialize engines
       function initEngine(w, name) {
         w.postMessage('uci');
         w.addEventListener('message', ({ data }) => {
@@ -192,7 +205,6 @@
       initEngine(engine,     'Play-engine');
       initEngine(evalEngine, 'Eval-engine');
 
-      // Level change handler
       $('#levelSelect').on('change', function() {
         currentLevel = +this.value;
         const elo   = eloForLevel(currentLevel);
@@ -212,7 +224,6 @@
         );
       });
 
-      // Setup chessboard & game
       const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
@@ -225,18 +236,13 @@
       function onDragStart(src, piece) {
         return !(game.game_over() || piece[0] !== 'w');
       }
-
       function onSnapEnd() {
         board.position(game.fen(), false);
       }
-
       function onDrop(src, tgt) {
         const mv = game.move({ from: src, to: tgt, promotion: 'q' });
         if (!mv) return 'snapback';
-
-        console.log('🤚 You played:', mv.san);
         highlightMove(src, tgt, 'white');
-
         setTimeout(() => {
           engine.postMessage('position fen ' + game.fen());
           const nodes = nodesByLevel[currentLevel] || 10000;
@@ -244,46 +250,36 @@
         }, 250);
       }
 
-      // Engine move handler
       engine.addEventListener('message', ({ data }) => {
         const line = data.trim();
         if (line.startsWith('bestmove') && !searchingFair) {
           const uci = line.split(' ')[1],
                 from = uci.slice(0,2),
                 to   = uci.slice(2,4);
-
           highlightMove(from, to, 'black');
-
           const res = game.move({ from, to, promotion: 'q' });
           if (res) board.position(game.fen(), false);
         }
       });
 
-      // Random position
       $('#randomiseBtn').click(() => {
         const fen = generateJChessFEN();
-        console.log('🔀 New random FEN:', fen);
         game.load(fen);
         board.position(fen, false);
       });
 
-      // Fair position search
       $('#fairBtn').click(() => {
         if (searchingFair) return;
         searchingFair = true;
-        console.log('🎯 Starting fair search…');
         $('#loadingSpinner').show();
         tryNextFair();
       });
 
       function tryNextFair() {
         const fen = generateJChessFEN();
-        console.log('Checking FEN:', fen);
         let lastCp = null;
-
         evalEngine.postMessage('position fen ' + fen);
         evalEngine.postMessage('go depth 15');
-
         function onEval({ data }) {
           const line = data.trim();
           if (line.startsWith('info') && line.includes('score cp')) {
@@ -294,9 +290,7 @@
             evalEngine.removeEventListener('message', onEval);
             const pawns = (lastCp || 0) / 100;
             const isFair = Math.abs(pawns) <= 0.4;
-            console.log(`Eval ${pawns.toFixed(2)} – ${isFair ? 'Fair' : 'Not Fair'}`);
             if (isFair) {
-              console.log('✅ Loaded fair FEN:', fen);
               game.load(fen);
               board.position(fen, false);
               searchingFair = false;
@@ -306,11 +300,9 @@
             }
           }
         }
-
         evalEngine.addEventListener('message', onEval);
       }
 
-      // J-Chess helpers
       function shuffle(arr) {
         const a = arr.slice();
         for (let i = a.length - 1; i > 0; i--) {
@@ -333,6 +325,17 @@
         const B = generateBackRank().toLowerCase();
         return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
       }
+
+      // Get FEN button handler
+      document.getElementById('getFenBtn').addEventListener('click', () => {
+        const fen = game.fen();
+        const container = document.getElementById('fenContainer');
+        const output    = document.getElementById('fenOutput');
+        output.value    = fen;
+        container.style.display = 'block';
+        output.select();
+      });
+
     });
   </script>
 </body>
