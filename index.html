@@ -55,6 +55,15 @@
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
 
+    /* Status text */
+    #fairStatus {
+      margin: 12px auto;
+      max-width: 400px;
+      text-align: left;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+
     /* FEN output */
     #fenContainer {
       margin: 12px auto;
@@ -94,20 +103,28 @@
   <div id="controls">
     <button id="randomiseBtn">Generate Position</button>
     <button id="fairBtn">Generate Fair Position</button>
+    <label for="timeSelect">Analysis Time:</label>
+    <select id="timeSelect">
+      <option value="250">0.25 s</option>
+      <option value="500">0.5 s</option>
+      <option value="1000" selected>1 s</option>
+      <option value="2000">2 s</option>
+      <option value="5000">5 s</option>
+    </select>
     <label for="levelSelect">Level:</label>
     <select id="levelSelect">
-      <option value="1">Lv. 1</option>
-      <option value="2">Lv. 2</option>
-      <option value="3">Lv. 3</option>
-      <option value="4">Lv. 4</option>
-      <option value="5" selected>Lv. 5</option>
-      <option value="6">Lv. 6</option>
-      <option value="7">Lv. 7</option>
-      <option value="8">Lv. 8</option>
-      <option value="9">Lv. 9</option>
-      <option value="10">Lv. 10</option>
+      <option value="1">Lv. 1</option>
+      <option value="2">Lv. 2</option>
+      <option value="3">Lv. 3</option>
+      <option value="4">Lv. 4</option>
+      <option value="5" selected>Lv. 5</option>
+      <option value="6">Lv. 6</option>
+      <option value="7">Lv. 7</option>
+      <option value="8">Lv. 8</option>
+      <option value="9">Lv. 9</option>
+      <option value="10">Lv. 10</option>
     </select>
-    <button id="getFenBtn">Get FEN</button>
+    <button id="getFenBtn">Get FEN</button>
   </div>
 
   <div id="board-container">
@@ -115,13 +132,15 @@
     <div id="loadingSpinner"></div>
   </div>
 
+  <div id="fairStatus"></div>
+
   <div id="fenContainer">
     <textarea id="fenOutput" readonly rows="2"></textarea>
   </div>
 
   <div id="stats">
-    <h2>8.3 million starting positions</h2>
-    <h2>2.5 million fair starting positions</h2>
+    <h2>8.3 million starting positions</h2>
+    <h2>2.5 million fair starting positions</h2>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -132,25 +151,17 @@
       console.log('🟢 DOM ready');
 
       const nodesByLevel = {
-        1:       1,
-        2:      10,
-        3:    1000,
-        4:   10000,
-        5:   25000,
-        6:   50000,
-        7:  100000,
-        8:  250000,
-        9:  250000,
-        10: 500000
+        1: 1,  2: 10,   3: 1000, 4: 10000, 5: 25000,
+        6: 50000, 7: 100000, 8: 250000, 9: 250000, 10: 500000
       };
-
       const levelToSkill = {
-        1:  1, 2:  3, 3:  5, 4: 8, 5: 10,
-        6: 12, 7: 14, 8: 16, 9: 18, 10: 20
+        1:1, 2:3, 3:5, 4:8,  5:10,
+        6:12,7:14,8:16,9:18, 10:20
       };
 
-      let currentLevel = 5,
-          searchingFair = false;
+      let currentLevel  = 5;
+      let searchingFair = false;
+      let fairAttempt   = 0;
       let engine, evalEngine;
 
       try {
@@ -161,30 +172,32 @@
         return;
       }
 
-      function eloForLevel(level) {
-        const minElo = 1350, maxElo9 = 2999;
-        return level < 10
-          ? Math.round(minElo + ((level - 1) / 8) * (maxElo9 - minElo))
+      function eloForLevel(lv) {
+        const min = 1350, max9 = 2999;
+        return lv < 10
+          ? Math.round(min + ((lv - 1)/8)*(max9 - min))
           : null;
       }
 
+      // Helpers to highlight moves
       const $board = $('#board');
-      const squareClass = 'square-55d63';
+      const sqClass = 'square-55d63';
       function clearHighlights() {
-        $board.find(`.${squareClass}`)
+        $board.find(`.${sqClass}`)
               .removeClass('highlight-white highlight-black');
       }
-      function highlightMove(from, to, color) {
+      function highlightMove(f,t,col) {
         clearHighlights();
-        $board.find(`.square-${from}`)
-              .addClass(`highlight-${color}`);
-        $board.find(`.square-${to}`)
-              .addClass(`highlight-${color}`);
+        $board.find(`.square-${f}`)
+              .addClass(`highlight-${col}`);
+        $board.find(`.square-${t}`)
+              .addClass(`highlight-${col}`);
       }
 
-      function initEngine(w, name) {
+      // Create engines
+      function createEngine(w, name) {
         w.postMessage('uci');
-        w.addEventListener('message', ({ data }) => {
+        w.addEventListener('message', ({data}) => {
           const line = data.trim();
           if (line === 'uciok') {
             w.postMessage('ucinewgame');
@@ -202,10 +215,11 @@
           }
         });
       }
-      initEngine(engine,     'Play-engine');
-      initEngine(evalEngine, 'Eval-engine');
+      createEngine(engine,     'Play-engine');
+      createEngine(evalEngine, 'Eval-engine');
 
-      $('#levelSelect').on('change', function() {
+      // Handle changing skill level
+      $('#levelSelect').on('change', function(){
         currentLevel = +this.value;
         const elo   = eloForLevel(currentLevel);
         const skill = levelToSkill[currentLevel];
@@ -218,12 +232,10 @@
             w.postMessage('setoption name UCI_LimitStrength value false');
           }
         });
-        console.log(
-          `🎚 UI Lv.${currentLevel} → Skill ${skill}` +
-          (elo ? ` (Elo≈${elo})` : ' (Full)')
-        );
+        console.log(`🎚 UI Lv.${currentLevel} → Skill ${skill}` + (elo ? ` (Elo≈${elo})` : ' (Full)'));
       });
 
+      // Setup chessboard & game
       const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
@@ -233,54 +245,70 @@
       });
       $(window).resize(board.resize);
 
-      function onDragStart(src, piece) {
+      function onDragStart(src,piece) {
         return !(game.game_over() || piece[0] !== 'w');
       }
       function onSnapEnd() {
         board.position(game.fen(), false);
       }
-      function onDrop(src, tgt) {
-        const mv = game.move({ from: src, to: tgt, promotion: 'q' });
+      function onDrop(src,tgt) {
+        const mv = game.move({from:src,to:tgt,promotion:'q'});
         if (!mv) return 'snapback';
-        highlightMove(src, tgt, 'white');
+        highlightMove(src,tgt,'white');
         setTimeout(() => {
           engine.postMessage('position fen ' + game.fen());
-          const nodes = nodesByLevel[currentLevel] || 10000;
-          engine.postMessage('go nodes ' + nodes);
+          engine.postMessage('go nodes ' + (nodesByLevel[currentLevel]||10000));
         }, 250);
       }
 
-      engine.addEventListener('message', ({ data }) => {
+      // Engine responds
+      engine.addEventListener('message', ({data}) => {
         const line = data.trim();
         if (line.startsWith('bestmove') && !searchingFair) {
-          const uci = line.split(' ')[1],
-                from = uci.slice(0,2),
-                to   = uci.slice(2,4);
-          highlightMove(from, to, 'black');
-          const res = game.move({ from, to, promotion: 'q' });
-          if (res) board.position(game.fen(), false);
+          const uci  = line.split(' ')[1];
+          const from = uci.slice(0,2);
+          const to   = uci.slice(2,4);
+          highlightMove(from,to,'black');
+          const r = game.move({from,to,promotion:'q'});
+          if (r) board.position(game.fen(), false);
         }
       });
 
+      // DOM refs
+      const statusDiv = document.getElementById('fairStatus');
+      const fenDiv    = document.getElementById('fenContainer');
+
+      // Random position
       $('#randomiseBtn').click(() => {
+        fenDiv.style.display = 'none';
+        statusDiv.textContent = '';
         const fen = generateJChessFEN();
         game.load(fen);
         board.position(fen, false);
       });
 
+      // Fair position
       $('#fairBtn').click(() => {
         if (searchingFair) return;
+        fenDiv.style.display = 'none';
+        statusDiv.textContent = '';
+        fairAttempt   = 0;
         searchingFair = true;
-        $('#loadingSpinner').show();
+        document.getElementById('loadingSpinner').style.display = 'block';
         tryNextFair();
       });
 
       function tryNextFair() {
+        fairAttempt ++;
+        statusDiv.textContent += `Checking position ${fairAttempt}…\n`;
         const fen = generateJChessFEN();
         let lastCp = null;
+        const ms = +document.getElementById('timeSelect').value;
+
         evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go depth 15');
-        function onEval({ data }) {
+        evalEngine.postMessage('go movetime ' + ms);
+
+        function onEval({data}) {
           const line = data.trim();
           if (line.startsWith('info') && line.includes('score cp')) {
             const m = line.match(/score cp (-?\d+)/);
@@ -288,13 +316,14 @@
           }
           if (line.startsWith('bestmove')) {
             evalEngine.removeEventListener('message', onEval);
-            const pawns = (lastCp || 0) / 100;
+            const pawns = (lastCp||0)/100;
             const isFair = Math.abs(pawns) <= 0.4;
+            statusDiv.textContent += isFair ? "Pass\n" : "Failed\n";
             if (isFair) {
               game.load(fen);
               board.position(fen, false);
               searchingFair = false;
-              $('#loadingSpinner').hide();
+              document.getElementById('loadingSpinner').style.display = 'none';
             } else {
               setTimeout(tryNextFair, 30);
             }
@@ -303,11 +332,12 @@
         evalEngine.addEventListener('message', onEval);
       }
 
+      // Helpers for J‑Chess FEN
       function shuffle(arr) {
         const a = arr.slice();
         for (let i = a.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [a[i], a[j]] = [a[j], a[i]];
+          [a[i],a[j]] = [a[j],a[i]];
         }
         return a;
       }
@@ -317,7 +347,7 @@
         do {
           R = shuffle(P);
           b = [R.indexOf('b'), R.lastIndexOf('b')];
-        } while ((b[0] % 2) === (b[1] % 2));
+        } while ((b[0]%2) === (b[1]%2));
         return R.join('');
       }
       function generateJChessFEN() {
@@ -326,14 +356,12 @@
         return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
       }
 
-      // Get FEN button handler
+      // Get FEN
       document.getElementById('getFenBtn').addEventListener('click', () => {
-        const fen = game.fen();
-        const container = document.getElementById('fenContainer');
-        const output    = document.getElementById('fenOutput');
-        output.value    = fen;
-        container.style.display = 'block';
-        output.select();
+        const out = document.getElementById('fenOutput');
+        out.value = game.fen();
+        fenDiv.style.display = 'block';
+        out.select();
       });
 
     });
