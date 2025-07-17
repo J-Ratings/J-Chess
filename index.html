@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>J–Chess + Stockfish (MultiPV variable nodes)</title>
+  <title>J–Chess + Stockfish (MultiPV + variable nodes + half‑threshold)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
@@ -122,24 +122,23 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // Node limits by level
+    // Node‐count by level
     const nodesByLevel = {
       1: 500000, 2: 500000, 3: 500000, 4: 500000,
       5: 500000, 6: 500000,
       7: 1000000, 8: 1000000,
       9: 2000000, 10: 3000000
     };
-
-    // Centipawn thresholds per level
+    // Base centipawn thresholds by level
     const thresholdByLevel = {
-      1:1000, 2:500, 3:300, 4:200, 5:75,
-      6:60, 7:45, 8:30, 9:15, 10:0
+      1:1000, 2:500, 3:300, 4:200,
+      5:75, 6:60, 7:45, 8:30, 9:15, 10:0
     };
 
     let currentLevel  = 5;
     let searchingFair = false;
 
-    // Create Stockfish workers
+    // Stockfish workers
     const engine     = new Worker('engine/stockfish-17-lite-single.js');
     const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
 
@@ -155,7 +154,7 @@
       $board.find(`.square-${t}`).addClass(`highlight-${col}`);
     }
 
-    // Initialise play‑engine with MultiPV=10
+    // Initialise play‑engine (MultiPV=10)
     engine.postMessage('uci');
     engine.addEventListener('message', function setupPlay({data}) {
       if (data.trim() === 'uciok') {
@@ -164,8 +163,8 @@
         engine.postMessage('isready');
       }
       if (data.trim() === 'readyok') {
-        console.log('✅ Play‑engine ready');
         engine.removeEventListener('message', setupPlay);
+        console.log('✅ Play‑engine ready');
       }
     });
 
@@ -178,18 +177,18 @@
         evalEngine.postMessage('isready');
       }
       if (data.trim() === 'readyok') {
-        console.log('✅ Eval‑engine ready');
         evalEngine.removeEventListener('message', setupEval);
+        console.log('✅ Eval‑engine ready');
       }
     });
 
-    // Update currentLevel on change
+    // Update level
     $('#levelSelect').on('change', function() {
       currentLevel = +this.value;
     });
 
-    // Chessboard & game setup
-    const game = new Chess();
+    // Chessboard & game
+    const game  = new Chess();
     const board = Chessboard('board', {
       draggable: true,
       position: 'start',
@@ -205,7 +204,7 @@
       board.position(game.fen(), false);
     }
 
-    // Move selection: MultiPV + threshold + variable nodes
+    // Handle engine move with MultiPV + variable nodes + half‑threshold
     function onDrop(src, tgt) {
       const mv = game.move({ from: src, to: tgt, promotion: 'q' });
       if (!mv) return 'snapback';
@@ -214,9 +213,17 @@
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
 
-      const threshold  = thresholdByLevel[currentLevel];
-      const nodes      = nodesByLevel[currentLevel] || 200000;
-      let candidates   = [];
+      // Determine threshold
+      const baseThreshold = thresholdByLevel[currentLevel] || 0;
+      let threshold = baseThreshold;
+      // count full moves so far
+      const fullMoves = Math.floor(game.history().length / 2);
+      if (currentLevel >= 4 && fullMoves < 5) {
+        threshold = baseThreshold / 2;
+      }
+
+      const nodes    = nodesByLevel[currentLevel] || 500000;
+      let candidates = [];
 
       function handleEngine({data}) {
         const line = data.trim();
@@ -224,15 +231,17 @@
           const mpv = +line.match(/multipv\s+(\d+)/)[1];
           const cp  = +line.match(/score cp\s+(-?\d+)/)[1];
           const uci = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
-          candidates[mpv-1] = { move: uci, score: cp };
+          candidates[mpv - 1] = { move: uci, score: cp };
         }
         if (line.startsWith('bestmove')) {
           engine.removeEventListener('message', handleEngine);
           if (!candidates.length) return;
           const bestScore = candidates[0].score;
+          // pool of moves within threshold
           const pool = candidates.filter(c => c && c.score >= bestScore - threshold);
+          // pick random from pool
           const choice = pool[Math.floor(Math.random() * pool.length)].move;
-          const f = choice.slice(0,2), t = choice.slice(2,4);
+          const f = choice.slice(0, 2), t = choice.slice(2, 4);
           highlightMove(f, t, 'black');
           game.move({ from: f, to: t, promotion: 'q' });
           board.position(game.fen(), false);
@@ -244,7 +253,7 @@
       engine.postMessage('go nodes ' + nodes);
     }
 
-    // Generate random J‑Chess position
+    // Random J‑Chess position
     $('#randomiseBtn').click(() => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
@@ -253,7 +262,7 @@
       board.position(fen, false);
     });
 
-    // Generate fair J‑Chess position
+    // Fair J‑Chess position
     $('#fairBtn').click(() => {
       if (searchingFair) return;
       fenDiv.style.display  = 'none';
@@ -279,8 +288,8 @@
         }
         if (line.startsWith('bestmove')) {
           evalEngine.removeEventListener('message', onEval);
-          const score = ((lastCp||0)/100).toFixed(2);
-          const fair  = Math.abs((lastCp||0)/100) <= 0.4;
+          const score = ((lastCp || 0) / 100).toFixed(2);
+          const fair  = Math.abs((lastCp || 0) / 100) <= 0.4;
           statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
           if (fair) {
             game.load(fen);
@@ -297,8 +306,8 @@
 
     // J‑Chess FEN helpers
     function shuffle(a) {
-      for (let i = a.length-1; i > 0; i--) {
-        const j = Math.floor(Math.random()*(i+1));
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
         [a[i], a[j]] = [a[j], a[i]];
       }
       return a;
@@ -309,7 +318,7 @@
       do {
         R = shuffle(P);
         b = [R.indexOf('b'), R.lastIndexOf('b')];
-      } while ((b[0]%2) === (b[1]%2));
+      } while ((b[0] % 2) === (b[1] % 2));
       return R.join('');
     }
     function generateJChessFEN() {
