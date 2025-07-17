@@ -55,15 +55,6 @@
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
 
-    /* Status text */
-    #fairStatus {
-      margin: 12px auto;
-      max-width: 400px;
-      text-align: left;
-      font-family: monospace;
-      white-space: pre-wrap;
-    }
-
     /* FEN output */
     #fenContainer {
       margin: 12px auto;
@@ -75,6 +66,15 @@
       padding: 8px;
       font-family: monospace;
       rows: 2;
+    }
+
+    /* Status text */
+    #fairStatus {
+      margin: 12px auto;
+      max-width: 400px;
+      text-align: left;
+      font-family: monospace;
+      white-space: pre-wrap;
     }
 
     /* Stats below board */
@@ -105,26 +105,26 @@
     <button id="fairBtn">Generate Fair Position</button>
     <label for="timeSelect">Analysis Time:</label>
     <select id="timeSelect">
-      <option value="250">0.25 s</option>
-      <option value="500">0.5 s</option>
-      <option value="1000" selected>1 s</option>
-      <option value="2000">2 s</option>
-      <option value="5000">5 s</option>
+      <option value="250">0.25 s</option>
+      <option value="500">0.5 s</option>
+      <option value="1000" selected>1 s</option>
+      <option value="2000">2 s</option>
+      <option value="5000">5 s</option>
     </select>
     <label for="levelSelect">Level:</label>
     <select id="levelSelect">
-      <option value="1">Lv. 1</option>
-      <option value="2">Lv. 2</option>
-      <option value="3">Lv. 3</option>
-      <option value="4">Lv. 4</option>
-      <option value="5" selected>Lv. 5</option>
-      <option value="6">Lv. 6</option>
-      <option value="7">Lv. 7</option>
-      <option value="8">Lv. 8</option>
-      <option value="9">Lv. 9</option>
-      <option value="10">Lv. 10</option>
+      <option value="1">Lv. 1</option>
+      <option value="2">Lv. 2</option>
+      <option value="3">Lv. 3</option>
+      <option value="4">Lv. 4</option>
+      <option value="5" selected>Lv. 5</option>
+      <option value="6">Lv. 6</option>
+      <option value="7">Lv. 7</option>
+      <option value="8">Lv. 8</option>
+      <option value="9">Lv. 9</option>
+      <option value="10">Lv. 10</option>
     </select>
-    <button id="getFenBtn">Get FEN</button>
+    <button id="getFenBtn">Get FEN</button>
   </div>
 
   <div id="board-container">
@@ -132,15 +132,15 @@
     <div id="loadingSpinner"></div>
   </div>
 
-  <div id="fairStatus"></div>
-
   <div id="fenContainer">
     <textarea id="fenOutput" readonly rows="2"></textarea>
   </div>
 
+  <div id="fairStatus"></div>
+
   <div id="stats">
-    <h2>8.3 million starting positions</h2>
-    <h2>2.5 million fair starting positions</h2>
+    <h2>8.3 million starting positions</h2>
+    <h2>2.5 million fair starting positions</h2>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -148,20 +148,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('🟢 DOM ready');
-
       const nodesByLevel = {
-        1: 1,  2: 10,   3: 1000, 4: 10000, 5: 25000,
-        6: 50000, 7: 100000, 8: 250000, 9: 250000, 10: 500000
+        1:1,2:10,3:1000,4:10000,5:25000,
+        6:50000,7:100000,8:250000,9:250000,10:500000
       };
-      const levelToSkill = {
-        1:1, 2:3, 3:5, 4:8,  5:10,
-        6:12,7:14,8:16,9:18, 10:20
-      };
-
+      const levelToSkill = {1:1,2:3,3:5,4:8,5:10,6:12,7:14,8:16,9:18,10:20};
       let currentLevel  = 5;
       let searchingFair = false;
-      let fairAttempt   = 0;
       let engine, evalEngine;
 
       try {
@@ -173,20 +166,18 @@
       }
 
       function eloForLevel(lv) {
-        const min = 1350, max9 = 2999;
-        return lv < 10
-          ? Math.round(min + ((lv - 1)/8)*(max9 - min))
+        const min=1350, max9=2999;
+        return lv<10
+          ? Math.round(min + ((lv-1)/8)*(max9-min))
           : null;
       }
 
-      // Helpers to highlight moves
       const $board = $('#board');
-      const sqClass = 'square-55d63';
-      function clearHighlights() {
-        $board.find(`.${sqClass}`)
+      function clearHighlights(){
+        $board.find('.square-55d63')
               .removeClass('highlight-white highlight-black');
       }
-      function highlightMove(f,t,col) {
+      function highlightMove(f,t,col){
         clearHighlights();
         $board.find(`.square-${f}`)
               .addClass(`highlight-${col}`);
@@ -194,50 +185,46 @@
               .addClass(`highlight-${col}`);
       }
 
-      // Create engines
-      function createEngine(w, name) {
+      function createEngine(w,name){
         w.postMessage('uci');
-        w.addEventListener('message', ({data}) => {
+        w.addEventListener('message', ({data})=>{
           const line = data.trim();
-          if (line === 'uciok') {
+          if(line==='uciok'){
             w.postMessage('ucinewgame');
-            if (currentLevel < 10) {
+            if(currentLevel<10){
               w.postMessage('setoption name UCI_LimitStrength value true');
-              w.postMessage('setoption name UCI_Elo value ' + eloForLevel(currentLevel));
-              w.postMessage('setoption name Skill Level value ' + levelToSkill[currentLevel]);
+              w.postMessage('setoption name UCI_Elo value '+ eloForLevel(currentLevel));
+              w.postMessage('setoption name Skill Level value '+ levelToSkill[currentLevel]);
             } else {
               w.postMessage('setoption name UCI_LimitStrength value false');
             }
             w.postMessage('isready');
           }
-          if (line === 'readyok') {
+          if(line==='readyok'){
             console.log(`✅ ${name} ready`);
           }
         });
       }
-      createEngine(engine,     'Play-engine');
+      createEngine(engine, 'Play-engine');
       createEngine(evalEngine, 'Eval-engine');
 
-      // Handle changing skill level
       $('#levelSelect').on('change', function(){
         currentLevel = +this.value;
-        const elo   = eloForLevel(currentLevel);
+        const elo = eloForLevel(currentLevel);
         const skill = levelToSkill[currentLevel];
-        [engine, evalEngine].forEach(w => {
-          if (currentLevel < 10) {
+        [engine, evalEngine].forEach(w=>{
+          if(currentLevel<10){
             w.postMessage('setoption name UCI_LimitStrength value true');
-            w.postMessage('setoption name UCI_Elo value ' + elo);
-            w.postMessage('setoption name Skill Level value ' + skill);
+            w.postMessage('setoption name UCI_Elo value '+ elo);
+            w.postMessage('setoption name Skill Level value '+ skill);
           } else {
             w.postMessage('setoption name UCI_LimitStrength value false');
           }
         });
-        console.log(`🎚 UI Lv.${currentLevel} → Skill ${skill}` + (elo ? ` (Elo≈${elo})` : ' (Full)'));
       });
 
-      // Setup chessboard & game
       const game = new Chess();
-      const board = Chessboard('board', {
+      const board = Chessboard('board',{
         draggable: true,
         position: 'start',
         pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
@@ -245,125 +232,116 @@
       });
       $(window).resize(board.resize);
 
-      function onDragStart(src,piece) {
-        return !(game.game_over() || piece[0] !== 'w');
+      function onDragStart(src,piece){
+        return !(game.game_over()||piece[0]!=='w');
       }
-      function onSnapEnd() {
+      function onSnapEnd(){
         board.position(game.fen(), false);
       }
-      function onDrop(src,tgt) {
+      function onDrop(src,tgt){
         const mv = game.move({from:src,to:tgt,promotion:'q'});
-        if (!mv) return 'snapback';
+        if(!mv) return 'snapback';
         highlightMove(src,tgt,'white');
-        setTimeout(() => {
-          engine.postMessage('position fen ' + game.fen());
-          engine.postMessage('go nodes ' + (nodesByLevel[currentLevel]||10000));
-        }, 250);
+        setTimeout(()=>{
+          engine.postMessage('position fen '+game.fen());
+          engine.postMessage('go nodes '+ (nodesByLevel[currentLevel]||10000));
+        },250);
       }
 
-      // Engine responds
-      engine.addEventListener('message', ({data}) => {
+      engine.addEventListener('message', ({data})=>{
         const line = data.trim();
-        if (line.startsWith('bestmove') && !searchingFair) {
-          const uci  = line.split(' ')[1];
-          const from = uci.slice(0,2);
-          const to   = uci.slice(2,4);
-          highlightMove(from,to,'black');
-          const r = game.move({from,to,promotion:'q'});
-          if (r) board.position(game.fen(), false);
+        if(line.startsWith('bestmove') && !searchingFair){
+          const uci = line.split(' ')[1],
+                f = uci.slice(0,2),
+                t = uci.slice(2,4);
+          highlightMove(f,t,'black');
+          const r = game.move({from:f,to:t,promotion:'q'});
+          if(r) board.position(game.fen(), false);
         }
       });
 
-      // DOM refs
       const statusDiv = document.getElementById('fairStatus');
       const fenDiv    = document.getElementById('fenContainer');
 
-      // Random position
-      $('#randomiseBtn').click(() => {
+      $('#randomiseBtn').click(()=>{
         fenDiv.style.display = 'none';
         statusDiv.textContent = '';
         const fen = generateJChessFEN();
         game.load(fen);
-        board.position(fen, false);
+        board.position(fen,false);
       });
 
-      // Fair position
       $('#fairBtn').click(() => {
-        if (searchingFair) return;
+        if(searchingFair) return;
         fenDiv.style.display = 'none';
         statusDiv.textContent = '';
-        fairAttempt   = 0;
         searchingFair = true;
         document.getElementById('loadingSpinner').style.display = 'block';
         tryNextFair();
       });
 
-      function tryNextFair() {
-        fairAttempt ++;
-        statusDiv.textContent += `Checking position ${fairAttempt}…\n`;
+      function tryNextFair(){
         const fen = generateJChessFEN();
+        statusDiv.textContent += fen + '\n';
         let lastCp = null;
         const ms = +document.getElementById('timeSelect').value;
 
         evalEngine.postMessage('position fen ' + fen);
         evalEngine.postMessage('go movetime ' + ms);
 
-        function onEval({data}) {
+        function onEval({data}){
           const line = data.trim();
-          if (line.startsWith('info') && line.includes('score cp')) {
+          if(line.startsWith('info') && line.includes('score cp')){
             const m = line.match(/score cp (-?\d+)/);
-            if (m) lastCp = +m[1];
+            if(m) lastCp = +m[1];
           }
-          if (line.startsWith('bestmove')) {
+          if(line.startsWith('bestmove')){
             evalEngine.removeEventListener('message', onEval);
-            const pawns = (lastCp||0)/100;
-            const isFair = Math.abs(pawns) <= 0.4;
-            statusDiv.textContent += isFair ? "Pass\n" : "Failed\n";
-            if (isFair) {
+            const score = ((lastCp||0)/100).toFixed(2);
+            const isFair = Math.abs(lastCp/100) <= 0.4;
+            statusDiv.textContent += `${score} => ${isFair ? 'Fair' : 'Unfair'}\n\n`;
+            if(isFair){
               game.load(fen);
-              board.position(fen, false);
+              board.position(game.fen(),false);
               searchingFair = false;
               document.getElementById('loadingSpinner').style.display = 'none';
             } else {
-              setTimeout(tryNextFair, 30);
+              setTimeout(tryNextFair,30);
             }
           }
         }
         evalEngine.addEventListener('message', onEval);
       }
 
-      // Helpers for J‑Chess FEN
-      function shuffle(arr) {
+      function shuffle(arr){
         const a = arr.slice();
-        for (let i = a.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
+        for(let i=a.length-1;i>0;i--){
+          const j = Math.floor(Math.random()*(i+1));
           [a[i],a[j]] = [a[j],a[i]];
         }
         return a;
       }
-      function generateBackRank() {
+      function generateBackRank(){
         const P = ['r','n','b','q','k','b','n','r'];
-        let R, b;
-        do {
+        let R,b;
+        do{
           R = shuffle(P);
           b = [R.indexOf('b'), R.lastIndexOf('b')];
-        } while ((b[0]%2) === (b[1]%2));
+        } while((b[0]%2)===(b[1]%2));
         return R.join('');
       }
-      function generateJChessFEN() {
+      function generateJChessFEN(){
         const W = generateBackRank().toUpperCase();
         const B = generateBackRank().toLowerCase();
         return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
       }
 
-      // Get FEN
-      document.getElementById('getFenBtn').addEventListener('click', () => {
+      document.getElementById('getFenBtn').addEventListener('click',()=>{
         const out = document.getElementById('fenOutput');
         out.value = game.fen();
         fenDiv.style.display = 'block';
         out.select();
       });
-
     });
   </script>
 </body>
