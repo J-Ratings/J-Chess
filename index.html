@@ -217,7 +217,7 @@
       const baseThreshold = thresholdByLevel[currentLevel] || 0;
       let threshold = baseThreshold;
       // count full moves so far
-      const fullMoves = Math.floor(game.history().length / 3);
+      const fullMoves = Math.floor(game.history().length / 6);
       if (currentLevel >= 4 && fullMoves < 5) {
         threshold = baseThreshold / 2;
       }
