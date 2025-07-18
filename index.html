@@ -69,6 +69,9 @@
     .highlight-black {
       box-shadow: inset 0 0 3px 3px blue !important;
     }
+    .highlight-click {
+      box-shadow: inset 0 0 3px 3px orange !important;
+    }
   </style>
 </head>
 <body>
@@ -122,39 +125,41 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // Node‐count by level
     const nodesByLevel = {
       1: 500000, 2: 500000, 3: 500000, 4: 500000,
       5: 500000, 6: 500000,
       7: 1000000, 8: 1000000,
       9: 2000000, 10: 3000000
     };
-    // Base centipawn thresholds by level
     const thresholdByLevel = {
       1:1000, 2:500, 3:300, 4:200,
       5:75, 6:60, 7:45, 8:30, 9:15, 10:0
     };
 
-    let currentLevel  = 5;
+    let currentLevel = 5;
     let searchingFair = false;
+    let clickSource = null;
 
-    // Stockfish workers
     const engine     = new Worker('engine/stockfish-17-lite-single.js');
     const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
 
-    // Highlight helpers
-    const $board = $('#board');
     function clearHighlights() {
-      $board.find('.square-55d63')
-            .removeClass('highlight-white highlight-black');
-    }
-    function highlightMove(f, t, col) {
-      clearHighlights();
-      $board.find(`.square-${f}`).addClass(`highlight-${col}`);
-      $board.find(`.square-${t}`).addClass(`highlight-${col}`);
+      $('#board').find('.square-55d63')
+        .removeClass('highlight-white highlight-black highlight-click');
     }
 
-    // Initialise play‑engine (MultiPV=10)
+    function highlightMove(from, to, cls) {
+      clearHighlights();
+      $(`.square-${from}`).addClass(`highlight-${cls}`);
+      $(`.square-${to}`).addClass(`highlight-${cls}`);
+    }
+
+    function highlightClick(square) {
+      clearHighlights();
+      $(`.square-${square}`).addClass('highlight-click');
+    }
+
+    // create play engine
     engine.postMessage('uci');
     engine.addEventListener('message', function setupPlay({data}) {
       if (data.trim() === 'uciok') {
@@ -164,11 +169,10 @@
       }
       if (data.trim() === 'readyok') {
         engine.removeEventListener('message', setupPlay);
-        console.log('✅ Play‑engine ready');
       }
     });
 
-    // Initialise eval‑engine
+    // create eval engine
     evalEngine.postMessage('uci');
     evalEngine.addEventListener('message', function setupEval({data}) {
       if (data.trim() === 'uciok') {
@@ -178,16 +182,13 @@
       }
       if (data.trim() === 'readyok') {
         evalEngine.removeEventListener('message', setupEval);
-        console.log('✅ Eval‑engine ready');
       }
     });
 
-    // Update level
     $('#levelSelect').on('change', function() {
       currentLevel = +this.value;
     });
 
-    // Chessboard & game
     const game  = new Chess();
     const board = Chessboard('board', {
       draggable: true,
@@ -200,32 +201,30 @@
     function onDragStart(src, piece) {
       return !(game.game_over() || piece[0] !== 'w');
     }
+
+    function onDrop(src, tgt) {
+      const mv = game.move({ from: src, to: tgt, promotion: 'q' });
+      if (!mv) return 'snapback';
+      handleEngineMove(src, tgt);
+    }
+
     function onSnapEnd() {
       board.position(game.fen(), false);
     }
 
-    // Handle engine move with MultiPV + variable nodes + half‑threshold
-    function onDrop(src, tgt) {
-      const mv = game.move({ from: src, to: tgt, promotion: 'q' });
-      if (!mv) return 'snapback';
-
+    function handleEngineMove(src, tgt) {
       highlightMove(src, tgt, 'white');
-      fenDiv.style.display  = 'none';
-      statusDiv.textContent = '';
+      $('#fenContainer').hide();
+      $('#fairStatus').text('');
 
-      // Determine threshold
       const baseThreshold = thresholdByLevel[currentLevel] || 0;
       let threshold = baseThreshold;
-      // count full moves so far
       const fullMoves = Math.floor(game.history().length / 6);
-      if (currentLevel >= 4 && fullMoves < 5) {
-        threshold = baseThreshold / 2;
-      }
-
-      const nodes    = nodesByLevel[currentLevel] || 500000;
+      if (currentLevel >= 4 && fullMoves < 5) threshold = baseThreshold / 2;
+      const nodes = nodesByLevel[currentLevel] || 500000;
       let candidates = [];
 
-      function handleEngine({data}) {
+      function onInfo({data}) {
         const line = data.trim();
         if (line.startsWith('info') && line.includes('multipv') && line.includes('score cp')) {
           const mpv = +line.match(/multipv\s+(\d+)/)[1];
@@ -234,12 +233,10 @@
           candidates[mpv - 1] = { move: uci, score: cp };
         }
         if (line.startsWith('bestmove')) {
-          engine.removeEventListener('message', handleEngine);
+          engine.removeEventListener('message', onInfo);
           if (!candidates.length) return;
           const bestScore = candidates[0].score;
-          // pool of moves within threshold
           const pool = candidates.filter(c => c && c.score >= bestScore - threshold);
-          // pick random from pool
           const choice = pool[Math.floor(Math.random() * pool.length)].move;
           const f = choice.slice(0, 2), t = choice.slice(2, 4);
           highlightMove(f, t, 'black');
@@ -248,33 +245,23 @@
         }
       }
 
-      engine.addEventListener('message', handleEngine);
+      engine.addEventListener('message', onInfo);
       engine.postMessage('position fen ' + game.fen());
       engine.postMessage('go nodes ' + nodes);
     }
 
-    // Random J‑Chess position
-    $('#randomiseBtn').click(() => {
-      fenDiv.style.display  = 'none';
-      statusDiv.textContent = '';
-      const fen = generateJChessFEN();
-      game.load(fen);
-      board.position(fen, false);
-    });
-
-    // Fair J‑Chess position
-    $('#fairBtn').click(() => {
+    function attemptFair() {
       if (searchingFair) return;
-      fenDiv.style.display  = 'none';
-      statusDiv.textContent = '';
       searchingFair = true;
+      $('#fenContainer').hide();
+      $('#fairStatus').text('');
       $('#loadingSpinner').show();
-      tryNextFair();
-    });
+      nextFair();
+    }
 
-    function tryNextFair() {
+    function nextFair() {
       const fen = generateJChessFEN();
-      statusDiv.textContent += fen + '\n';
+      $('#fairStatus').append(fen + '\n');
       let lastCp = null;
       const ms   = +$('#timeSelect').val();
 
@@ -290,21 +277,21 @@
           evalEngine.removeEventListener('message', onEval);
           const score = ((lastCp || 0) / 100).toFixed(2);
           const fair  = Math.abs((lastCp || 0) / 100) <= 0.4;
-          statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
+          $('#fairStatus').append(`${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`);
           if (fair) {
             game.load(fen);
             board.position(fen, false);
             searchingFair = false;
             $('#loadingSpinner').hide();
           } else {
-            setTimeout(tryNextFair, 30);
+            setTimeout(nextFair, 30);
           }
         }
       }
+
       evalEngine.addEventListener('message', onEval);
     }
 
-    // J‑Chess FEN helpers
     function shuffle(a) {
       for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -312,31 +299,62 @@
       }
       return a;
     }
+
     function generateBackRank() {
       const P = ['r','n','b','q','k','b','n','r'];
       let R, b;
       do {
-        R = shuffle(P);
+        R = shuffle(P.slice());
         b = [R.indexOf('b'), R.lastIndexOf('b')];
       } while ((b[0] % 2) === (b[1] % 2));
       return R.join('');
     }
+
     function generateJChessFEN() {
       const W = generateBackRank().toUpperCase();
       const B = generateBackRank().toLowerCase();
       return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
     }
 
-    // Get FEN UI
-    const fenDiv    = document.getElementById('fenContainer');
-    const statusDiv = document.getElementById('fairStatus');
-    document.getElementById('getFenBtn').addEventListener('click', () => {
-      const out = document.getElementById('fenOutput');
-      out.value = game.fen();
-      fenDiv.style.display = 'block';
-      out.select();
+    function getSquare(el) {
+      const classes = el.className.split(/\s+/);
+      for (const c of classes) {
+        if (c.startsWith('square-') && c.length === 8) return c.slice(7);
+      }
+      return null;
+    }
+
+    $('#board').on('click', '.square-55d63', function() {
+      const sq = getSquare(this);
+      if (!sq) return;
+      if (!clickSource) {
+        clickSource = sq;
+        highlightClick(sq);
+      } else {
+        const move = game.move({ from: clickSource, to: sq, promotion: 'q' });
+        if (move) {
+          board.position(game.fen(), false);
+          handleEngineMove(clickSource, sq);
+        }
+        clearHighlights();
+        clickSource = null;
+      }
     });
 
+    $('#randomiseBtn').click(() => {
+      const fen = generateJChessFEN();
+      game.load(fen);
+      board.position(fen, false);
+      clearHighlights();
+    });
+
+    $('#fairBtn').click(attemptFair);
+
+    $('#getFenBtn').click(() => {
+      $('#fenOutput').val(game.fen());
+      $('#fenContainer').show();
+      $('#fenOutput')[0].select();
+    });
   });
   </script>
 </body>
