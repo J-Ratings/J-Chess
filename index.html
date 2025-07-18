@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>J–Chess + Stockfish (MultiPV + variable nodes + half‑threshold)</title>
+  <title>J–Chess + Stockfish (MultiPV + variable nodes + half-threshold)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
@@ -21,6 +21,10 @@
       padding: 8px 16px;
       font-size: 1em;
       cursor: pointer;
+    }
+    #board-container,
+    #board {
+      touch-action: none;
     }
     #board-container {
       position: relative;
@@ -69,9 +73,6 @@
     .highlight-black {
       box-shadow: inset 0 0 3px 3px blue !important;
     }
-    .highlight-click {
-      box-shadow: inset 0 0 3px 3px orange !important;
-    }
   </style>
 </head>
 <body>
@@ -82,26 +83,27 @@
     <button id="fairBtn">Generate Fair Position</button>
     <label for="timeSelect">Generation Time:</label>
     <select id="timeSelect">
-      <option value="250">0.25 s</option>
-      <option value="500">0.5 s</option>
-      <option value="1000" selected>1 s</option>
-      <option value="2000">2 s</option>
-      <option value="5000">5 s</option>
+      <option value="250">0.25 s</option>
+      <option value="500">0.5 s</option>
+      <option value="1000" selected>1 s</option>
+      <option value="2000">2 s</option>
+      <option value="5000">5 s</option>
     </select>
     <label for="levelSelect">Level:</label>
     <select id="levelSelect">
-      <option value="1">Lv. 1</option>
-      <option value="2">Lv. 2</option>
-      <option value="3">Lv. 3</option>
-      <option value="4">Lv. 4</option>
-      <option value="5" selected>Lv. 5</option>
-      <option value="6">Lv. 6</option>
-      <option value="7">Lv. 7</option>
-      <option value="8">Lv. 8</option>
-      <option value="9">Lv. 9</option>
-      <option value="10">Lv. 10</option>
+      <option value="1">Lv. 1 (500)</option>
+      <option value="2">Lv. 2 (800)</option>
+      <option value="3">Lv. 3 (1200)</option>
+      <option value="4">Lv. 4 (1500)</option>
+      <option value="5" selected>Lv. 5 (1700)</option>
+      <option value="6">Lv. 6 (2000)</option>
+      <option value="7">Lv. 7 (2200)</option>
+      <option value="8">Lv. 8 (2500)</option>
+      <option value="9">Lv. 9 (2800)</option>
+      <option value="10">Lv. 10 (3500)</option>
     </select>
-    <button id="getFenBtn">Get FEN</button>
+    <button id="getFenBtn">Get FEN</button>
+    <button id="newGameBtn">New Game</button>
   </div>
 
   <div id="board-container">
@@ -116,8 +118,8 @@
   <div id="fairStatus"></div>
 
   <div id="stats">
-    <h2>8.3 million starting positions</h2>
-    <h2>2.5 million fair starting positions</h2>
+    <h2>8.3 million starting positions</h2>
+    <h2>2.5 million fair starting positions</h2>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -138,28 +140,24 @@
 
     let currentLevel = 5;
     let searchingFair = false;
-    let clickSource = null;
+    let startFen;
 
-    const engine     = new Worker('engine/stockfish-17-lite-single.js');
-    const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
+    const fenDiv    = document.getElementById('fenContainer');
+    const statusDiv = document.getElementById('fairStatus');
+    const $board    = $('#board');
 
     function clearHighlights() {
-      $('#board').find('.square-55d63')
-        .removeClass('highlight-white highlight-black highlight-click');
+      $board.find('.square-55d63')
+            .removeClass('highlight-white highlight-black');
     }
-
-    function highlightMove(from, to, cls) {
+    function highlightMove(f, t, col) {
       clearHighlights();
-      $(`.square-${from}`).addClass(`highlight-${cls}`);
-      $(`.square-${to}`).addClass(`highlight-${cls}`);
+      $board.find(`.square-${f}`).addClass(`highlight-${col}`);
+      $board.find(`.square-${t}`).addClass(`highlight-${col}`);
     }
 
-    function highlightClick(square) {
-      clearHighlights();
-      $(`.square-${square}`).addClass('highlight-click');
-    }
-
-    // create play engine
+    // Create play-engine (MultiPV=10)
+    const engine = new Worker('engine/stockfish-17-lite-single.js');
     engine.postMessage('uci');
     engine.addEventListener('message', function setupPlay({data}) {
       if (data.trim() === 'uciok') {
@@ -172,7 +170,8 @@
       }
     });
 
-    // create eval engine
+    // Create eval-engine
+    const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
     evalEngine.postMessage('uci');
     evalEngine.addEventListener('message', function setupEval({data}) {
       if (data.trim() === 'uciok') {
@@ -198,33 +197,39 @@
     });
     $(window).resize(board.resize);
 
+    // capture the current start‐position
+    startFen = game.fen();
+
     function onDragStart(src, piece) {
       return !(game.game_over() || piece[0] !== 'w');
+    }
+    function onSnapEnd() {
+      board.position(game.fen(), false);
     }
 
     function onDrop(src, tgt) {
       const mv = game.move({ from: src, to: tgt, promotion: 'q' });
       if (!mv) return 'snapback';
-      handleEngineMove(src, tgt);
-    }
 
-    function onSnapEnd() {
-      board.position(game.fen(), false);
+      handleEngineMove(src, tgt);
     }
 
     function handleEngineMove(src, tgt) {
       highlightMove(src, tgt, 'white');
-      $('#fenContainer').hide();
-      $('#fairStatus').text('');
+      fenDiv.style.display  = 'none';
+      statusDiv.textContent = '';
 
       const baseThreshold = thresholdByLevel[currentLevel] || 0;
       let threshold = baseThreshold;
       const fullMoves = Math.floor(game.history().length / 6);
-      if (currentLevel >= 4 && fullMoves < 5) threshold = baseThreshold / 2;
-      const nodes = nodesByLevel[currentLevel] || 500000;
+      if (currentLevel >= 4 && fullMoves < 5) {
+        threshold = baseThreshold / 2;
+      }
+
+      const nodes    = nodesByLevel[currentLevel] || 500000;
       let candidates = [];
 
-      function onInfo({data}) {
+      function handleEngine({data}) {
         const line = data.trim();
         if (line.startsWith('info') && line.includes('multipv') && line.includes('score cp')) {
           const mpv = +line.match(/multipv\s+(\d+)/)[1];
@@ -233,7 +238,7 @@
           candidates[mpv - 1] = { move: uci, score: cp };
         }
         if (line.startsWith('bestmove')) {
-          engine.removeEventListener('message', onInfo);
+          engine.removeEventListener('message', handleEngine);
           if (!candidates.length) return;
           const bestScore = candidates[0].score;
           const pool = candidates.filter(c => c && c.score >= bestScore - threshold);
@@ -245,23 +250,33 @@
         }
       }
 
-      engine.addEventListener('message', onInfo);
+      engine.addEventListener('message', handleEngine);
       engine.postMessage('position fen ' + game.fen());
       engine.postMessage('go nodes ' + nodes);
     }
 
-    function attemptFair() {
-      if (searchingFair) return;
-      searchingFair = true;
-      $('#fenContainer').hide();
-      $('#fairStatus').text('');
-      $('#loadingSpinner').show();
-      nextFair();
-    }
-
-    function nextFair() {
+    $('#randomiseBtn').click(() => {
+      fenDiv.style.display  = 'none';
+      statusDiv.textContent = '';
       const fen = generateJChessFEN();
-      $('#fairStatus').append(fen + '\n');
+      game.load(fen);
+      board.position(fen, false);
+      clearHighlights();
+      startFen = fen;
+    });
+
+    $('#fairBtn').click(() => {
+      if (searchingFair) return;
+      fenDiv.style.display  = 'none';
+      statusDiv.textContent = '';
+      searchingFair = true;
+      $('#loadingSpinner').show();
+      tryNextFair();
+    });
+
+    function tryNextFair() {
+      const fen = generateJChessFEN();
+      statusDiv.textContent += fen + '\n';
       let lastCp = null;
       const ms   = +$('#timeSelect').val();
 
@@ -277,18 +292,19 @@
           evalEngine.removeEventListener('message', onEval);
           const score = ((lastCp || 0) / 100).toFixed(2);
           const fair  = Math.abs((lastCp || 0) / 100) <= 0.4;
-          $('#fairStatus').append(`${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`);
+          statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
           if (fair) {
             game.load(fen);
             board.position(fen, false);
+            clearHighlights();
+            startFen = fen;
             searchingFair = false;
             $('#loadingSpinner').hide();
           } else {
-            setTimeout(nextFair, 30);
+            setTimeout(tryNextFair, 30);
           }
         }
       }
-
       evalEngine.addEventListener('message', onEval);
     }
 
@@ -299,7 +315,6 @@
       }
       return a;
     }
-
     function generateBackRank() {
       const P = ['r','n','b','q','k','b','n','r'];
       let R, b;
@@ -309,52 +324,27 @@
       } while ((b[0] % 2) === (b[1] % 2));
       return R.join('');
     }
-
     function generateJChessFEN() {
       const W = generateBackRank().toUpperCase();
       const B = generateBackRank().toLowerCase();
       return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
     }
 
-    function getSquare(el) {
-      const classes = el.className.split(/\s+/);
-      for (const c of classes) {
-        if (c.startsWith('square-') && c.length === 8) return c.slice(7);
-      }
-      return null;
-    }
-
-    $('#board').on('click', '.square-55d63', function() {
-      const sq = getSquare(this);
-      if (!sq) return;
-      if (!clickSource) {
-        clickSource = sq;
-        highlightClick(sq);
-      } else {
-        const move = game.move({ from: clickSource, to: sq, promotion: 'q' });
-        if (move) {
-          board.position(game.fen(), false);
-          handleEngineMove(clickSource, sq);
-        }
-        clearHighlights();
-        clickSource = null;
-      }
-    });
-
-    $('#randomiseBtn').click(() => {
-      const fen = generateJChessFEN();
-      game.load(fen);
-      board.position(fen, false);
+    document.getElementById('newGameBtn').addEventListener('click', () => {
+      fenDiv.style.display  = 'none';
+      statusDiv.textContent = '';
+      game.load(startFen);
+      board.position(startFen, false);
       clearHighlights();
     });
 
-    $('#fairBtn').click(attemptFair);
-
-    $('#getFenBtn').click(() => {
-      $('#fenOutput').val(game.fen());
-      $('#fenContainer').show();
-      $('#fenOutput')[0].select();
+    document.getElementById('getFenBtn').addEventListener('click', () => {
+      const out = document.getElementById('fenOutput');
+      out.value = game.fen();
+      fenDiv.style.display = 'block';
+      out.select();
     });
+
   });
   </script>
 </body>
