@@ -80,6 +80,12 @@
       Intel i9 hardware. 2,189 positions were not outside the +/- 0.4 threshold, so about 22%.
       That's 1,815,644 fair positions - nearly 2 million.
     </p>
+  <figure style="margin:0 0 1.2em; text-align:center;">
+    <img src="histogram.png" alt="Histogram of 10,000 J-Chess starting position evaluations showing fair range" style="max-width:100%; height:auto; border:1px solid #ccc; background:#fff; padding:4px;">
+    <figcaption style="font-size:0.85rem; colour:#555;">
+      Distribution of Stockfish evaluations (10,000 random positions). Green band: fair range (±0.40).
+    </figcaption>
+  </figure>
     <p>
       The “Generate Fair Position” button generates a random J-Chess position and
       runs a short Stockfish evaluation. If the eval is outside +/- 0.4 then it repeats
