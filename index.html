@@ -65,10 +65,8 @@
       max-width: var(--content-max);
       margin: 0 auto;
       padding: 1.2rem clamp(1rem, 4vw, 2.2rem) 2.5rem;
-      text-align: centre;
       text-align: center;
     }
-
     #controls {
       display: flex;
       flex-wrap: wrap;
@@ -87,15 +85,13 @@
       border: 1px solid #bbb;
       background: #fff;
       cursor: pointer;
-      transition: background .15s, border-colour .15s, border-color .15s;
+      transition: background .15s, border-color .15s;
     }
     #controls button:hover,
     #controls select:hover {
       background: #f0f6fa;
-      border-colour: #999;
       border-color: #999;
     }
-
     #board-container {
       position: relative;
       width: 100%;
@@ -108,9 +104,7 @@
         max-width: min(96vw, 520px);
       }
     }
-
     #board { width: 100%; height: 100%; touch-action: none; }
-
     #loadingSpinner {
       position: absolute;
       top: 50%; left: 50%;
@@ -128,7 +122,6 @@
       0% { transform: translate(-50%, -50%) rotate(0deg); }
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
-
     #fenContainer {
       margin: 1rem auto 0;
       max-width: 520px;
@@ -174,7 +167,6 @@
       color: #555;
       text-align: center;
     }
-
     @media (max-width: 520px) {
       #controls {
         flex-direction: column;
@@ -278,10 +270,12 @@
       11: 1000000, 12: 1000000,
       13: 2000000, 14: 2000000, 15: 2000000
     };
-    const thresholdByLevel = {
-      1:1000, 2:500, 3:300, 4:225, 5:150, 6:100,
-      7:75, 8:60, 9:48, 10:37, 11:30, 12:20,
-      13:15, 14:10, 15:0
+
+    // σ values (centipawns) derived from one-sided uniform thresholds: sigma = T / 1.596
+    const sigmaByLevel = {
+      1:627, 2:313, 3:188, 4:141, 5:94, 6:63,
+      7:47, 8:38, 9:30, 10:23, 11:19, 12:13,
+      13:9, 14:6, 15:0
     };
 
     let currentLevel = 5;
@@ -370,66 +364,87 @@
       handleEngineMove(src, tgt);
     }
 
+    function gaussianSelect(candidates, levelSigma) {
+      if (!candidates.length) return null;
+      if (levelSigma <= 0) {
+        // deterministic best
+        candidates.sort((a,b)=>b.cp - a.cp);
+        return candidates[0];
+      }
+      candidates.sort((a,b)=>b.cp - a.cp);
+      const best = candidates[0].cp;
+      // Optional early-game σ reduction for stronger opening play
+      const movesSoFar = game.history().length;
+      if (currentLevel >= 4 && movesSoFar < 10) {
+        levelSigma = levelSigma / 1.8; // tweakable
+      }
+
+      let weights = [];
+      let sum = 0;
+      for (const c of candidates) {
+        const delta = best - c.cp; // >= 0
+        const w = Math.exp(-(delta*delta)/(2*levelSigma*levelSigma));
+        weights.push(w);
+        sum += w;
+      }
+      let r = Math.random()*sum;
+      for (let i=0;i<candidates.length;i++) {
+        r -= weights[i];
+        if (r <= 0) return candidates[i];
+      }
+      return candidates[candidates.length-1];
+    }
+
     function handleEngineMove(src, tgt) {
       highlightMove(src, tgt, 'white');
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
 
-      const baseThreshold = thresholdByLevel[currentLevel] || 0;
-      let threshold = baseThreshold;
-      const fullMoves = Math.floor(game.history().length / 6);
-      if (currentLevel >= 4 && fullMoves < 5) {
-        threshold = baseThreshold / 2;
-      }
-      const thresholdForCurrentMove = threshold;
+      const nodes = nodesByLevel[currentLevel] || 500000;
+      const sigma = sigmaByLevel[currentLevel] || 0;
 
-      const nodes    = nodesByLevel[currentLevel] || 500000;
-      let candidates = [];
-      let currentBestCpSeen = null;
+      let candMap = {}; // multipv index -> {move, cp}
+      let seenAnyScore = false;
 
       function handleEngineMsg({data}) {
         const line = data.trim();
-
-        if (line.startsWith('info') && line.includes('multipv') &&
-            (line.includes('score cp') || line.includes('score mate'))) {
-
-          const mpvMatch = line.match(/multipv\s+(\d+)/);
-          const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
-          if (!mpvMatch || !pvMatch) return;
-          const mpv = +mpvMatch[1];
-
-          let score;
+        if (line.startsWith('info') && line.includes('multipv')) {
           if (line.includes('score cp')) {
-            const cpMatch = line.match(/score cp\s+(-?\d+)/);
-            if (!cpMatch) return;
-            score = +cpMatch[1];
-            if (currentBestCpSeen === null || score > currentBestCpSeen) {
-              currentBestCpSeen = score;
+            const mpvMatch = line.match(/multipv\s+(\d+)/);
+            const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+            const cpMatch  = line.match(/score cp\s+(-?\d+)/);
+            if (mpvMatch && pvMatch && cpMatch) {
+              const mpv = +mpvMatch[1];
+              candMap[mpv] = { move: pvMatch[1], cp: +cpMatch[1] };
+              seenAnyScore = true;
             }
-          } else {
+          } else if (line.includes('score mate')) {
+            // Map mate evaluations: treat mate-in-n as large cp to keep ordering
+            const mpvMatch = line.match(/multipv\s+(\d+)/);
+            const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
             const mateMatch = line.match(/score mate\s+(-?\d+)/);
-            if (!mateMatch) return;
-            if (currentBestCpSeen === null) currentBestCpSeen = 0;
-            const randBonus = 100 + Math.floor(Math.random() * 401);
-            const mateVal = +mateMatch[1];
-            const sign = mateVal > 0 ? 1 : -1;
-            score = currentBestCpSeen + sign * randBonus;
+            if (mpvMatch && pvMatch && mateMatch) {
+              const mpv = +mpvMatch[1];
+              const mateVal = +mateMatch[1];
+              // Positive mate => winning, assign big positive cp; negative => big negative
+              const synthetic = mateVal > 0 ? 100000 - mateVal*100 : -100000 - mateVal*100;
+              candMap[mpv] = { move: pvMatch[1], cp: synthetic };
+              seenAnyScore = true;
+            }
           }
-
-          candidates[mpv - 1] = { move: pvMatch[1], score };
         }
-
         if (line.startsWith('bestmove')) {
           engine.removeEventListener('message', handleEngineMsg);
-          const list = candidates.filter(Boolean);
-          if (!list.length) return;
+          if (!seenAnyScore) return;
 
-          list.sort((a,b) => b.score - a.score);
-          const bestScore = list[0].score;
-          const pool = list.filter(c => c.score >= bestScore - thresholdForCurrentMove);
-          const choice = pool[Math.floor(Math.random() * pool.length)].move;
+            // Collect candidates
+          const candidates = Object.keys(candMap)
+              .map(k => candMap[k])
+              .filter(Boolean);
 
-          const f = choice.slice(0, 2), t = choice.slice(2, 4);
+          const choice = gaussianSelect(candidates, sigma);
+          if (!choice) return;
+          const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
           highlightMove(f, t, 'black');
           game.move({ from: f, to: t, promotion: 'q' });
           board.position(game.fen(), false);
@@ -443,21 +458,47 @@
 
     function engineReplyFromCurrent() {
       const nodes = nodesByLevel[currentLevel] || 500000;
-      let bestMove = null;
+      const sigma = sigmaByLevel[currentLevel] || 0;
+
+      let candMap = {};
+      let seenAny = false;
+
       function listener({data}) {
         const line = data.trim();
+        if (line.startsWith('info') && line.includes('multipv')) {
+          if (line.includes('score cp')) {
+            const mpvMatch = line.match(/multipv\s+(\d+)/);
+            const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+            const cpMatch  = line.match(/score cp\s+(-?\d+)/);
+            if (mpvMatch && pvMatch && cpMatch) {
+              candMap[+mpvMatch[1]] = { move: pvMatch[1], cp: +cpMatch[1] };
+              seenAny = true;
+            }
+          } else if (line.includes('score mate')) {
+            const mpvMatch = line.match(/multipv\s+(\d+)/);
+            const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+            const mateMatch = line.match(/score mate\s+(-?\d+)/);
+            if (mpvMatch && pvMatch && mateMatch) {
+              const mateVal = +mateMatch[1];
+              const synthetic = mateVal > 0 ? 100000 - mateVal*100 : -100000 - mateVal*100;
+              candMap[+mpvMatch[1]] = { move: pvMatch[1], cp: synthetic };
+              seenAny = true;
+            }
+          }
+        }
         if (line.startsWith('bestmove')) {
           engine.removeEventListener('message', listener);
-          const parts = line.split(/\s+/);
-          bestMove = parts[1];
-          if (bestMove && bestMove !== '(none)') {
-            const f = bestMove.slice(0,2), t = bestMove.slice(2,4);
+          if (!seenAny) return;
+          const candidates = Object.keys(candMap).map(k => candMap[k]);
+          const choice = gaussianSelect(candidates, sigma);
+          if (choice) {
+            const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
             const side = game.turn();
             game.move({from: f, to: t, promotion: 'q'});
             highlightMove(f, t, side === 'w' ? 'black' : 'white');
             board.position(game.fen(), false);
-            if (waitingForEngineFirst) waitingForEngineFirst = false;
           }
+          if (waitingForEngineFirst) waitingForEngineFirst = false;
         }
       }
       engine.addEventListener('message', listener);
@@ -468,7 +509,7 @@
     $('#randomiseBtn').click(() => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
-      const fen = generateJChessFEN(); // white to move
+      const fen = generateJChessFEN();
       game.load(fen);
       board.position(fen, false);
       clearHighlights();
@@ -511,7 +552,7 @@
         if (line.startsWith('bestmove')) {
           evalEngine.removeEventListener('message', onEval);
           const score = ((lastCp || 0) / 100).toFixed(2);
-          const fair  = Math.abs((lastCp || 0) / 100) <= 0.4;
+            const fair  = Math.abs((lastCp || 0) / 100) <= 0.4;
           statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
           if (fair) {
             game.load(fen);
@@ -569,7 +610,7 @@
       statusDiv.textContent = '';
       isHumanBlack = false;
       waitingForEngineFirst = false;
-      game.load(startFen); // white to move
+      game.load(startFen);
       setOrientation();
       board.position(startFen, false);
       clearHighlights();
@@ -580,11 +621,11 @@
       statusDiv.textContent = '';
       isHumanBlack = true;
       waitingForEngineFirst = true;
-      game.load(startFen); // keep white to move
+      game.load(startFen);
       setOrientation();
       board.position(startFen, false);
       clearHighlights();
-      engineReplyFromCurrent(); // engine (white) plays first move
+      engineReplyFromCurrent();
     });
 
   });
