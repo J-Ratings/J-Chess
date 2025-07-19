@@ -94,15 +94,13 @@
       border-color: #999;
     }
 
-    /* Enlarged & fluid board */
     #board-container {
       position: relative;
       width: 100%;
-      max-width: 520px;              /* up from 430px */
+      max-width: 520px;
       margin: 0 auto;
       aspect-ratio: 1;
     }
-    /* Let it expand more eagerly on narrow screens */
     @media (max-width: 620px) {
       #board-container {
         max-width: min(96vw, 520px);
@@ -175,7 +173,6 @@
       text-align: center;
     }
 
-    /* Stack controls & widen board naturally on small screens */
     @media (max-width: 520px) {
       #controls {
         flex-direction: column;
@@ -184,17 +181,11 @@
       #controls > * { width: 100%; }
       #controls label { text-align: left; }
     }
-
-    /* Slightly reduce side padding on very narrow devices so board can be larger */
     @media (max-width: 420px) {
-      .container {
-        padding: 1rem 0.75rem 2rem;
-      }
+      .container { padding: 1rem 0.75rem 2rem; }
     }
     @media (max-width: 380px) {
-      .container {
-        padding: 0.9rem 0.55rem 1.8rem;
-      }
+      .container { padding: 0.9rem 0.55rem 1.8rem; }
     }
   </style>
 </head>
@@ -242,7 +233,8 @@
       </select>
 
       <button id="getFenBtn">Get FEN</button>
-      <button id="newGameBtn">New Game</button>
+      <button id="playWhiteBtn">Play White</button>
+      <button id="playBlackBtn">Play Black</button>
     </div>
 
     <div id="board-container">
@@ -351,7 +343,15 @@
     startFen = game.fen();
 
     function onDragStart(src, piece) {
-      return !(game.game_over() || piece[0] !== 'w');
+      // Allow drag only for side to move and only white pieces when it's white's turn (human as white)
+      if (game.game_over()) return false;
+      const turn = game.turn();
+      if (turn === 'w') {
+        return piece[0] === 'w';
+      } else {
+        // When playing black, we disallow user dragging white's first move (engine plays white)
+        return piece[0] === 'b';
+      }
     }
     function onSnapEnd() {
       board.position(game.fen(), false);
@@ -369,7 +369,7 @@
 
       const baseThreshold = thresholdByLevel[currentLevel] || 0;
       let threshold = baseThreshold;
-      const fullMoves = Math.floor(game.history().length / 10);
+      const fullMoves = Math.floor(game.history().length / 6);
       if (currentLevel >= 4 && fullMoves < 5) {
         threshold = baseThreshold / 2;
       }
@@ -413,7 +413,7 @@
 
         if (line.startsWith('bestmove')) {
           engine.removeEventListener('message', handleEngineMsg);
-          const list = candidates.filter(Boolean);
+            const list = candidates.filter(Boolean);
           if (!list.length) return;
 
           list.sort((a,b) => b.score - a.score);
@@ -433,10 +433,33 @@
       engine.postMessage('go nodes ' + nodes);
     }
 
+    function engineReplyFromCurrent() {
+      // Engine move when it's white's turn (for Play Black scenario)
+      const nodes = nodesByLevel[currentLevel] || 500000;
+      let bestMove = null;
+      function listener({data}) {
+        const line = data.trim();
+        if (line.startsWith('bestmove')) {
+          engine.removeEventListener('message', listener);
+          const parts = line.split(/\s+/);
+          bestMove = parts[1];
+          if (bestMove && bestMove !== '(none)') {
+            const f = bestMove.slice(0,2), t = bestMove.slice(2,4);
+            game.move({from: f, to: t, promotion: 'q'});
+            highlightMove(f, t, 'black');
+            board.position(game.fen(), false);
+          }
+        }
+      }
+      engine.addEventListener('message', listener);
+      engine.postMessage('position fen ' + game.fen());
+      engine.postMessage('go nodes ' + nodes);
+    }
+
     $('#randomiseBtn').click(() => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
-      const fen = generateJChessFEN();
+      const fen = generateJChessFEN(); // always white to move
       game.load(fen);
       board.position(fen, false);
       clearHighlights();
@@ -467,7 +490,7 @@
           lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
         } else if (line.startsWith('info') && line.includes('score mate')) {
           const mateVal = +line.match(/score mate\s+(-?\d+)/)[1];
-            lastCp = (mateVal > 0 ? 5000 : -5000);
+          lastCp = (mateVal > 0 ? 5000 : -5000);
         }
         if (line.startsWith('bestmove')) {
           evalEngine.removeEventListener('message', onEval);
@@ -511,19 +534,35 @@
       return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
     }
 
-    document.getElementById('newGameBtn').addEventListener('click', () => {
-      fenDiv.style.display  = 'none';
-      statusDiv.textContent = '';
-      game.load(startFen);
-      board.position(startFen, false);
-      clearHighlights();
-    });
-
     document.getElementById('getFenBtn').addEventListener('click', () => {
       const out = document.getElementById('fenOutput');
       out.value = game.fen();
       fenDiv.style.display = 'block';
       out.select();
+    });
+
+    document.getElementById('playWhiteBtn').addEventListener('click', () => {
+      fenDiv.style.display  = 'none';
+      statusDiv.textContent = '';
+      game.load(startFen); // white to move
+      board.position(startFen, false);
+      clearHighlights();
+    });
+
+    document.getElementById('playBlackBtn').addEventListener('click', () => {
+      fenDiv.style.display  = 'none';
+      statusDiv.textContent = '';
+      // Modify FEN so black moves first if not already
+      let parts = startFen.split(' ');
+      if (parts[1] !== 'b') {
+        parts[1] = 'b';
+      }
+      const blackFen = parts.join(' ');
+      game.load(blackFen);
+      board.position(blackFen, false);
+      clearHighlights();
+      // Engine (white) makes first move
+      engineReplyFromCurrent();
     });
 
   });
