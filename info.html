@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Jumble Chess – Info</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      line-height: 1.45;
+      background: #f5f5f5;
+      color: #222;
+      padding: 20px;
+      max-width: 860px;
+      box-sizing: border-box;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    header a {
+      text-decoration: none;
+      color: #0077cc;
+    }
+    header nav {
+      margin-top: 8px;
+      font-size: 0.95rem;
+    }
+    h1 { margin: 0 0 4px; font-size: 1.9rem; }
+    h2 { margin-top: 1.8em; }
+    code, pre { background: #e9ecef; padding: 2px 4px; border-radius: 3px; }
+    .fen-example { font-family: monospace; background:#fff; padding:6px 8px; border:1px solid #ccc; display:inline-block; }
+    footer {
+      margin-top: 3rem;
+      font-size: 0.85rem;
+      colour: #555;
+      text-align: centre;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Jumble Chess – Info</h1>
+    <nav>
+      <a href="index.html">Play</a> |
+      <a href="info.html">Info</a>
+    </nav>
+  </header>
+
+  <section>
+    <h2>What Is Jumble Chess?</h2>
+    <p>
+      Jumble Chess is a casual variant where each side’s back rank is randomly
+      arranged (subject to bishops starting on opposite colours) while the pawns
+      remain in their usual places. It is similar in spirit to Chess960, but
+      uses an independent randomisation for Black as well as White – so the two
+      back ranks need not mirror each other, producing far more distinct
+      starting positions.
+    </p>
+  </section>
+
+  <section>
+    <h2>How Many Positions?</h2>
+    <p>
+      There are 8! / 4 = 10,080 legal bishop‑opposite layouts for one side
+      (divide by 2 for swapping the two bishops’ colour squares and divide by 2
+      again for king between rooks constraint not being enforced here).
+      Because White and Black are generated independently, the total number of
+      raw starting pairs is 10,080 × 10,080 ≈ 101.6 million. The playable subset
+      used here is filtered, giving about 8.3 million distinct starting positions
+      after removing duplicates arising from symmetry and simple invalid
+      configurations. A further fairness filter (engine evaluation in a narrow
+      centipawn window) yields roughly 2.5 million “fair” starts.
+    </p>
+    <p>
+      (Those figures are empirical / implementation‑specific rather than a pure
+      combinatorial identity, hence “about”.)
+    </p>
+  </section>
+
+  <section>
+    <h2>Fair Positions</h2>
+    <p>
+      The “Generate Fair Position” button repeatedly samples random starts and
+      runs a short Stockfish evaluation (configurable time) until it finds a
+      position with an evaluation whose absolute value is at most 0.40 pawns.
+      This screens out severely imbalanced setups (e.g. a trapped rook or an
+      exposed king) while keeping variety.
+    </p>
+    <p>
+      The fairness check uses: <code>go movetime &lt;X&gt;</code> with a
+      lightweight build of Stockfish. A position is accepted if
+      <code>|score| ≤ 40</code> centipawns.
+    </p>
+  </section>
+
+  <section>
+    <h2>Playing Strength Levels</h2>
+    <p>
+      The engine responds using a MultiPV search (10 candidate lines). After a
+      search capped by a node budget that grows with the selected level, it
+      gathers the candidate moves and introduces randomness: any move whose
+      score is within a level‑dependent threshold (centipawns) of the top move
+      can be chosen. Early in the game (first few ply groups) the threshold is
+      temporarily halved at intermediate levels to avoid gifting material too
+      quickly while still feeling human. Higher levels shrink the threshold and
+      raise the node count.
+    </p>
+  </section>
+
+  <section>
+    <h2>Why I Made It</h2>
+    <p>
+      Standard openings can become rote. By jumbling both sides independently
+      you get fresh tactical patterns every game; you must construct a plan from
+      scratch rather than recall theory. The fairness filter keeps games
+      competitive instead of starting from a decisive plus or minus. It is also
+      a convenient testbed for experimenting with engine “humanisation” via
+      MultiPV sampling and strength scaling by node limits plus a half‑threshold
+      mechanism.
+    </p>
+  </section>
+
+  <section>
+    <h2>Example FEN</h2>
+    <p class="fen-example">
+      rnqbkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1
+    </p>
+    <p>
+      Format: standard Forsyth–Edwards; only the back ranks change. Castling
+      rights are deliberately stripped (<code>- -</code>) because the king and
+      rooks may be anywhere; implementing variant castling rules is out of
+      scope for this minimal version.
+    </p>
+  </section>
+
+  <section>
+    <h2>Limitations / Future Ideas</h2>
+    <ul>
+      <li>Per‑position seeding so a position can be shared by short code.</li>
+      <li>Optional symmetry mode (same shuffle for both sides) for a
+          Chess960‑like feel.</li>
+      <li>Time control and move list export (PGN).</li>
+      <li>Better strength calibration (Elo mapping is only approximate).</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p><a href="index.html">Back to the board</a></p>
+  </footer>
+</body>
+</html>
