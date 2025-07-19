@@ -271,12 +271,19 @@
       13: 2000000, 14: 2000000, 15: 2000000
     };
 
-    // σ values (centipawns) derived from one-sided uniform thresholds: sigma = T / 1.596
+    // Base σ values (centipawns) from uniform thresholds (σ = T / 1.596)
     const sigmaByLevel = {
       1:627, 2:313, 3:188, 4:141, 5:94, 6:63,
       7:47, 8:38, 9:30, 10:23, 11:19, 12:13,
       13:9, 14:6, 15:0
     };
+
+    // Apply early-game reduction: first 10 plies (5 full moves) -> σ / 10
+    function effectiveSigma(baseSigma) {
+      const plies = game.history().length; // half-moves played so far
+      if (plies < 10) return baseSigma / 10;
+      return baseSigma;
+    }
 
     let currentLevel = 5;
     let searchingFair = false;
@@ -364,26 +371,21 @@
       handleEngineMove(src, tgt);
     }
 
-    function gaussianSelect(candidates, levelSigma) {
+    function gaussianSelect(candidates, baseSigma) {
       if (!candidates.length) return null;
-      if (levelSigma <= 0) {
-        // deterministic best
+      if (baseSigma <= 0) {
         candidates.sort((a,b)=>b.cp - a.cp);
         return candidates[0];
       }
       candidates.sort((a,b)=>b.cp - a.cp);
       const best = candidates[0].cp;
-      // Optional early-game σ reduction for stronger opening play
-      const movesSoFar = game.history().length;
-      if (currentLevel >= 4 && movesSoFar < 10) {
-        levelSigma = levelSigma / 1.8; // tweakable
-      }
+      const sig = effectiveSigma(baseSigma);
 
       let weights = [];
       let sum = 0;
       for (const c of candidates) {
         const delta = best - c.cp; // >= 0
-        const w = Math.exp(-(delta*delta)/(2*levelSigma*levelSigma));
+        const w = Math.exp(-(delta*delta)/(2*sig*sig));
         weights.push(w);
         sum += w;
       }
@@ -401,9 +403,9 @@
       statusDiv.textContent = '';
 
       const nodes = nodesByLevel[currentLevel] || 500000;
-      const sigma = sigmaByLevel[currentLevel] || 0;
+      const baseSigma = sigmaByLevel[currentLevel] || 0;
 
-      let candMap = {}; // multipv index -> {move, cp}
+      let candMap = {};
       let seenAnyScore = false;
 
       function handleEngineMsg({data}) {
@@ -419,14 +421,12 @@
               seenAnyScore = true;
             }
           } else if (line.includes('score mate')) {
-            // Map mate evaluations: treat mate-in-n as large cp to keep ordering
-            const mpvMatch = line.match(/multipv\s+(\d+)/);
-            const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+            const mpvMatch  = line.match(/multipv\s+(\d+)/);
+            const pvMatch   = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
             const mateMatch = line.match(/score mate\s+(-?\d+)/);
             if (mpvMatch && pvMatch && mateMatch) {
               const mpv = +mpvMatch[1];
               const mateVal = +mateMatch[1];
-              // Positive mate => winning, assign big positive cp; negative => big negative
               const synthetic = mateVal > 0 ? 100000 - mateVal*100 : -100000 - mateVal*100;
               candMap[mpv] = { move: pvMatch[1], cp: synthetic };
               seenAnyScore = true;
@@ -436,13 +436,8 @@
         if (line.startsWith('bestmove')) {
           engine.removeEventListener('message', handleEngineMsg);
           if (!seenAnyScore) return;
-
-            // Collect candidates
-          const candidates = Object.keys(candMap)
-              .map(k => candMap[k])
-              .filter(Boolean);
-
-          const choice = gaussianSelect(candidates, sigma);
+          const candidates = Object.keys(candMap).map(k => candMap[k]).filter(Boolean);
+          const choice = gaussianSelect(candidates, baseSigma);
           if (!choice) return;
           const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
           highlightMove(f, t, 'black');
@@ -458,7 +453,7 @@
 
     function engineReplyFromCurrent() {
       const nodes = nodesByLevel[currentLevel] || 500000;
-      const sigma = sigmaByLevel[currentLevel] || 0;
+      const baseSigma = sigmaByLevel[currentLevel] || 0;
 
       let candMap = {};
       let seenAny = false;
@@ -475,8 +470,8 @@
               seenAny = true;
             }
           } else if (line.includes('score mate')) {
-            const mpvMatch = line.match(/multipv\s+(\d+)/);
-            const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+            const mpvMatch  = line.match(/multipv\s+(\d+)/);
+            const pvMatch   = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
             const mateMatch = line.match(/score mate\s+(-?\d+)/);
             if (mpvMatch && pvMatch && mateMatch) {
               const mateVal = +mateMatch[1];
@@ -490,7 +485,7 @@
           engine.removeEventListener('message', listener);
           if (!seenAny) return;
           const candidates = Object.keys(candMap).map(k => candMap[k]);
-          const choice = gaussianSelect(candidates, sigma);
+          const choice = gaussianSelect(candidates, baseSigma);
           if (choice) {
             const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
             const side = game.turn();
@@ -552,7 +547,7 @@
         if (line.startsWith('bestmove')) {
           evalEngine.removeEventListener('message', onEval);
           const score = ((lastCp || 0) / 100).toFixed(2);
-            const fair  = Math.abs((lastCp || 0) / 100) <= 0.4;
+          const fair  = Math.abs((lastCp || 0) / 100) <= 0.4;
           statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
           if (fair) {
             game.load(fen);
