@@ -65,6 +65,7 @@
       max-width: var(--content-max);
       margin: 0 auto;
       padding: 1.2rem clamp(1rem, 4vw, 2.2rem) 2.5rem;
+      text-align: centre;
       text-align: center;
     }
 
@@ -86,11 +87,12 @@
       border: 1px solid #bbb;
       background: #fff;
       cursor: pointer;
-      transition: background .15s, border-color .15s;
+      transition: background .15s, border-colour .15s, border-color .15s;
     }
     #controls button:hover,
     #controls select:hover {
       background: #f0f6fa;
+      border-colour: #999;
       border-color: #999;
     }
 
@@ -285,6 +287,8 @@
     let currentLevel = 5;
     let searchingFair = false;
     let startFen;
+    let isHumanBlack = false;
+    let waitingForEngineFirst = false;
 
     const fenDiv    = document.getElementById('fenContainer');
     const statusDiv = document.getElementById('fairStatus');
@@ -340,17 +344,21 @@
     });
     $(window).resize(board.resize);
 
+    function setOrientation() {
+      board.orientation(isHumanBlack ? 'black' : 'white');
+    }
+
     startFen = game.fen();
+    setOrientation();
 
     function onDragStart(src, piece) {
-      // Allow drag only for side to move and only white pieces when it's white's turn (human as white)
       if (game.game_over()) return false;
       const turn = game.turn();
-      if (turn === 'w') {
-        return piece[0] === 'w';
+      if (!isHumanBlack) {
+        return piece[0] === 'w' && turn === 'w';
       } else {
-        // When playing black, we disallow user dragging white's first move (engine plays white)
-        return piece[0] === 'b';
+        if (waitingForEngineFirst) return false;
+        return piece[0] === 'b' && turn === 'b';
       }
     }
     function onSnapEnd() {
@@ -413,7 +421,7 @@
 
         if (line.startsWith('bestmove')) {
           engine.removeEventListener('message', handleEngineMsg);
-            const list = candidates.filter(Boolean);
+          const list = candidates.filter(Boolean);
           if (!list.length) return;
 
           list.sort((a,b) => b.score - a.score);
@@ -434,7 +442,6 @@
     }
 
     function engineReplyFromCurrent() {
-      // Engine move when it's white's turn (for Play Black scenario)
       const nodes = nodesByLevel[currentLevel] || 500000;
       let bestMove = null;
       function listener({data}) {
@@ -445,9 +452,11 @@
           bestMove = parts[1];
           if (bestMove && bestMove !== '(none)') {
             const f = bestMove.slice(0,2), t = bestMove.slice(2,4);
+            const side = game.turn();
             game.move({from: f, to: t, promotion: 'q'});
-            highlightMove(f, t, 'black');
+            highlightMove(f, t, side === 'w' ? 'black' : 'white');
             board.position(game.fen(), false);
+            if (waitingForEngineFirst) waitingForEngineFirst = false;
           }
         }
       }
@@ -459,11 +468,18 @@
     $('#randomiseBtn').click(() => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
-      const fen = generateJChessFEN(); // always white to move
+      const fen = generateJChessFEN(); // white to move
       game.load(fen);
       board.position(fen, false);
       clearHighlights();
       startFen = fen;
+      if (isHumanBlack) {
+        waitingForEngineFirst = true;
+        setOrientation();
+        engineReplyFromCurrent();
+      } else {
+        setOrientation();
+      }
     });
 
     $('#fairBtn').click(() => {
@@ -504,6 +520,13 @@
             startFen = fen;
             searchingFair = false;
             $('#loadingSpinner').hide();
+            if (isHumanBlack) {
+              waitingForEngineFirst = true;
+              setOrientation();
+              engineReplyFromCurrent();
+            } else {
+              setOrientation();
+            }
           } else {
             setTimeout(tryNextFair, 30);
           }
@@ -544,7 +567,10 @@
     document.getElementById('playWhiteBtn').addEventListener('click', () => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
+      isHumanBlack = false;
+      waitingForEngineFirst = false;
       game.load(startFen); // white to move
+      setOrientation();
       board.position(startFen, false);
       clearHighlights();
     });
@@ -552,17 +578,13 @@
     document.getElementById('playBlackBtn').addEventListener('click', () => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
-      // Modify FEN so black moves first if not already
-      let parts = startFen.split(' ');
-      if (parts[1] !== 'b') {
-        parts[1] = 'b';
-      }
-      const blackFen = parts.join(' ');
-      game.load(blackFen);
-      board.position(blackFen, false);
+      isHumanBlack = true;
+      waitingForEngineFirst = true;
+      game.load(startFen); // keep white to move
+      setOrientation();
+      board.position(startFen, false);
       clearHighlights();
-      // Engine (white) makes first move
-      engineReplyFromCurrent();
+      engineReplyFromCurrent(); // engine (white) plays first move
     });
 
   });
