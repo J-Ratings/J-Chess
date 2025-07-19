@@ -369,7 +369,7 @@
 
       const baseThreshold = thresholdByLevel[currentLevel] || 0;
       let threshold = baseThreshold;
-      const fullMoves = Math.floor(game.history().length / 6);
+      const fullMoves = Math.floor(game.history().length / 10);
       if (currentLevel >= 4 && fullMoves < 5) {
         threshold = baseThreshold / 2;
       }
