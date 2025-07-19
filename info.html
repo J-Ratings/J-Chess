@@ -66,89 +66,42 @@
   <section>
     <h2>How Many Positions?</h2>
     <p>
-      There are 8! / 4 = 10,080 legal bishop‑opposite layouts for one side
-      (divide by 2 for swapping the two bishops’ colour squares and divide by 2
-      again for king between rooks constraint not being enforced here).
-      Because White and Black are generated independently, the total number of
-      raw starting pairs is 10,080 × 10,080 ≈ 101.6 million. The playable subset
-      used here is filtered, giving about 8.3 million distinct starting positions
-      after removing duplicates arising from symmetry and simple invalid
-      configurations. A further fairness filter (engine evaluation in a narrow
-      centipawn window) yields roughly 2.5 million “fair” starts.
+      
     </p>
-    <p>
-      (Those figures are empirical / implementation‑specific rather than a pure
-      combinatorial identity, hence “about”.)
-    </p>
+
   </section>
 
   <section>
     <h2>Fair Positions</h2>
     <p>
-      The “Generate Fair Position” button repeatedly samples random starts and
-      runs a short Stockfish evaluation (configurable time) until it finds a
-      position with an evaluation whose absolute value is at most 0.40 pawns.
-      This screens out severely imbalanced setups (e.g. a trapped rook or an
-      exposed king) while keeping variety.
+      The “Generate Fair Position” button generates a random J-Chess position and
+      runs a short Stockfish evaluation. If the eval is outside +/- 0.4 then it repeats
+      the process with a new J-Chess position until a fair evaluation is found. Given
+      about 30% of positions are 'fair', the chance of waiting more than 10 positions is 
+      is <3%.
     </p>
-    <p>
-      The fairness check uses: <code>go movetime &lt;X&gt;</code> with a
-      lightweight build of Stockfish. A position is accepted if
-      <code>|score| ≤ 40</code> centipawns.
-    </p>
-  </section>
 
-  <section>
-    <h2>Playing Strength Levels</h2>
-    <p>
-      The engine responds using a MultiPV search (10 candidate lines). After a
-      search capped by a node budget that grows with the selected level, it
-      gathers the candidate moves and introduces randomness: any move whose
-      score is within a level‑dependent threshold (centipawns) of the top move
-      can be chosen. Early in the game (first few ply groups) the threshold is
-      temporarily halved at intermediate levels to avoid gifting material too
-      quickly while still feeling human. Higher levels shrink the threshold and
-      raise the node count.
-    </p>
   </section>
 
   <section>
     <h2>Why I Made It</h2>
     <p>
-      Standard openings can become rote. By jumbling both sides independently
-      you get fresh tactical patterns every game; you must construct a plan from
-      scratch rather than recall theory. The fairness filter keeps games
-      competitive instead of starting from a decisive plus or minus. It is also
-      a convenient testbed for experimenting with engine “humanisation” via
-      MultiPV sampling and strength scaling by node limits plus a half‑threshold
-      mechanism.
-    </p>
-  </section>
-
-  <section>
-    <h2>Example FEN</h2>
-    <p class="fen-example">
-      rnqbkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1
+      I have a great dislike for deep opening prep. Chess960 is certainly a step
+      in the right direction but I find the castling rules fiddly. I also think that 
+      no castling leads to more interesting positions. I also think it is not impossible
+      in Chess960 to deeply analyse 10-20 positions and hope they come up. 
     </p>
     <p>
-      Format: standard Forsyth–Edwards; only the back ranks change. Castling
-      rights are deliberately stripped (<code>- -</code>) because the king and
-      rooks may be anywhere; implementing variant castling rules is out of
-      scope for this minimal version.
+     J-Chess removes all hope for opening prep. As there is no castling, the king does not
+     need to be between the rooks giving more options. However, by removing castling, we do
+     introduce a more restrictive style such as no opposite side castling positions. To 
+     counter this, I have forced the jumbling to occur independently for both sides. Now the
+     kings can sometimes be on opposite sides. There are also now millions of positions completely
+     removing any opportunity to prep.
     </p>
   </section>
 
-  <section>
-    <h2>Limitations / Future Ideas</h2>
-    <ul>
-      <li>Per‑position seeding so a position can be shared by short code.</li>
-      <li>Optional symmetry mode (same shuffle for both sides) for a
-          Chess960‑like feel.</li>
-      <li>Time control and move list export (PGN).</li>
-      <li>Better strength calibration (Elo mapping is only approximate).</li>
-    </ul>
-  </section>
-
+ 
   <footer>
     <p><a href="index.html">Back to the board</a></p>
   </footer>
