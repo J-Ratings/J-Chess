@@ -9,7 +9,6 @@
     :root {
       --brand-bg: #0d3f66;
       --brand-fg: #ffffff;
-      --brand-accent: #ffffff;
       --content-max: 900px;
     }
     * { box-sizing: border-box; }
@@ -20,8 +19,6 @@
       color: #222;
       -webkit-font-smoothing: antialiased;
     }
-
-    /* Top site bar */
     .site-bar {
       display: flex;
       align-items: center;
@@ -31,9 +28,9 @@
       color: var(--brand-fg);
       padding: 0.65rem clamp(1rem, 4vw, 2.2rem);
       box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      flex-wrap: wrap;
       position: relative;
       z-index: 10;
-      flex-wrap: wrap;
     }
     .site-bar h1 {
       margin: 0;
@@ -41,7 +38,6 @@
       font-size: clamp(1.1rem, 2.2vw + 0.6rem, 1.55rem);
       letter-spacing: .5px;
       line-height: 1.2;
-      flex: 0 0 auto;
     }
     .site-bar nav {
       display: flex;
@@ -60,23 +56,17 @@
       outline: none;
     }
     .site-bar nav a:hover,
-    .site-bar nav a:focus-visible {
-      background: rgba(255,255,255,0.18);
-    }
+    .site-bar nav a:focus-visible { background: rgba(255,255,255,0.18); }
     .site-bar nav a.active {
       background: #ffffff;
       color: var(--brand-bg);
     }
-
-    /* Main container */
     .container {
       max-width: var(--content-max);
       margin: 0 auto;
       padding: 1.2rem clamp(1rem, 4vw, 2.2rem) 2.5rem;
       text-align: center;
     }
-
-    /* Controls */
     #controls {
       display: flex;
       flex-wrap: wrap;
@@ -86,9 +76,7 @@
       margin: 0 0 1.2rem;
       font-size: 0.95rem;
     }
-    #controls label {
-      font-weight: 600;
-    }
+    #controls label { font-weight: 600; }
     #controls select,
     #controls button {
       font: inherit;
@@ -104,8 +92,6 @@
       background: #f0f6fa;
       border-color: #999;
     }
-
-    /* Board area */
     #board-container {
       position: relative;
       width: 100%;
@@ -113,11 +99,7 @@
       margin: 0 auto;
       aspect-ratio: 1;
     }
-    #board {
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
+    #board { width: 100%; height: 100%; touch-action: none; }
     #loadingSpinner {
       position: absolute;
       top: 50%; left: 50%;
@@ -135,7 +117,6 @@
       0% { transform: translate(-50%, -50%) rotate(0deg); }
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
-
     #fenContainer {
       margin: 1rem auto 0;
       max-width: 430px;
@@ -169,33 +150,25 @@
       font-size: clamp(1rem, 0.85rem + 0.6vw, 1.25rem);
       font-weight: 600;
     }
-
     .highlight-white {
       box-shadow: inset 0 0 3px 3px rgba(255,255,0,0.85) !important;
     }
     .highlight-black {
       box-shadow: inset 0 0 3px 3px rgba(0,0,255,0.85) !important;
     }
-
     footer {
       margin-top: 2.4rem;
       font-size: 0.75rem;
       color: #555;
       text-align: center;
     }
-
     @media (max-width: 520px) {
       #controls {
         flex-direction: column;
         align-items: stretch;
       }
-      #controls > * {
-        width: 100%;
-      }
-      #controls label {
-        width: 100%;
-        text-align: left;
-      }
+      #controls > * { width: 100%; }
+      #controls label { text-align: left; }
       #board-container { max-width: 360px; }
     }
   </style>
@@ -269,7 +242,6 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-
     // Auto mark active nav link
     const here = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.site-bar nav a').forEach(a => {
@@ -304,7 +276,6 @@
       $board.find(`.square-${t}`).addClass(`highlight-${col}`);
     }
 
-    // Play engine (MultiPV = 10)
     const engine = new Worker('engine/stockfish-17-lite-single.js');
     engine.postMessage('uci');
     engine.addEventListener('message', function setupPlay({data}) {
@@ -319,7 +290,6 @@
       }
     });
 
-    // Eval engine
     const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
     evalEngine.postMessage('uci');
     evalEngine.addEventListener('message', function setupEval({data}) {
@@ -372,27 +342,60 @@
       if (currentLevel >= 4 && fullMoves < 5) {
         threshold = baseThreshold / 2;
       }
+      const thresholdForCurrentMove = threshold;
 
       const nodes    = nodesByLevel[currentLevel] || 500000;
       let candidates = [];
+      let currentBestCpSeen = null; // best real cp score encountered (not synthetic mate)
 
       function handleEngineMsg({data}) {
         const line = data.trim();
-        if (line.startsWith('info') && line.includes('multipv') && line.includes('score cp')) {
-          const mpv = +line.match(/multipv\s+(\d+)/)[1];
-          const cp  = +line.match(/score cp\s+(-?\d+)/)[1];
-            // Guard match for pv:
-          const pvMatch = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
-          if (pvMatch) {
-            candidates[mpv - 1] = { move: pvMatch[1], score: cp };
+
+        if (line.startsWith('info') && line.includes('multipv') &&
+            (line.includes('score cp') || line.includes('score mate'))) {
+
+          const mpvMatch = line.match(/multipv\s+(\d+)/);
+          const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+          if (!mpvMatch || !pvMatch) return;
+          const mpv = +mpvMatch[1];
+
+          let score;
+            // Centipawn case
+          if (line.includes('score cp')) {
+            const cpMatch = line.match(/score cp\s+(-?\d+)/);
+            if (!cpMatch) return;
+            score = +cpMatch[1];
+            // update best real cp
+            if (currentBestCpSeen === null || score > currentBestCpSeen) {
+              currentBestCpSeen = score;
+            }
+          } else {
+            // Mate case: assign synthetic cp = bestCp + Rand(100..500)
+            const mateMatch = line.match(/score mate\s+(-?\d+)/);
+            if (!mateMatch) return;
+            // If no cp seen yet, baseline at 0
+            if (currentBestCpSeen === null) currentBestCpSeen = 0;
+            const randBonus = 100 + Math.floor(Math.random() * 401); // 100..500
+            // Sign of mate: positive => side to move is winning, negative => losing.
+            const mateVal = +mateMatch[1];
+            const sign = mateVal > 0 ? 1 : -1;
+            score = currentBestCpSeen + sign * randBonus;
           }
+
+          candidates[mpv - 1] = { move: pvMatch[1], score };
         }
+
         if (line.startsWith('bestmove')) {
           engine.removeEventListener('message', handleEngineMsg);
-          if (!candidates.length) return;
-          const bestScore = candidates[0].score;
-          const pool = candidates.filter(c => c && c.score >= bestScore - threshold);
+          const list = candidates.filter(Boolean);
+          if (!list.length) return;
+
+            // Sort descending by score (larger = better from side to move)
+          list.sort((a,b) => b.score - a.score);
+          const bestScore = list[0].score;
+          const pool = list.filter(c => c.score >= bestScore - thresholdForCurrentMove);
           const choice = pool[Math.floor(Math.random() * pool.length)].move;
+
           const f = choice.slice(0, 2), t = choice.slice(2, 4);
           highlightMove(f, t, 'black');
           game.move({ from: f, to: t, promotion: 'q' });
@@ -437,6 +440,12 @@
         const line = data.trim();
         if (line.startsWith('info') && line.includes('score cp')) {
           lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
+        } else if (line.startsWith('info') && line.includes('score mate')) {
+          // If mate reported in fairness eval, treat mate as large cp for fairness (unlikely in opening),
+          // but keep original logic simple:
+          const mateVal = +line.match(/score mate\s+(-?\d+)/)[1];
+          // Map mate to a big cp so fairness test will reject unless near zero (it won't be).
+          lastCp = (mateVal > 0 ? 5000 : -5000);
         }
         if (line.startsWith('bestmove')) {
           evalEngine.removeEventListener('message', onEval);
