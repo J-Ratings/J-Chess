@@ -55,18 +55,20 @@
     <h2>What Is Jumble Chess?</h2>
     <p>
       Jumble Chess is a chess variant where each side’s back rank is randomly
-      arranged (subject to bishops starting on opposite colours) while the pawns
-      remain in their usual places. It is similar in spirit to Chess960, but
-      uses an independent randomisation for Black as well as White – so the two
+      arranged (bishops start on opposite colours). It is similar in spirit to Chess960, 
+      but castling is not a rule and so the king does not need to be between the rooks. 
+      This variant uses an independent randomisation for Black as well as White – so the two
       back ranks need not mirror each other, producing far more distinct
-      starting positions. There is also no castling involved.
+      starting positions.
     </p>
   </section>
 
   <section>
     <h2>How Many Positions?</h2>
     <p>
-      
+      For one side, there are 2880 possible starting positions. Doing the randomising for both 
+      sides independently gives 2880 x 2880 = 8,294,400. So there are over 8 million possible 
+      starting positions in J-Chess.
     </p>
 
   </section>
@@ -74,30 +76,37 @@
   <section>
     <h2>Fair Positions</h2>
     <p>
+      A sample of 10,000 positions were analysed with Stockfish 17.1 at 1 second per position using
+      Intel i9 hardware. 2,189 positions were not outside the +/- 0.4 threshold, so about 22%.
+      That's 1,815,644 fair positions - nearly 2 million.
+    </p>
+    <p>
       The “Generate Fair Position” button generates a random J-Chess position and
       runs a short Stockfish evaluation. If the eval is outside +/- 0.4 then it repeats
       the process with a new J-Chess position until a fair evaluation is found. Given
-      about 30% of positions are 'fair', the chance of waiting more than 10 positions is 
-      is <3%.
+      about 22% of positions are 'fair', there will be roughly 50% chance you will get a fair 
+      position in 3 iterations and 92% chance you will get a fair position in 10 iterations.
     </p>
 
   </section>
 
   <section>
-    <h2>Why I Made It</h2>
+    <h2>Why I Made This</h2>
     <p>
-      I have a great dislike for deep opening prep. Chess960 is certainly a step
-      in the right direction but I find the castling rules fiddly. I also think that 
+      As much as I enjoy chess, I have a great dislike for deep opening prep. Chess960 is certainly 
+      a step in the right direction but I find the castling rules fiddly. I also think that 
       no castling leads to more interesting positions. In Chess960, it is not impossible
-      to deeply analyse 10-20 positions and hope they come up. Or perhaps analyse 
+      to deeply analyse 10-20 positions and hope they come up. Or perhaps analyse lightly 100 
+      positions. If it's possible, the top players will do it. With J-Chess, there are nearly 2 million
+      fair positions. No point in memorisation.
     </p>
     <p>
-     J-Chess removes all hope for opening prep. As there is no castling, the king does not
-     need to be between the rooks giving more options. However, by removing castling, we do
-     introduce a more restrictive style such as no opposite side castling positions. To 
-     counter this, I have forced the jumbling to occur independently for both sides. Now the
-     kings can sometimes be on opposite sides. There are also now millions of positions completely
-     removing any opportunity to prep.
+      J-Chess also has no castling which I see as an plus. The king does not necessarily get to safety
+      leading to dynamic creative positions. A reason I felt it necessary to not have symetrical
+      positions (apart from vast combinations) is that no castling + symmetry leads to kings always being 
+      opposite each other for most of the game. This can remove the thrill of opposite-side castling positions.
+      With independent shuffling, you might get opposite side kings or you might get a position where both kings
+      are safe. You never know! You work with what you've got, safe in the knowledge that the position is equal.
     </p>
   </section>
 
