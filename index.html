@@ -2,42 +2,126 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>J–Chess + Stockfish (MultiPV + variable nodes + half-threshold)</title>
+  <title>J-Chess – Play</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
-    html, body {
-      height: 100%;
+    :root {
+      --brand-bg: #0d3f66;
+      --brand-fg: #ffffff;
+      --brand-accent: #ffffff;
+      --content-max: 900px;
+    }
+    * { box-sizing: border-box; }
+    body {
       margin: 0;
-      font-family: sans-serif;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       background: #f5f5f5;
+      color: #222;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top site bar */
+    .site-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.25rem;
+      background: var(--brand-bg);
+      color: var(--brand-fg);
+      padding: 0.65rem clamp(1rem, 4vw, 2.2rem);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      position: relative;
+      z-index: 10;
+      flex-wrap: wrap;
+    }
+    .site-bar h1 {
+      margin: 0;
+      font-weight: 700;
+      font-size: clamp(1.1rem, 2.2vw + 0.6rem, 1.55rem);
+      letter-spacing: .5px;
+      line-height: 1.2;
+      flex: 0 0 auto;
+    }
+    .site-bar nav {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .site-bar nav a {
+      text-decoration: none;
+      color: var(--brand-fg);
+      font-weight: 600;
+      font-size: clamp(0.85rem, 1vw + 0.55rem, 0.95rem);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      line-height: 1.1;
+      transition: background .15s, color .15s;
+      outline: none;
+    }
+    .site-bar nav a:hover,
+    .site-bar nav a:focus-visible {
+      background: rgba(255,255,255,0.18);
+    }
+    .site-bar nav a.active {
+      background: #ffffff;
+      color: var(--brand-bg);
+    }
+
+    /* Main container */
+    .container {
+      max-width: var(--content-max);
+      margin: 0 auto;
+      padding: 1.2rem clamp(1rem, 4vw, 2.2rem) 2.5rem;
       text-align: center;
     }
+
+    /* Controls */
     #controls {
-      margin: 15px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem 0.9rem;
+      margin: 0 0 1.2rem;
+      font-size: 0.95rem;
     }
-    #controls > * {
-      margin: 0 8px;
-      padding: 8px 16px;
-      font-size: 1em;
+    #controls label {
+      font-weight: 600;
+    }
+    #controls select,
+    #controls button {
+      font: inherit;
+      padding: 0.5rem 0.9rem;
+      border-radius: 4px;
+      border: 1px solid #bbb;
+      background: #fff;
       cursor: pointer;
+      transition: background .15s, border-color .15s;
     }
-    #board-container,
-    #board {
-      touch-action: none;
+    #controls button:hover,
+    #controls select:hover {
+      background: #f0f6fa;
+      border-color: #999;
     }
+
+    /* Board area */
     #board-container {
       position: relative;
       width: 100%;
-      max-width: 400px;
+      max-width: 430px;
       margin: 0 auto;
       aspect-ratio: 1;
     }
-    #board { width: 100%; height: 100%; }
+    #board {
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
     #loadingSpinner {
       position: absolute;
       top: 50%; left: 50%;
-      width: 50px; height: 50px;
+      width: 56px; height: 56px;
       border: 6px solid #eee;
       border-top: 6px solid #0077cc;
       border-radius: 50%;
@@ -51,83 +135,147 @@
       0% { transform: translate(-50%, -50%) rotate(0deg); }
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
+
     #fenContainer {
-      margin: 12px auto; max-width: 400px; display: none;
+      margin: 1rem auto 0;
+      max-width: 430px;
+      display: none;
     }
     #fenOutput {
-      width: 100%; padding: 8px; font-family: monospace;
+      width: 100%;
+      padding: 0.55rem 0.65rem;
+      font-family: ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+      font-size: 0.9rem;
+      resize: vertical;
     }
     #fairStatus {
-      margin: 12px auto; max-width: 400px;
-      text-align: left; font-family: monospace; white-space: pre-wrap;
+      margin: 1rem auto 0;
+      max-width: 430px;
+      text-align: left;
+      font-family: ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+      white-space: pre-wrap;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 0.6rem 0.7rem;
+      border-radius: 4px;
+      min-height: 2rem;
     }
     #stats {
-      margin-top: 12px; text-align: center;
+      margin-top: 1.2rem;
+      text-align: center;
     }
     #stats h2 {
-      margin: 6px 0; font-size: 1.2em; font-weight: 600;
+      margin: 0.35rem 0;
+      font-size: clamp(1rem, 0.85rem + 0.6vw, 1.25rem);
+      font-weight: 600;
     }
+
     .highlight-white {
-      box-shadow: inset 0 0 3px 3px yellow !important;
+      box-shadow: inset 0 0 3px 3px rgba(255,255,0,0.85) !important;
     }
     .highlight-black {
-      box-shadow: inset 0 0 3px 3px blue !important;
+      box-shadow: inset 0 0 3px 3px rgba(0,0,255,0.85) !important;
+    }
+
+    footer {
+      margin-top: 2.4rem;
+      font-size: 0.75rem;
+      color: #555;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      #controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      #controls > * {
+        width: 100%;
+      }
+      #controls label {
+        width: 100%;
+        text-align: left;
+      }
+      #board-container { max-width: 360px; }
     }
   </style>
 </head>
 <body>
-  <h1>Jumble Chess</h1>
-  <p><a href="info.html">Info &amp; About</a></p>
+  <header class="site-bar">
+    <h1>J-Chess</h1>
+    <nav>
+      <a href="index.html">Play</a>
+      <a href="info.html">Info</a>
+    </nav>
+  </header>
 
-  <div id="controls">
-    <button id="randomiseBtn">Generate Position</button>
-    <button id="fairBtn">Generate Fair Position</button>
-    <label for="timeSelect">Generation Time:</label>
-    <select id="timeSelect">
-      <option value="250">0.25 s</option>
-      <option value="500">0.5 s</option>
-      <option value="1000" selected>1 s</option>
-      <option value="2000">2 s</option>
-      <option value="5000">5 s</option>
-    </select>
-    <label for="levelSelect">Level:</label>
-    <select id="levelSelect">
-      <option value="1">Lv. 1 (500)</option>
-      <option value="2">Lv. 2 (800)</option>
-      <option value="3">Lv. 3 (1200)</option>
-      <option value="4">Lv. 4 (1500)</option>
-      <option value="5" selected>Lv. 5 (1800)</option>
-      <option value="6">Lv. 6 (2000)</option>
-      <option value="7">Lv. 7 (2200)</option>
-      <option value="8">Lv. 8 (2500)</option>
-      <option value="9">Lv. 9 (2800)</option>
-      <option value="10">Lv. 10 (3500)</option>
-    </select>
-    <button id="getFenBtn">Get FEN</button>
-    <button id="newGameBtn">New Game</button>
-  </div>
+  <div class="container">
 
-  <div id="board-container">
-    <div id="board"></div>
-    <div id="loadingSpinner"></div>
-  </div>
+    <div id="controls">
+      <button id="randomiseBtn">Generate Position</button>
+      <button id="fairBtn">Generate Fair Position</button>
 
-  <div id="fenContainer">
-    <textarea id="fenOutput" readonly rows="2"></textarea>
-  </div>
+      <label for="timeSelect">Generation Time:</label>
+      <select id="timeSelect">
+        <option value="250">0.25 s</option>
+        <option value="500">0.5 s</option>
+        <option value="1000" selected>1 s</option>
+        <option value="2000">2 s</option>
+        <option value="5000">5 s</option>
+      </select>
 
-  <div id="fairStatus"></div>
+      <label for="levelSelect">Level:</label>
+      <select id="levelSelect">
+        <option value="1">Lv. 1 (500)</option>
+        <option value="2">Lv. 2 (800)</option>
+        <option value="3">Lv. 3 (1200)</option>
+        <option value="4">Lv. 4 (1500)</option>
+        <option value="5" selected>Lv. 5 (1800)</option>
+        <option value="6">Lv. 6 (2000)</option>
+        <option value="7">Lv. 7 (2200)</option>
+        <option value="8">Lv. 8 (2500)</option>
+        <option value="9">Lv. 9 (2800)</option>
+        <option value="10">Lv. 10 (3500)</option>
+      </select>
 
-  <div id="stats">
-    <h2>8.3 million starting positions</h2>
-    <h2>2.5 million fair starting positions</h2>
+      <button id="getFenBtn">Get FEN</button>
+      <button id="newGameBtn">New Game</button>
+    </div>
+
+    <div id="board-container">
+      <div id="board"></div>
+      <div id="loadingSpinner"></div>
+    </div>
+
+    <div id="fenContainer">
+      <textarea id="fenOutput" readonly rows="2"></textarea>
+    </div>
+
+    <div id="fairStatus"></div>
+
+    <div id="stats">
+      <h2>8.3 million starting positions</h2>
+      <h2>~1.8 million fair starting positions</h2>
+    </div>
+
+    <footer>
+      <p>&copy; 2025 J-Chess</p>
+    </footer>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+
   <script>
   document.addEventListener('DOMContentLoaded', () => {
+
+    // Auto mark active nav link
+    const here = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.site-bar nav a').forEach(a => {
+      if (a.getAttribute('href') === here) a.classList.add('active');
+    });
+
     const nodesByLevel = {
       1: 500000, 2: 500000, 3: 500000, 4: 500000,
       5: 500000, 6: 500000,
@@ -148,8 +296,7 @@
     const $board    = $('#board');
 
     function clearHighlights() {
-      $board.find('.square-55d63')
-            .removeClass('highlight-white highlight-black');
+      $board.find('.square-55d63').removeClass('highlight-white highlight-black');
     }
     function highlightMove(f, t, col) {
       clearHighlights();
@@ -157,30 +304,32 @@
       $board.find(`.square-${t}`).addClass(`highlight-${col}`);
     }
 
-    // Create play-engine (MultiPV=10)
+    // Play engine (MultiPV = 10)
     const engine = new Worker('engine/stockfish-17-lite-single.js');
     engine.postMessage('uci');
     engine.addEventListener('message', function setupPlay({data}) {
-      if (data.trim() === 'uciok') {
+      const line = data.trim();
+      if (line === 'uciok') {
         engine.postMessage('setoption name MultiPV value 10');
         engine.postMessage('ucinewgame');
         engine.postMessage('isready');
       }
-      if (data.trim() === 'readyok') {
+      if (line === 'readyok') {
         engine.removeEventListener('message', setupPlay);
       }
     });
 
-    // Create eval-engine
+    // Eval engine
     const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
     evalEngine.postMessage('uci');
     evalEngine.addEventListener('message', function setupEval({data}) {
-      if (data.trim() === 'uciok') {
+      const line = data.trim();
+      if (line === 'uciok') {
         evalEngine.postMessage('ucinewgame');
         evalEngine.postMessage('setoption name UCI_LimitStrength value false');
         evalEngine.postMessage('isready');
       }
-      if (data.trim() === 'readyok') {
+      if (line === 'readyok') {
         evalEngine.removeEventListener('message', setupEval);
       }
     });
@@ -198,7 +347,6 @@
     });
     $(window).resize(board.resize);
 
-    // capture the current start‐position
     startFen = game.fen();
 
     function onDragStart(src, piece) {
@@ -207,11 +355,9 @@
     function onSnapEnd() {
       board.position(game.fen(), false);
     }
-
     function onDrop(src, tgt) {
       const mv = game.move({ from: src, to: tgt, promotion: 'q' });
       if (!mv) return 'snapback';
-
       handleEngineMove(src, tgt);
     }
 
@@ -230,16 +376,19 @@
       const nodes    = nodesByLevel[currentLevel] || 500000;
       let candidates = [];
 
-      function handleEngine({data}) {
+      function handleEngineMsg({data}) {
         const line = data.trim();
         if (line.startsWith('info') && line.includes('multipv') && line.includes('score cp')) {
           const mpv = +line.match(/multipv\s+(\d+)/)[1];
           const cp  = +line.match(/score cp\s+(-?\d+)/)[1];
-          const uci = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
-          candidates[mpv - 1] = { move: uci, score: cp };
+            // Guard match for pv:
+          const pvMatch = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+          if (pvMatch) {
+            candidates[mpv - 1] = { move: pvMatch[1], score: cp };
+          }
         }
         if (line.startsWith('bestmove')) {
-          engine.removeEventListener('message', handleEngine);
+          engine.removeEventListener('message', handleEngineMsg);
           if (!candidates.length) return;
           const bestScore = candidates[0].score;
           const pool = candidates.filter(c => c && c.score >= bestScore - threshold);
@@ -251,7 +400,7 @@
         }
       }
 
-      engine.addEventListener('message', handleEngine);
+      engine.addEventListener('message', handleEngineMsg);
       engine.postMessage('position fen ' + game.fen());
       engine.postMessage('go nodes ' + nodes);
     }
@@ -279,7 +428,7 @@
       const fen = generateJChessFEN();
       statusDiv.textContent += fen + '\n';
       let lastCp = null;
-      const ms   = +$('#timeSelect').val();
+      const ms = +$('#timeSelect').val();
 
       evalEngine.postMessage('position fen ' + fen);
       evalEngine.postMessage('go movetime ' + ms);
