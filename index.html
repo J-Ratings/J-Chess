@@ -216,13 +216,13 @@
         <button id="fairBtn">Fair J-Chess</button>
         <div class="field">
           <label for="timeSelect">Generation Time:</label>
-          <select id="timeSelect">
-            <option value="250">0.25 s</option>
-            <option value="500">0.5 s</option>
-            <option value="1000" selected>1 s</option>
-            <option value="2000">2 s</option>
-            <option value="5000">5 s</option>
-          </select>
+            <select id="timeSelect">
+              <option value="250">0.25 s</option>
+              <option value="500">0.5 s</option>
+              <option value="1000" selected>1 s</option>
+              <option value="2000">2 s</option>
+              <option value="5000">5 s</option>
+            </select>
         </div>
       </div>
       <!-- Row 2 -->
@@ -310,7 +310,7 @@
     let startFen;
     let isHumanBlack = false;
     let waitingForEngineFirst = false;
-    let standardMode = true;
+    // let standardMode = true; // retained if you need it later
 
     const fenDiv    = document.getElementById('fenContainer');
     const statusDiv = document.getElementById('fairStatus');
@@ -371,7 +371,6 @@
     }
 
     startFen = game.fen();
-    standardMode = true;
     setOrientation();
 
     function onDragStart(src, piece) {
@@ -384,9 +383,7 @@
         return piece[0] === 'b' && turn === 'b';
       }
     }
-    function onSnapEnd() {
-      board.position(game.fen(), false);
-    }
+    function onSnapEnd() { board.position(game.fen(), false); }
     function onDrop(src, tgt) {
       const mv = game.move({ from: src, to: tgt, promotion: 'q' });
       if (!mv) return 'snapback';
@@ -437,8 +434,7 @@
             const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
             const cpMatch  = line.match(/score cp\s+(-?\d+)/);
             if (mpvMatch && pvMatch && cpMatch) {
-              const mpv = +mpvMatch[1];
-              candMap[mpv] = { move: pvMatch[1], cp: +cpMatch[1] };
+              candMap[+mpvMatch[1]] = { move: pvMatch[1], cp: +cpMatch[1] };
               seenAnyScore = true;
             }
           } else if (line.includes('score mate')) {
@@ -446,10 +442,9 @@
             const pvMatch   = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
             const mateMatch = line.match(/score mate\s+(-?\d+)/);
             if (mpvMatch && pvMatch && mateMatch) {
-              const mpv = +mpvMatch[1];
               const mateVal = +mateMatch[1];
               const synthetic = mateVal > 0 ? 100000 - mateVal*100 : -100000 - mateVal*100;
-              candMap[mpv] = { move: pvMatch[1], cp: synthetic };
+              candMap[+mpvMatch[1]] = { move: pvMatch[1], cp: synthetic };
               seenAnyScore = true;
             }
           }
@@ -457,10 +452,10 @@
         if (line.startsWith('bestmove')) {
           engine.removeEventListener('message', handleEngineMsg);
           if (!seenAnyScore) return;
-          const candidates = Object.keys(candMap).map(k => candMap[k]).filter(Boolean);
-          const choice = gaussianSelect(candidates, baseSigma);
-          if (!choice) return;
-          const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
+            const candidates = Object.keys(candMap).map(k => candMap[k]).filter(Boolean);
+            const choice = gaussianSelect(candidates, baseSigma);
+            if (!choice) return;
+            const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
             highlightMove(f, t, 'black');
             game.move({ from: f, to: t, promotion: 'q' });
             board.position(game.fen(), false);
@@ -522,11 +517,11 @@
       engine.postMessage('go nodes ' + nodes);
     }
 
+    // Standard Chess
     $('#standardBtn').click(() => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
       game.reset();
-      standardMode = true;
       startFen = game.fen();
       board.position(startFen, false);
       clearHighlights();
@@ -539,15 +534,15 @@
       }
     });
 
+    // Random J-Chess
     $('#randomiseBtn').click(() => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
       const fen = generateJChessFEN();
       game.load(fen);
-      standardMode = false;
+      startFen = fen;
       board.position(fen, false);
       clearHighlights();
-      startFen = fen;
       if (isHumanBlack) {
         waitingForEngineFirst = true;
         setOrientation();
@@ -557,19 +552,19 @@
       }
     });
 
+    // Fair J-Chess search
     $('#fairBtn').click(() => {
       if (searchingFair) return;
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
       searchingFair = true;
-      standardMode = false;
       $('#loadingSpinner').show();
       tryNextFair();
     });
 
     function tryNextFair() {
       const fen = generateJChessFEN();
-      statusDiv.textContent += fen + '\\n';
+      statusDiv.textContent += fen + '\n';
       let lastCp = null;
       const ms = +$('#timeSelect').val();
 
@@ -578,21 +573,22 @@
 
       function onEval({data}) {
         const line = data.trim();
-if (line.startsWith('info') && line.includes('score cp')) {
-  const m = line.match(/score cp\s+(-?\d+)/);
-  if (m) lastCp = +m[1];
-} else if (line.startsWith('info') && line.includes('score mate')) {
-  const mm = line.match(/score mate\s+(-?\d+)/);
-  if (mm) {
-    const mateVal = +mm[1];
-    lastCp = (mateVal > 0 ? 5000 : -5000);
-  }
+        if (line.startsWith('info') && line.includes('score cp')) {
+          const m = line.match(/score cp\s+(-?\d+)/);
+            if (m) lastCp = +m[1];
+        } else if (line.startsWith('info') && line.includes('score mate')) {
+          const mm = line.match(/score mate\s+(-?\d+)/);
+          if (mm) {
+            const mateVal = +mm[1];
+            lastCp = (mateVal > 0 ? 5000 : -5000);
+          }
         }
         if (line.startsWith('bestmove')) {
           evalEngine.removeEventListener('message', onEval);
-          const score = ((lastCp || 0) / 100).toFixed(2);
-          const fair  = Math.abs((lastCp || 0) / 100) <= 0.4;
-          statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\\n\\n`;
+          const rawCp = (lastCp === null ? 0 : lastCp);
+          const score = (rawCp / 100).toFixed(2);
+          const fair  = Math.abs(rawCp) <= 40; // 40 centipawns = 0.40
+          statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
           if (fair) {
             game.load(fen);
             board.position(fen, false);
