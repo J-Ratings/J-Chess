@@ -32,119 +32,166 @@
       position: relative;
       z-index: 10;
     }
-    .site-bar h1 { margin:0; font-weight:700; font-size:clamp(1.1rem,2.2vw + 0.6rem,1.55rem); letter-spacing:.5px; line-height:1.2; }
-    .site-bar h1 a { color:var(--brand-fg); text-decoration:none; }
+    .site-bar h1 {
+      margin: 0;
+      font-weight: 700;
+      font-size: clamp(1.1rem, 2.2vw + 0.6rem, 1.55rem);
+      letter-spacing: .5px;
+      line-height: 1.2;
+    }
+    .site-bar h1 a {
+      color: var(--brand-fg);
+      text-decoration: none;
+    }
     .site-bar h1 a:hover,
-    .site-bar h1 a:focus-visible { text-decoration:underline; }
-    .site-bar nav { display:flex; gap:0.6rem; flex-wrap:wrap; }
+    .site-bar h1 a:focus-visible { text-decoration: underline; }
+    .site-bar nav {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
     .site-bar nav a {
-      text-decoration:none; color:var(--brand-fg); font-weight:600;
-      font-size:clamp(0.85rem,1vw + 0.55rem,0.95rem);
-      padding:0.45rem 0.85rem; border-radius:4px; line-height:1.1;
-      transition:background .15s,color .15s; outline:none;
+      text-decoration: none;
+      color: var(--brand-fg);
+      font-weight: 600;
+      font-size: clamp(0.85rem, 1vw + 0.55rem, 0.95rem);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      line-height: 1.1;
+      transition: background .15s, color .15s;
+      outline: none;
     }
     .site-bar nav a:hover,
-    .site-bar nav a:focus-visible { background:rgba(255,255,255,0.18); }
-    .site-bar nav a.active { background:#fff; color:var(--brand-bg); }
-
-    .container { max-width:var(--content-max); margin:0 auto; padding:1.2rem clamp(1rem,4vw,2.2rem) 2.5rem; text-align:center; }
-
-    #controlRows { display:flex; flex-direction:column; gap:0.65rem; margin-bottom:1.1rem; }
-    .control-row { display:flex; flex-wrap:wrap; justify-content:center; gap:0.65rem 0.9rem; }
-    button, select {
-      font:inherit; padding:0.5rem 0.9rem; border-radius:4px;
-      border:1px solid #bbb; background:#fff; cursor:pointer;
-      transition:background .15s,border-color .15s;
+    .site-bar nav a:focus-visible { background: rgba(255,255,255,0.18); }
+    .site-bar nav a.active {
+      background: #ffffff;
+      color: var(--brand-bg);
     }
-    button:hover, select:hover { background:#f0f6fa; border-color:#999; }
-    .field { display:flex; align-items:center; gap:0.4rem; flex-wrap:nowrap; }
-    .field label { font-weight:600; font-size:0.95rem; white-space:nowrap; }
+    .container {
+      max-width: var(--content-max);
+      margin: 0 auto;
+      padding: 1.2rem clamp(1rem, 4vw, 2.2rem) 2.5rem;
+      text-align: center;
+    }
 
-    #board-container { position:relative; width:100%; max-width:520px; margin:0 auto; aspect-ratio:1; }
-    @media (max-width:620px){ #board-container{ max-width:min(96vw,520px);} }
-    #board { width:100%; height:100%; touch-action:none; }
+    /* Control rows */
+    #controlRows {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 1.1rem;
+    }
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.65rem 0.9rem;
+    }
+    button, select {
+      font: inherit;
+      padding: 0.5rem 0.9rem;
+      border-radius: 4px;
+      border: 1px solid #bbb;
+      background: #fff;
+      cursor: pointer;
+      transition: background .15s, border-colour .15s;
+    }
+    button:hover, select:hover {
+      background: #f0f6fa;
+      border-colour: #999;
+    }
+    .field {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: nowrap;
+    }
+    .field label {
+      font-weight: 600;
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
 
-    #getFenBtn { margin-top:0.85rem; }
+    #board-container {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      aspect-ratio: 1;
+    }
+    @media (max-width: 620px) {
+      #board-container { max-width: min(96vw, 520px); }
+    }
+    #board { width: 100%; height: 100%; touch-action: none; }
+
+    #getFenBtn { margin-top: 0.85rem; }
 
     #loadingSpinner {
-      position:absolute; top:50%; left:50%; width:56px; height:56px;
-      border:6px solid #eee; border-top:6px solid #0077cc; border-radius:50%;
-      animation:spin 0.8s linear infinite; transform:translate(-50%,-50%);
-      display:none; z-index:10; pointer-events:none;
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 56px; height: 56px;
+      border: 6px solid #eee;
+      border-top: 6px solid #0077cc;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      transform: translate(-50%, -50%);
+      display: none;
+      z-index: 10;
+      pointer-events: none;
     }
-    @keyframes spin { 0%{transform:translate(-50%,-50%) rotate(0deg);} 100%{transform:translate(-50%,-50%) rotate(360deg);} }
-
-    #fenContainer { margin:0.6rem auto 0; max-width:520px; display:none; }
+    @keyframes spin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    #fenContainer {
+      margin: 0.6rem auto 0;
+      max-width: 520px;
+      display: none;
+    }
     #fenOutput {
-      width:100%; padding:0.55rem 0.65rem;
-      font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
-      font-size:0.9rem; resize:vertical;
+      width: 100%;
+      padding: 0.55rem 0.65rem;
+      font-family: ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+      font-size: 0.9rem;
+      resize: vertical;
     }
     #fairStatus {
-      margin:1rem auto 0; max-width:520px; text-align:left;
-      font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
-      white-space:pre-wrap; background:#fff; border:1px solid #ddd;
-      padding:0.6rem 0.7rem; border-radius:4px; min-height:2rem;
+      margin: 1rem auto 0;
+      max-width: 520px;
+      text-align: left;
+      font-family: ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+      white-space: pre-wrap;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 0.6rem 0.7rem;
+      border-radius: 4px;
+      min-height: 2rem;
     }
-    #stats { margin-top:1.2rem; text-align:center; }
-    #stats h2 { margin:0.35rem 0; font-size:clamp(1rem,0.85rem + 0.6vw,1.25rem); font-weight:600; }
-
-    .highlight-white { box-shadow:inset 0 0 3px 3px rgba(255,255,0,0.85)!important; }
-    .highlight-black { box-shadow:inset 0 0 3px 3px rgba(0,0,255,0.85)!important; }
-
-    footer { margin-top:2.4rem; font-size:0.75rem; color:#555; text-align:center; }
-
-    @media (max-width:520px){
-      .field { width:100%; justify-content:center; }
-      select { min-width:140px; }
+    #stats {
+      margin-top: 1.2rem;
+      text-align: center;
     }
-
-    /* === Celebration overlay === */
-    #celebrationBanner {
-      position:fixed;
-      top:1rem;
-      left:50%;
-      transform:translateX(-50%);
-      background:#ffffff;
-      color:#222;
-      padding:0.65rem 1.1rem;
-      border:1px solid #ccc;
-      border-radius:6px;
-      box-shadow:0 4px 12px rgba(0,0,0,0.18);
-      font-size:0.95rem;
-      font-weight:600;
-      z-index:1000;
-      display:none;
-      max-width:90%;
-      text-align:center;
+    #stats h2 {
+      margin: 0.35rem 0;
+      font-size: clamp(1rem, 0.85rem + 0.6vw, 1.25rem);
+      font-weight: 600;
     }
-    #celebrationBanner.fade-out {
-      animation:bannerFade 0.6s forwards;
+    .highlight-white {
+      box-shadow: inset 0 0 3px 3px rgba(255,255,0,0.85) !important;
     }
-    @keyframes bannerFade { to { opacity:0; transform:translate(-50%, -8px); } }
-
-    #celebrationBanner button {
-      margin-left:0.75rem;
-      font:inherit;
-      font-size:0.8rem;
-      padding:0.35rem 0.7rem;
-      border:1px solid #888;
-      border-radius:4px;
-      background:#f7f7f7;
-      cursor:pointer;
+    .highlight-black {
+      box-shadow: inset 0 0 3px 3px rgba(0,0,255,0.85) !important;
     }
-    #celebrationBanner button:hover {
-      background:#ececec;
+    footer {
+      margin-top: 2.4rem;
+      font-size: 0.75rem;
+      colour: #555;
+      text-align: center;
     }
 
-    #confettiCanvas {
-      position:fixed;
-      inset:0;
-      width:100%;
-      height:100%;
-      pointer-events:none;
-      z-index:999;
-      display:none;
+    @media (max-width: 520px) {
+      .field { width: 100%; justify-content: center; }
+      select { min-width: 140px; }
     }
   </style>
 </head>
@@ -156,9 +203,6 @@
       <a href="/info/">Info</a>
     </nav>
   </header>
-
-  <div id="celebrationBanner"></div>
-  <canvas id="confettiCanvas"></canvas>
 
   <div class="container">
     <div id="controlRows">
@@ -231,6 +275,7 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
+    // Active nav highlight (supports trailing slashes)
     const currentPath = location.pathname.replace(/\/+$/, '') || '/';
     document.querySelectorAll('.site-bar nav a').forEach(a => {
       const hrefPath = a.getAttribute('href').replace(/\/+$/, '') || '/';
@@ -245,7 +290,6 @@
       13: 2000000, 14: 2000000, 15: 2000000
     };
 
-    // (Updated sigma table as supplied)
     const sigmaByLevel = {
       1:627, 2:313, 3:188, 4:141, 5:120, 6:90,
       7:70, 8:50, 9:40, 10:30, 11:24, 12:18,
@@ -264,15 +308,17 @@
         const lvl = +opt.value;
         const base = baseRatings[lvl];
         const shown = isJChessMode ? base + 200 : base;
-        opt.textContent = `Lv. ${lvl} (${shown})`;
+        opt.textContent = Lv. ${lvl} (${shown});
       });
     }
 
-    function effectiveSigma(baseSigma) {
-      const plies = game.history().length;
-      if (!isJChessMode && plies < 10) return baseSigma / 10;
-      return baseSigma;
-    }
+function effectiveSigma(baseSigma) {
+  const plies = game.history().length;
+  if (!isJChessMode && plies < 10) {
+    return baseSigma / 10; // Stronger opening for Standard Chess only
+  }
+  return baseSigma;
+}
 
     let currentLevel = 5;
     let searchingFair = false;
@@ -289,8 +335,8 @@
     }
     function highlightMove(f, t, col) {
       clearHighlights();
-      $board.find(`.square-${f}`).addClass(`highlight-${col}`);
-      $board.find(`.square-${t}`).addClass(`highlight-${col}`);
+      $board.find(.square-${f}).addClass(highlight-${col});
+      $board.find(.square-${t}).addClass(highlight-${col});
     }
 
     const engine = new Worker('engine/stockfish-17-lite-single.js');
@@ -302,7 +348,9 @@
         engine.postMessage('ucinewgame');
         engine.postMessage('isready');
       }
-      if (line === 'readyok') engine.removeEventListener('message', setupPlay);
+      if (line === 'readyok') {
+        engine.removeEventListener('message', setupPlay);
+      }
     });
 
     const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
@@ -314,7 +362,9 @@
         evalEngine.postMessage('setoption name UCI_LimitStrength value false');
         evalEngine.postMessage('isready');
       }
-      if (line === 'readyok') evalEngine.removeEventListener('message', setupEval);
+      if (line === 'readyok') {
+        evalEngine.removeEventListener('message', setupEval);
+      }
     });
 
     $('#levelSelect').on('change', function() {
@@ -364,18 +414,20 @@
       candidates.sort((a,b)=>b.cp - a.cp);
       const best = candidates[0].cp;
       const sig = effectiveSigma(baseSigma);
-      let weights = [], sum = 0;
+      let weights = [];
+      let sum = 0;
       for (const c of candidates) {
         const delta = best - c.cp;
         const w = Math.exp(-(delta*delta)/(2*sig*sig));
-        weights.push(w); sum += w;
+        weights.push(w);
+        sum += w;
       }
-      let r = Math.random()*sum;
-      for (let i=0;i<candidates.length;i++){
+      let r = Math.random() * sum;
+      for (let i = 0; i < candidates.length; i++) {
         r -= weights[i];
         if (r <= 0) return candidates[i];
       }
-      return candidates[candidates.length-1];
+      return candidates[candidates.length - 1];
     }
 
     function handleEngineMove(src, tgt) {
@@ -418,10 +470,10 @@
           const candidates = Object.keys(candMap).map(k => candMap[k]).filter(Boolean);
           const choice = gaussianSelect(candidates, baseSigma);
           if (!choice) return;
-            const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
-            highlightMove(f, t, 'black');
-            game.move({ from:f, to:t, promotion:'q' });
-            board.position(game.fen(), false);
+          const f = choice.move.slice(0, 2), t = choice.move.slice(2, 4);
+          highlightMove(f, t, 'black');
+          game.move({ from: f, to: t, promotion: 'q' });
+          board.position(game.fen(), false);
         }
       }
 
@@ -445,7 +497,7 @@
             const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
             const cpMatch  = line.match(/score cp\s+(-?\d+)/);
             if (mpvMatch && pvMatch && cpMatch) {
-              candMap[+mpvMatch[1]] = { move: pvMatch[1], cp:+cpMatch[1] };
+              candMap[+mpvMatch[1]] = { move: pvMatch[1], cp: +cpMatch[1] };
               seenAny = true;
             }
           } else if (line.includes('score mate')) {
@@ -466,141 +518,23 @@
           const candidates = Object.keys(candMap).map(k => candMap[k]);
           const choice = gaussianSelect(candidates, baseSigma);
           if (choice) {
-            const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
+            const f = choice.move.slice(0, 2), t = choice.move.slice(2, 4);
             const side = game.turn();
-            game.move({ from:f, to:t, promotion:'q' });
+            game.move({ from: f, to: t, promotion: 'q' });
             highlightMove(f, t, side === 'w' ? 'black' : 'white');
             board.position(game.fen(), false);
           }
           if (waitingForEngineFirst) waitingForEngineFirst = false;
         }
       }
+
       engine.addEventListener('message', listener);
       engine.postMessage('position fen ' + game.fen());
       engine.postMessage('go nodes ' + nodes);
     }
 
-    // === Celebration utilities ===
-    const celebrationBanner = document.getElementById('celebrationBanner');
-    const confettiCanvas = document.getElementById('confettiCanvas');
-    const ctx = confettiCanvas.getContext('2d');
-    let confettiPieces = [];
-    let confettiActive = false;
-    let continuous = false;
-    let stopTimeout = null;
-    function resizeCanvas() {
-      confettiCanvas.width = window.innerWidth;
-      confettiCanvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    function launchConfetti(durationMs, keep) {
-      continuous = !!keep;
-      confettiActive = true;
-      confettiCanvas.style.display = 'block';
-      confettiPieces = [];
-      const colours = ['#ffcc00','#ff6666','#66ccff','#66dd88','#cc99ff','#ff99cc'];
-      const count = 180;
-      for (let i=0;i<count;i++) {
-        confettiPieces.push({
-          x: Math.random()*confettiCanvas.width,
-            y: Math.random()*confettiCanvas.height - confettiCanvas.height,
-          r: 5 + Math.random()*6,
-          c: colours[Math.floor(Math.random()*colours.length)],
-          vx: -2 + Math.random()*4,
-          vy: 2 + Math.random()*3,
-          ay: 0.03 + Math.random()*0.05,
-          spin: Math.random()*Math.PI*2,
-          spinV: -0.25 + Math.random()*0.5
-        });
-      }
-      if (!keep && durationMs > 0) {
-        stopTimeout = setTimeout(() => endConfetti(), durationMs);
-      }
-      requestAnimationFrame(drawConfetti);
-    }
-    function drawConfetti() {
-      if (!confettiActive) return;
-      ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
-      confettiPieces.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += p.ay;
-        p.spin += p.spinV;
-        if (p.y > confettiCanvas.height + 20) {
-          if (continuous) {
-            p.y = -20;
-            p.x = Math.random()*confettiCanvas.width;
-            p.vy = 2 + Math.random()*3;
-          }
-        }
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.spin);
-        ctx.fillStyle = p.c;
-        ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r);
-        ctx.restore();
-      });
-      requestAnimationFrame(drawConfetti);
-    }
-    function endConfetti() {
-      confettiActive = false;
-      continuous = false;
-      confettiCanvas.style.display = 'none';
-      if (stopTimeout) clearTimeout(stopTimeout);
-    }
-    function showBanner(text, persistent) {
-      celebrationBanner.innerHTML = persistent
-        ? `${text} <button id="continueBtn">Continue</button>`
-        : text;
-      celebrationBanner.style.display = 'block';
-      celebrationBanner.classList.remove('fade-out');
-      if (!persistent) {
-        // auto fade after 5s
-        setTimeout(() => {
-          celebrationBanner.classList.add('fade-out');
-          setTimeout(()=> celebrationBanner.style.display='none', 650);
-        }, 5000);
-      } else {
-        celebrationBanner.querySelector('#continueBtn').addEventListener('click', () => {
-          celebrationBanner.style.display = 'none';
-          endConfetti();
-        });
-      }
-    }
-
-    function checkSpecialPosition(fen) {
-      // Extract ranks
-      const ranks = fen.split(' ')[0].split('/');
-      if (ranks.length !== 8) return;
-      const blackRank = ranks[0];
-      const whiteRank = ranks[7];
-      // Expand FEN rank (digits to empty squares) but we only care about piece sequence ignoring empties
-      function expand(rank) {
-        return rank.replace(/[1-8]/g, d => '.'.repeat(+d));
-      }
-      const b = expand(blackRank);
-      const w = expand(whiteRank).toLowerCase();
-      // symmetrical? (ignoring colour)
-      const symmetrical = b === w;
-      // standard pattern?
-      const std = (whiteRank === 'RNBQKBNR' && blackRank === 'rnbqkbnr');
-
-      if (std) {
-        showBanner('Main Position! (1 in 8,294,400)', true);
-        launchConfetti(0, true); // continuous until user clicks Continue
-        return;
-      }
-      if (symmetrical) {
-        showBanner('Symmetrical! (1 in 2,880)');
-        launchConfetti(5000, false);
-      }
-    }
-    // === End celebration utilities ===
-
     // Standard Chess
-    document.getElementById('standardBtn').addEventListener('click', () => {
+    $('#standardBtn').click(() => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
       isJChessMode = false;
@@ -613,45 +547,48 @@
         waitingForEngineFirst = true;
         setOrientation();
         engineReplyFromCurrent();
-      } else setOrientation();
+      } else {
+        setOrientation();
+      }
     });
 
     // Random J-Chess
-    document.getElementById('randomiseBtn').addEventListener('click', () => {
+    $('#randomiseBtn').click(() => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
       isJChessMode = true;
       refreshLevelLabels();
-      game.load(generateJChessFEN());
-      const fen = game.fen();
+      const fen = generateJChessFEN();
+      game.load(fen);
       startFen = fen;
       board.position(fen, false);
       clearHighlights();
-      checkSpecialPosition(fen);
       if (isHumanBlack) {
         waitingForEngineFirst = true;
         setOrientation();
         engineReplyFromCurrent();
-      } else setOrientation();
+      } else {
+        setOrientation();
+      }
     });
 
     // Fair J-Chess search
-    document.getElementById('fairBtn').addEventListener('click', () => {
+    $('#fairBtn').click(() => {
       if (searchingFair) return;
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
       isJChessMode = true;
       refreshLevelLabels();
       searchingFair = true;
-      document.getElementById('loadingSpinner').style.display = 'block';
+      $('#loadingSpinner').show();
       tryNextFair();
     });
 
     function tryNextFair() {
       const fen = generateJChessFEN();
-      statusDiv.textContent += fen + '\\n';
+      statusDiv.textContent += fen + '\n';
       let lastCp = null;
-      const ms = +document.getElementById('timeSelect').value;
+      const ms = +$('#timeSelect').val();
 
       evalEngine.postMessage('position fen ' + fen);
       evalEngine.postMessage('go movetime ' + ms);
@@ -659,37 +596,38 @@
       function onEval({data}) {
         const line = data.trim();
         if (line.startsWith('info') && line.includes('score cp')) {
-          const m = line.match(/score cp\\s+(-?\\d+)/);
+          const m = line.match(/score cp\s+(-?\d+)/);
           if (m) lastCp = +m[1];
         } else if (line.startsWith('info') && line.includes('score mate')) {
-          const mm = line.match(/score mate\\s+(-?\\d+)/);
-          if (mm) {
-            const mateVal = +mm[1];
-            lastCp = (mateVal > 0 ? 5000 : -5000);
-          }
+          const mm = line.match(/score mate\s+(-?\d+)/);
+            if (mm) {
+              const mateVal = +mm[1];
+              lastCp = (mateVal > 0 ? 5000 : -5000);
+            }
         }
         if (line.startsWith('bestmove')) {
           evalEngine.removeEventListener('message', onEval);
           const rawCp = (lastCp === null ? 0 : lastCp);
           const score = (rawCp / 100).toFixed(2);
-            const fair  = Math.abs(rawCp) <= 40;
-            statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\\n\\n`;
-            if (fair) {
-              game.load(fen);
-              board.position(fen, false);
-              clearHighlights();
-              startFen = fen;
-              searchingFair = false;
-              document.getElementById('loadingSpinner').style.display = 'none';
-              // (Optional) you could call checkSpecialPosition here, but fair search intentionally filters; unlikely to match standard anyway.
-              if (isHumanBlack) {
-                waitingForEngineFirst = true;
-                setOrientation();
-                engineReplyFromCurrent();
-              } else setOrientation();
+          const fair  = Math.abs(rawCp) <= 40;
+          statusDiv.textContent += ${score} => ${fair ? 'Fair' : 'Unfair'}\n\n;
+          if (fair) {
+            game.load(fen);
+            board.position(fen, false);
+            clearHighlights();
+            startFen = fen;
+            searchingFair = false;
+            $('#loadingSpinner').hide();
+            if (isHumanBlack) {
+              waitingForEngineFirst = true;
+              setOrientation();
+              engineReplyFromCurrent();
             } else {
-              setTimeout(tryNextFair, 30);
+              setOrientation();
             }
+          } else {
+            setTimeout(tryNextFair, 30);
+          }
         }
       }
       evalEngine.addEventListener('message', onEval);
@@ -714,7 +652,7 @@
     function generateJChessFEN() {
       const W = generateBackRank().toUpperCase();
       const B = generateBackRank().toLowerCase();
-      return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+      return ${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1;
     }
 
     document.getElementById('getFenBtn').addEventListener('click', () => {
