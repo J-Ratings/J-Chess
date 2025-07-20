@@ -312,10 +312,13 @@
       });
     }
 
-    function effectiveSigma(baseSigma) {
-      const plies = game.history().length;
-      return plies < 10 ? baseSigma / 10 : baseSigma;
-    }
+function effectiveSigma(baseSigma) {
+  const plies = game.history().length;
+  if (!isJChessMode && plies < 10) {
+    return baseSigma / 10; // Stronger opening for Standard Chess only
+  }
+  return baseSigma;
+}
 
     let currentLevel = 5;
     let searchingFair = false;
