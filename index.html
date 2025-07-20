@@ -610,7 +610,7 @@ $board.find(`.square-${t}`).addClass(`highlight-${col}`);
           const rawCp = (lastCp === null ? 0 : lastCp);
           const score = (rawCp / 100).toFixed(2);
           const fair  = Math.abs(rawCp) <= 40;
-          statusDiv.textContent += ${score} => ${fair ? 'Fair' : 'Unfair'}\n\n;
+          statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
           if (fair) {
             game.load(fen);
             board.position(fen, false);
