@@ -308,7 +308,7 @@
         const lvl = +opt.value;
         const base = baseRatings[lvl];
         const shown = isJChessMode ? base + 200 : base;
-        opt.textContent = Lv. ${lvl} (${shown});
+        opt.textContent = `Lv. ${lvl} (${shown})`;
       });
     }
 
@@ -335,8 +335,8 @@ function effectiveSigma(baseSigma) {
     }
     function highlightMove(f, t, col) {
       clearHighlights();
-      $board.find(.square-${f}).addClass(highlight-${col});
-      $board.find(.square-${t}).addClass(highlight-${col});
+$board.find(`.square-${f}`).addClass(`highlight-${col}`);
+$board.find(`.square-${t}`).addClass(`highlight-${col}`);
     }
 
     const engine = new Worker('engine/stockfish-17-lite-single.js');
@@ -652,7 +652,7 @@ function effectiveSigma(baseSigma) {
     function generateJChessFEN() {
       const W = generateBackRank().toUpperCase();
       const B = generateBackRank().toLowerCase();
-      return ${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1;
+      return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
     }
 
     document.getElementById('getFenBtn').addEventListener('click', () => {
