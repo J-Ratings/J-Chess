@@ -578,11 +578,15 @@
 
       function onEval({data}) {
         const line = data.trim();
-        if (line.startsWith('info') && line.includes('score cp')) {
-          lastCp = +line.match(/score cp\\s+(-?\\d+)/)[1];
-        } else if (line.startsWith('info') && line.includes('score mate')) {
-          const mateVal = +line.match(/score mate\\s+(-?\\d+)/)[1];
-          lastCp = (mateVal > 0 ? 5000 : -5000);
+if (line.startsWith('info') && line.includes('score cp')) {
+  const m = line.match(/score cp\s+(-?\d+)/);
+  if (m) lastCp = +m[1];
+} else if (line.startsWith('info') && line.includes('score mate')) {
+  const mm = line.match(/score mate\s+(-?\d+)/);
+  if (mm) {
+    const mateVal = +mm[1];
+    lastCp = (mateVal > 0 ? 5000 : -5000);
+  }
         }
         if (line.startsWith('bestmove')) {
           evalEngine.removeEventListener('message', onEval);
