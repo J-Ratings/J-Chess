@@ -264,7 +264,7 @@
         const lvl = +opt.value;
         const base = baseRatings[lvl];
         const shown = isJChessMode ? base + 200 : base;
-        opt.textContent = Lv. ${lvl} (${shown});
+        opt.textContent = `Lv. ${lvl} (${shown})`;
       });
     }
 
@@ -289,8 +289,8 @@
     }
     function highlightMove(f, t, col) {
       clearHighlights();
-      $board.find(.square-${f}).addClass(highlight-${col});
-      $board.find(.square-${t}).addClass(highlight-${col});
+      $board.find(`.square-${f}`).addClass(`highlight-${col}`);
+      $board.find(`.square-${t}`).addClass(`highlight-${col}`);
     }
 
     const engine = new Worker('engine/stockfish-17-lite-single.js');
@@ -552,7 +552,7 @@
     }
     function showBanner(text, persistent) {
       celebrationBanner.innerHTML = persistent
-        ? ${text} <button id="continueBtn">Continue</button>
+        ? `${text} <button id="continueBtn">Continue</button>`
         : text;
       celebrationBanner.style.display = 'block';
       celebrationBanner.classList.remove('fade-out');
@@ -673,7 +673,7 @@
           const rawCp = (lastCp === null ? 0 : lastCp);
           const score = (rawCp / 100).toFixed(2);
             const fair  = Math.abs(rawCp) <= 40;
-            statusDiv.textContent += ${score} => ${fair ? 'Fair' : 'Unfair'}\\n\\n;
+            statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\\n\\n`;
             if (fair) {
               game.load(fen);
               board.position(fen, false);
@@ -714,7 +714,7 @@
     function generateJChessFEN() {
       const W = generateBackRank().toUpperCase();
       const B = generateBackRank().toLowerCase();
-      return ${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1;
+      return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
     }
 
     document.getElementById('getFenBtn').addEventListener('click', () => {
