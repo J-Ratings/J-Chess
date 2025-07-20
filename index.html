@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>J-Chess – Play</title>
+  <title>Jumble Chess – Play</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
@@ -197,7 +197,7 @@
 </head>
 <body>
   <header class="site-bar">
-    <h1><a href="/">J-Chess</a></h1>
+    <h1><a href="/">Jumble Chess</a></h1>
     <nav>
       <a href="/">Play</a>
       <a href="/info/">Info</a>
@@ -208,8 +208,8 @@
     <div id="controlRows">
       <div class="control-row" id="row1">
         <button id="standardBtn">Standard Chess</button>
-        <button id="randomiseBtn">J-Chess</button>
-        <button id="fairBtn">Fair J-Chess</button>
+        <button id="randomiseBtn">Jumble Chess</button>
+        <button id="fairBtn">Fair Jumble Chess</button>
         <div class="field">
           <label for="timeSelect">Generation Time:</label>
           <select id="timeSelect">
@@ -265,7 +265,7 @@
     </div>
 
     <footer>
-      <p>&copy; 2025 J-Chess</p>
+      <p>&copy; 2025 Jumble Chess</p>
     </footer>
   </div>
 
@@ -549,7 +549,7 @@
       }
     });
 
-    // Random J-Chess
+    // Random Jumble Chess
     $('#randomiseBtn').click(() => {
       fenDiv.style.display  = 'none';
       statusDiv.textContent = '';
@@ -569,7 +569,7 @@
       }
     });
 
-    // Fair J-Chess search
+    // Fair Jumble Chess search
     $('#fairBtn').click(() => {
       if (searchingFair) return;
       fenDiv.style.display  = 'none';
