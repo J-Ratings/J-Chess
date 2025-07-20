@@ -84,7 +84,7 @@
     .control-row {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
+      justify-content: centre;
       gap: 0.65rem 0.9rem;
     }
     button, select {
@@ -102,7 +102,7 @@
     }
     .field {
       display: flex;
-      align-items: center;
+      align-items: centre;
       gap: 0.4rem;
       flex-wrap: nowrap;
     }
@@ -169,7 +169,7 @@
     }
     #stats {
       margin-top: 1.2rem;
-      text-align: center;
+      text-align: centre;
     }
     #stats h2 {
       margin: 0.35rem 0;
@@ -186,11 +186,11 @@
       margin-top: 2.4rem;
       font-size: 0.75rem;
       colour: #555;
-      text-align: center;
+      text-align: centre;
     }
 
     @media (max-width: 520px) {
-      .field { width: 100%; justify-content: center; }
+      .field { width: 100%; justify-content: centre; }
       select { min-width: 140px; }
     }
   </style>
@@ -291,13 +291,13 @@
     };
 
     const sigmaByLevel = {
-      1:700, 2:350, 3:200, 4:150, 5:130, 6:100,
-      7:80, 8:60, 9:50, 10:40, 11:30, 12:20,
-      13:15, 14:7, 15:0
+      1:627, 2:313, 3:188, 4:141, 5:94, 6:63,
+      7:47, 8:38, 9:30, 10:23, 11:19, 12:13,
+      13:9, 14:6, 15:0
     };
 
     const baseRatings = {
-      1:500,2:800,3:1000,4:1200,5:1400,6:1600,7:1800,8:2000,
+      1:600,2:800,3:1000,4:1200,5:1400,6:1600,7:1800,8:2000,
       9:2200,10:2400,11:2600,12:2800,13:3000,14:3300,15:3600
     };
     let isJChessMode = false;
@@ -312,13 +312,10 @@
       });
     }
 
-function effectiveSigma(baseSigma) {
-  const plies = game.history().length;
-  if (!isJChessMode && plies < 10) {
-    return baseSigma / 10; // Stronger opening for Standard Chess only
-  }
-  return baseSigma;
-}
+    function effectiveSigma(baseSigma) {
+      const plies = game.history().length;
+      return plies < 10 ? baseSigma / 10 : baseSigma;
+    }
 
     let currentLevel = 5;
     let searchingFair = false;
@@ -335,8 +332,8 @@ function effectiveSigma(baseSigma) {
     }
     function highlightMove(f, t, col) {
       clearHighlights();
-$board.find(`.square-${f}`).addClass(`highlight-${col}`);
-$board.find(`.square-${t}`).addClass(`highlight-${col}`);
+      $board.find(`.square-${f}`).addClass(`highlight-${col}`);
+      $board.find(`.square-${t}`).addClass(`highlight-${col}`);
     }
 
     const engine = new Worker('engine/stockfish-17-lite-single.js');
