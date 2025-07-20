@@ -587,17 +587,15 @@
       // standard pattern?
       const std = (whiteRank === 'RNBQKBNR' && blackRank === 'rnbqkbnr');
 
-if (std) {
-  // Indefinite confetti until user clicks Continue (unchanged)
-  showBanner('Main Position! (1 in 8,294,400)', true);
-  launchConfetti(0, true); // keep = true -> continuous
-  return;
-}
-if (symmetrical) {
-  // Extended to 15s (≈3× previous 5s)
-  showBanner('Symmetrical! (1 in 2,880)');
-  launchConfetti(20000, false); // 15,000 ms
-}
+      if (std) {
+        showBanner('Main Position! (1 in 8,294,400)', true);
+        launchConfetti(0, true); // continuous until user clicks Continue
+        return;
+      }
+      if (symmetrical) {
+        showBanner('Symmetrical! (1 in 2,880)');
+        launchConfetti(5000, false);
+      }
     }
     // === End celebration utilities ===
 
@@ -753,5 +751,3 @@ if (symmetrical) {
   </script>
 </body>
 </html>
-
-
