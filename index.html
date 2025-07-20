@@ -99,7 +99,7 @@
       select { min-width:140px; }
     }
 
-    /* Celebration overlay */
+    /* === Celebration overlay === */
     #celebrationBanner {
       position:fixed;
       top:1rem;
@@ -118,18 +118,33 @@
       max-width:90%;
       text-align:center;
     }
-    #celebrationBanner.fade-out { animation:bannerFade 0.6s forwards; }
-    @keyframes bannerFade { to { opacity:0; transform:translate(-50%, -8px); } }
-    #celebrationBanner button {
-      margin-left:0.75rem; font:inherit; font-size:0.8rem;
-      padding:0.35rem 0.7rem; border:1px solid #888;
-      border-radius:4px; background:#f7f7f7; cursor:pointer;
+    #celebrationBanner.fade-out {
+      animation:bannerFade 0.6s forwards;
     }
-    #celebrationBanner button:hover { background:#ececec; }
+    @keyframes bannerFade { to { opacity:0; transform:translate(-50%, -8px); } }
+
+    #celebrationBanner button {
+      margin-left:0.75rem;
+      font:inherit;
+      font-size:0.8rem;
+      padding:0.35rem 0.7rem;
+      border:1px solid #888;
+      border-radius:4px;
+      background:#f7f7f7;
+      cursor:pointer;
+    }
+    #celebrationBanner button:hover {
+      background:#ececec;
+    }
 
     #confettiCanvas {
-      position:fixed; inset:0; width:100%; height:100%;
-      pointer-events:none; z-index:999; display:none;
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      z-index:999;
+      display:none;
     }
   </style>
 </head>
@@ -230,6 +245,7 @@
       13: 2000000, 14: 2000000, 15: 2000000
     };
 
+    // (Updated sigma table as supplied)
     const sigmaByLevel = {
       1:627, 2:313, 3:188, 4:141, 5:120, 6:90,
       7:70, 8:50, 9:40, 10:30, 11:24, 12:18,
@@ -402,10 +418,10 @@
           const candidates = Object.keys(candMap).map(k => candMap[k]).filter(Boolean);
           const choice = gaussianSelect(candidates, baseSigma);
           if (!choice) return;
-          const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
-          highlightMove(f, t, 'black');
-          game.move({ from:f, to:t, promotion:'q' });
-          board.position(game.fen(), false);
+            const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
+            highlightMove(f, t, 'black');
+            game.move({ from:f, to:t, promotion:'q' });
+            board.position(game.fen(), false);
         }
       }
 
@@ -417,6 +433,7 @@
     function engineReplyFromCurrent() {
       const nodes = nodesByLevel[currentLevel] || 500000;
       const baseSigma = sigmaByLevel[currentLevel] || 0;
+
       let candMap = {};
       let seenAny = false;
 
@@ -424,17 +441,17 @@
         const line = data.trim();
         if (line.startsWith('info') && line.includes('multipv')) {
           if (line.includes('score cp')) {
-            const mpvMatch = line.match(/multipv\\s+(\\d+)/);
-            const pvMatch  = line.match(/pv\\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
-            const cpMatch  = line.match(/score cp\\s+(-?\\d+)/);
+            const mpvMatch = line.match(/multipv\s+(\d+)/);
+            const pvMatch  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+            const cpMatch  = line.match(/score cp\s+(-?\d+)/);
             if (mpvMatch && pvMatch && cpMatch) {
               candMap[+mpvMatch[1]] = { move: pvMatch[1], cp:+cpMatch[1] };
               seenAny = true;
             }
           } else if (line.includes('score mate')) {
-            const mpvMatch  = line.match(/multipv\\s+(\\d+)/);
-            const pvMatch   = line.match(/pv\\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
-            const mateMatch = line.match(/score mate\\s+(-?\\d+)/);
+            const mpvMatch  = line.match(/multipv\s+(\d+)/);
+            const pvMatch   = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+            const mateMatch = line.match(/score mate\s+(-?\d+)/);
             if (mpvMatch && pvMatch && mateMatch) {
               const mateVal = +mateMatch[1];
               const synthetic = mateVal > 0 ? 100000 - mateVal*100 : -100000 - mateVal*100;
@@ -463,7 +480,7 @@
       engine.postMessage('go nodes ' + nodes);
     }
 
-    /* === Celebration utilities === */
+    // === Celebration utilities ===
     const celebrationBanner = document.getElementById('celebrationBanner');
     const confettiCanvas = document.getElementById('confettiCanvas');
     const ctx = confettiCanvas.getContext('2d');
@@ -471,7 +488,6 @@
     let confettiActive = false;
     let continuous = false;
     let stopTimeout = null;
-
     function resizeCanvas() {
       confettiCanvas.width = window.innerWidth;
       confettiCanvas.height = window.innerHeight;
@@ -485,11 +501,11 @@
       confettiCanvas.style.display = 'block';
       confettiPieces = [];
       const colours = ['#ffcc00','#ff6666','#66ccff','#66dd88','#cc99ff','#ff99cc'];
-      const count = 160;
+      const count = 180;
       for (let i=0;i<count;i++) {
         confettiPieces.push({
           x: Math.random()*confettiCanvas.width,
-          y: Math.random()*confettiCanvas.height - confettiCanvas.height,
+            y: Math.random()*confettiCanvas.height - confettiCanvas.height,
           r: 5 + Math.random()*6,
           c: colours[Math.floor(Math.random()*colours.length)],
           vx: -2 + Math.random()*4,
@@ -541,6 +557,7 @@
       celebrationBanner.style.display = 'block';
       celebrationBanner.classList.remove('fade-out');
       if (!persistent) {
+        // auto fade after 5s
         setTimeout(() => {
           celebrationBanner.classList.add('fade-out');
           setTimeout(()=> celebrationBanner.style.display='none', 650);
@@ -553,38 +570,36 @@
       }
     }
 
-    // === celebration conditions ===
     function checkSpecialPosition(fen) {
+      // Extract ranks
       const ranks = fen.split(' ')[0].split('/');
       if (ranks.length !== 8) return;
-      const blackRank = ranks[0];          // e.g. rnbqkbnr (or scrambled)
-      const whiteRank = ranks[7];          // e.g. RNBQKBNR (or scrambled)
-
-      // expand not strictly needed for start ranks (no digits), but keep pattern
-      function expand(rank){ return rank.replace(/[1-8]/g,d=>'.'.repeat(+d)); }
+      const blackRank = ranks[0];
+      const whiteRank = ranks[7];
+      // Expand FEN rank (digits to empty squares) but we only care about piece sequence ignoring empties
+      function expand(rank) {
+        return rank.replace(/[1-8]/g, d => '.'.repeat(+d));
+      }
       const b = expand(blackRank);
-      const wLower = expand(whiteRank).toLowerCase();
+      const w = expand(whiteRank).toLowerCase();
+      // symmetrical? (ignoring colour)
+      const symmetrical = b === w;
+      // standard pattern?
+      const std = (whiteRank === 'RNBQKBNR' && blackRank === 'rnbqkbnr');
 
-      const isStandard = (whiteRank === 'RNBQKBNR' && blackRank === 'rnbqkbnr');
-      const symmetrical = b === wLower;
-      const kingOnA1 = whiteRank.startsWith('K'); // test trigger
-
-      if (isStandard) {
-        showBanner('Main Position! (1 in 8,294,400)', true);
-        launchConfetti(0, true);
-        return;
-      }
-      if (symmetrical) {
-        showBanner('Symmetrical! (1 in 2,880)');
-        launchConfetti(5000, false);
-        return;
-      }
-      if (kingOnA1) {
-        showBanner('Test Trigger (K on a1)');
-        launchConfetti(3000, false);
-      }
+if (std) {
+  // Indefinite confetti until user clicks Continue (unchanged)
+  showBanner('Main Position! (1 in 8,294,400)', true);
+  launchConfetti(0, true); // keep = true -> continuous
+  return;
+}
+if (symmetrical) {
+  // Extended to 15s (≈3× previous 5s)
+  showBanner('Symmetrical! (1 in 2,880)');
+  launchConfetti(20000, false); // 15,000 ms
+}
     }
-    /* === end celebration utilities === */
+    // === End celebration utilities ===
 
     // Standard Chess
     document.getElementById('standardBtn').addEventListener('click', () => {
@@ -622,7 +637,7 @@
       } else setOrientation();
     });
 
-    // Fair J-Chess (unchanged celebration-wise)
+    // Fair J-Chess search
     document.getElementById('fairBtn').addEventListener('click', () => {
       if (searchingFair) return;
       fenDiv.style.display  = 'none';
@@ -636,7 +651,7 @@
 
     function tryNextFair() {
       const fen = generateJChessFEN();
-      statusDiv.textContent += fen + '\n';
+      statusDiv.textContent += fen + '\\n';
       let lastCp = null;
       const ms = +document.getElementById('timeSelect').value;
 
@@ -646,10 +661,10 @@
       function onEval({data}) {
         const line = data.trim();
         if (line.startsWith('info') && line.includes('score cp')) {
-          const m = line.match(/score cp\s+(-?\d+)/);
+          const m = line.match(/score cp\\s+(-?\\d+)/);
           if (m) lastCp = +m[1];
         } else if (line.startsWith('info') && line.includes('score mate')) {
-          const mm = line.match(/score mate\s+(-?\d+)/);
+          const mm = line.match(/score mate\\s+(-?\\d+)/);
           if (mm) {
             const mateVal = +mm[1];
             lastCp = (mateVal > 0 ? 5000 : -5000);
@@ -659,23 +674,24 @@
           evalEngine.removeEventListener('message', onEval);
           const rawCp = (lastCp === null ? 0 : lastCp);
           const score = (rawCp / 100).toFixed(2);
-          const fair  = Math.abs(rawCp) <= 40;
-          statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
-          if (fair) {
-            game.load(fen);
-            board.position(fen, false);
-            clearHighlights();
-            startFen = fen;
-            searchingFair = false;
-            document.getElementById('loadingSpinner').style.display = 'none';
-            if (isHumanBlack) {
-              waitingForEngineFirst = true;
-              setOrientation();
-              engineReplyFromCurrent();
-            } else setOrientation();
-          } else {
-            setTimeout(tryNextFair, 30);
-          }
+            const fair  = Math.abs(rawCp) <= 40;
+            statusDiv.textContent += `${score} => ${fair ? 'Fair' : 'Unfair'}\\n\\n`;
+            if (fair) {
+              game.load(fen);
+              board.position(fen, false);
+              clearHighlights();
+              startFen = fen;
+              searchingFair = false;
+              document.getElementById('loadingSpinner').style.display = 'none';
+              // (Optional) you could call checkSpecialPosition here, but fair search intentionally filters; unlikely to match standard anyway.
+              if (isHumanBlack) {
+                waitingForEngineFirst = true;
+                setOrientation();
+                engineReplyFromCurrent();
+              } else setOrientation();
+            } else {
+              setTimeout(tryNextFair, 30);
+            }
         }
       }
       evalEngine.addEventListener('message', onEval);
