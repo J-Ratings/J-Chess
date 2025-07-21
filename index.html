@@ -312,10 +312,17 @@
         $board.find(`.square-${t}`).addClass(`highlight-${col}`);
       }
 
-      function effectiveSigma(baseSigma) {
-        const plies = game.history().length;
-        return plies < 10 ? baseSigma / 10 : baseSigma;
-      }
+function effectiveSigma(baseSigma) {
+  if (isJChessMode) return baseSigma;
+
+  const plies = game.history().length;
+  if (plies < 8) return baseSigma / 10;
+  if (plies === 8) return baseSigma / 8;
+  if (plies === 9) return baseSigma / 6;
+  if (plies === 10) return baseSigma / 4;
+  if (plies === 11) return baseSigma / 2;
+  return baseSigma;
+}
 
       function gaussianSelect(candidates, baseSigma) {
         if (!candidates.length) return null;
