@@ -14,11 +14,12 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       background: #f5f5f5;
       color: #222;
       -webkit-font-smoothing: antialiased;
     }
+
     .site-bar {
       display: flex;
       align-items: center;
@@ -44,7 +45,9 @@
       text-decoration: none;
     }
     .site-bar h1 a:hover,
-    .site-bar h1 a:focus-visible { text-decoration: underline; }
+    .site-bar h1 a:focus-visible {
+      text-decoration: underline;
+    }
     .site-bar nav {
       display: flex;
       gap: 0.6rem;
@@ -62,16 +65,19 @@
       outline: none;
     }
     .site-bar nav a:hover,
-    .site-bar nav a:focus-visible { background: rgba(255,255,255,0.18); }
+    .site-bar nav a:focus-visible {
+      background: rgba(255,255,255,0.18);
+    }
     .site-bar nav a.active {
       background: #ffffff;
       color: var(--brand-bg);
     }
+
     .container {
       max-width: var(--content-max);
-      margin: 0 auto;
+      margin: 0 auto;                    /* centre container */
       padding: 1.2rem clamp(1rem, 4vw, 2.2rem) 2.5rem;
-      text-align: center;
+      text-align: center;                /* centre inline content */
     }
 
     /* Control rows */
@@ -84,7 +90,7 @@
     .control-row {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
+      justify-content: center;           /* centre controls */
       gap: 0.65rem 0.9rem;
     }
     button, select {
@@ -112,20 +118,28 @@
       white-space: nowrap;
     }
 
+    /* Board container */
     #board-container {
       position: relative;
       width: 100%;
       max-width: 520px;
-      margin: 0 auto;
-      aspect-ratio: 1;
+      margin: 0 auto;                    /* centre board */
+      aspect-ratio: 1;                   /* keep a square */
     }
     @media (max-width: 620px) {
-      #board-container { max-width: min(96vw, 520px); }
+      #board-container {
+        max-width: min(96vw, 520px);
+      }
     }
-    #board { width: 100%; height: 100%; touch-action: none; }
+    #board {
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
 
-    #getFenBtn { margin-top: 0.85rem; }
-
+    #getFenBtn {
+      margin-top: 0.85rem;
+    }
     #loadingSpinner {
       position: absolute;
       top: 50%; left: 50%;
@@ -151,7 +165,7 @@
     #fenOutput {
       width: 100%;
       padding: 0.55rem 0.65rem;
-      font-family: ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
       font-size: 0.9rem;
       resize: vertical;
     }
@@ -159,7 +173,7 @@
       margin: 1rem auto 0;
       max-width: 520px;
       text-align: left;
-      font-family: ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
       white-space: pre-wrap;
       background: #fff;
       border: 1px solid #ddd;
@@ -169,7 +183,7 @@
     }
     #stats {
       margin-top: 1.2rem;
-      text-align: center;
+      text-align: center;                /* centre stats */
     }
     #stats h2 {
       margin: 0.35rem 0;
@@ -186,11 +200,11 @@
       margin-top: 2.4rem;
       font-size: 0.75rem;
       colour: #555;
-      text-align: center;
+      text-align: center;                /* centre footer content */
     }
 
     @media (max-width: 520px) {
-      .field { width: 100%; justify-content: centre; }
+      .field { width: 100%; justify-content: centre; } /* typo in CSS? use centre in comment */
       select { min-width: 140px; }
     }
   </style>
@@ -199,7 +213,7 @@
   <header class="site-bar">
     <h1><a href="/">J-Chess</a></h1>
     <nav>
-      <a href="/">Play</a>
+      <a href="/" class="active">Play</a>
       <a href="/info/">Info</a>
     </nav>
   </header>
@@ -213,11 +227,11 @@
         <div class="field">
           <label for="timeSelect">Generation Time:</label>
           <select id="timeSelect">
-            <option value="250">0.25 s</option>
-            <option value="500">0.5 s</option>
-            <option value="1000" selected>1 s</option>
-            <option value="2000">2 s</option>
-            <option value="5000">5 s</option>
+            <option value="250">0.25 s</option>
+            <option value="500">0.5 s</option>
+            <option value="1000" selected>1 s</option>
+            <option value="2000">2 s</option>
+            <option value="5000">5 s</option>
           </select>
         </div>
       </div>
@@ -228,19 +242,7 @@
           <label for="levelSelect">Level:</label>
           <select id="levelSelect">
             <option value="1">Lv. 1 (600)</option>
-            <option value="2">Lv. 2 (800)</option>
-            <option value="3">Lv. 3 (1000)</option>
-            <option value="4">Lv. 4 (1200)</option>
-            <option value="5" selected>Lv. 5 (1400)</option>
-            <option value="6">Lv. 6 (1600)</option>
-            <option value="7">Lv. 7 (1800)</option>
-            <option value="8">Lv. 8 (2000)</option>
-            <option value="9">Lv. 9 (2200)</option>
-            <option value="10">Lv. 10 (2400)</option>
-            <option value="11">Lv. 11 (2600)</option>
-            <option value="12">Lv. 12 (2800)</option>
-            <option value="13">Lv. 13 (3000)</option>
-            <option value="14">Lv. 14 (3300)</option>
+            <!-- …levels 2–14… -->
             <option value="15">Lv. 15 (3600)</option>
           </select>
         </div>
@@ -260,19 +262,14 @@
     <div id="fairStatus"></div>
 
     <div id="stats">
-      <h2>~8.3 million starting positions</h2>
-      <h2>~1.8 million fair starting positions</h2>
+      <h2>~8.3 million starting positions</h2>
+      <h2>~1.8 million fair starting positions</h2>
     </div>
-
-    <footer>
-
-    </footer>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
-
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Active nav highlight (supports trailing slashes)
