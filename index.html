@@ -19,69 +19,67 @@
       color: #222;
       -webkit-font-smoothing: antialiased;
     }
-.site-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.25rem;
-  background: var(--brand-bg);
-  color: var(--brand-fg);
-  padding: 0.65rem clamp(1rem, 4vw, 2.2rem);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-  flex-wrap: wrap;
-  position: relative;
-  z-index: 10;
-}
 
-.site-bar h1 {
-  margin: 0;
-  font-weight: 700;
-  font-size: clamp(1.1rem, 2.2vw + 0.6rem, 1.55rem);
-  letter-spacing: .5px;
-  line-height: 1.2;
-}
+    .site-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.25rem;
+      background: var(--brand-bg);
+      padding: 0.65rem clamp(1rem, 4vw, 2.2rem);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 10;
+    }
+    .site-bar h1 {
+      margin: 0;
+      font-weight: 700;
+      font-size: clamp(1.1rem, 2.2vw + 0.6rem, 1.55rem);
+      letter-spacing: .5px;
+      line-height: 1.2;
+    }
+    /* Logo link always white */
+    .site-bar h1 a,
+    .site-bar h1 a:visited {
+      color: var(--brand-fg);
+      text-decoration: none;
+    }
+    .site-bar h1 a:hover,
+    .site-bar h1 a:focus-visible {
+      text-decoration: underline;
+    }
 
-.site-bar h1 a,
-.site-bar h1 a:visited,
-.site-bar nav a:link,
-.site-bar nav a:visited {
-  color: var(--brand-fg); /* always white */
-}
+    .site-bar nav {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    /* Base nav‑link styles */
+    .site-bar nav a {
+      text-decoration: none;
+      font-weight: 600;
+      font-size: clamp(0.85rem, 1vw + 0.55rem, 0.95rem);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      line-height: 1.1;
+      transition: background .15s, color .15s;
+      outline: none;
+    }
+    /* Nav links always white (visited or not) */
+    .site-bar nav a:link,
+    .site-bar nav a:visited {
+      color: var(--brand-fg);
+    }
+    .site-bar nav a:hover,
+    .site-bar nav a:focus-visible {
+      background: rgba(255,255,255,0.18);
+    }
+    .site-bar nav a.active {
+      background: #ffffff;
+      color: var(--brand-bg);
+    }
 
-.site-bar nav a.active {
-  background: #ffffff;
-  color: var(--brand-bg);
-}
-
-/* Base link styles */
-.site-bar nav a {
-  text-decoration: none;
-  font-weight: 600;
-  font-size: clamp(0.85rem, 1vw + 0.55rem, 0.95rem);
-  padding: 0.45rem 0.85rem;
-  border-radius: 4px;
-  line-height: 1.1;
-  transition: background .15s, color .15s;
-  outline: none;
-}
-
-/* Force unvisited and visited links to stay white */
-.site-bar nav a:link,
-.site-bar nav a:visited {
-  color: var(--brand-fg);
-}
-
-/* Hover/focus */
-.site-bar nav a:hover,
-.site-bar nav a:focus-visible {
-  background: rgba(255,255,255,0.18);
-}
-
-/* Active tab */
-.site-bar nav a.active {
-  background: #ffffff;
-  color: var(--brand-bg);
-}
     .container {
       max-width: var(--content-max);
       margin: 0 auto;
@@ -117,8 +115,8 @@
     .field label {
       font-weight: 600;
       font-size: 0.95rem;
-      white-space: nowrap;
     }
+
     #board-container {
       position: relative;
       width: 100%;
@@ -131,6 +129,7 @@
     }
     #board { width: 100%; height: 100%; touch-action: none; }
     #getFenBtn { margin-top: 0.85rem; }
+
     #loadingSpinner {
       position: absolute;
       top: 50%; left: 50%;
@@ -148,6 +147,7 @@
       0% { transform: translate(-50%, -50%) rotate(0deg); }
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
+
     #fenContainer, #pgnContainer {
       margin: 0.6rem auto 0;
       max-width: 520px;
@@ -160,6 +160,7 @@
       font-size: 0.9rem;
       resize: vertical;
     }
+
     #fairStatus {
       margin: 1rem auto 0;
       max-width: 520px;
@@ -172,6 +173,7 @@
       border-radius: 4px;
       min-height: 2rem;
     }
+
     #stats {
       margin-top: 1.2rem;
       text-align: center;
@@ -270,12 +272,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const currentPath = location.pathname.replace(/\/+$/, '') || '/';
-      document.querySelectorAll('.site-bar nav a').forEach(a => {
-        const href = a.getAttribute('href').replace(/\/+$/, '') || '/';
-        if (href === currentPath) a.classList.add('active');
-      });
-
       const nodesByLevel = {
         1:500000,2:500000,3:500000,4:500000,
         5:500000,6:500000,7:500000,8:500000,
@@ -300,16 +296,15 @@
       let isHumanBlack = false;
       let waitingForEngineFirst = false;
 
-      const fenDiv    = document.getElementById('fenContainer');
-      const pgnDiv    = document.getElementById('pgnContainer');
+      const fenDiv = document.getElementById('fenContainer');
+      const pgnDiv = document.getElementById('pgnContainer');
       const statusDiv = document.getElementById('fairStatus');
-      const outFen    = document.getElementById('fenOutput');
-      const outPgn    = document.getElementById('pgnOutput');
-      const $board    = $('#board');
+      const outFen = document.getElementById('fenOutput');
+      const outPgn = document.getElementById('pgnOutput');
+      const $board = $('#board');
 
       function clearHighlights() {
-        $board.find('.square-55d63')
-          .removeClass('highlight-white highlight-black');
+        $board.find('.square-55d63').removeClass('highlight-white highlight-black');
       }
       function highlightMove(f, t, col) {
         clearHighlights();
@@ -321,70 +316,27 @@
         pgnDiv.style.display = 'none';
       }
 
-      function effectiveSigma(baseSigma) {
-        if (isJChessMode) return baseSigma;
-        const plies = game.history().length;
-        if (plies < 8) return baseSigma/10;
-        if (plies === 8) return baseSigma/8;
-        if (plies === 9) return baseSigma/6;
-        if (plies === 10) return baseSigma/4;
-        if (plies === 11) return baseSigma/2;
-        return baseSigma;
-      }
-      function gaussianSelect(cand, baseSigma) {
-        if (!cand.length) return null;
-        if (baseSigma <= 0) {
-          cand.sort((a,b)=>b.cp-a.cp);
-          return cand[0];
-        }
-        cand.sort((a,b)=>b.cp-a.cp);
-        const best = cand[0].cp;
-        const sig  = effectiveSigma(baseSigma);
-        let sum = 0;
-        const weights = cand.map(c => {
-          const d = best - c.cp;
-          const w = Math.exp(-(d*d)/(2*sig*sig));
-          sum += w; return w;
-        });
-        let r = Math.random()*sum;
-        for (let i=0;i<cand.length;i++){
-          r-=weights[i];
-          if (r<=0) return cand[i];
-        }
-        return cand[cand.length-1];
+      function randomGaussian() {
+        let u = 0, v = 0;
+        while (u === 0) u = Math.random();
+        while (v === 0) v = Math.random();
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
       }
 
-      const engine = new Worker('engine/stockfish-17-lite-single.js');
-      engine.postMessage('uci');
-      engine.addEventListener('message', function setupPlay({data}) {
-        if (data.trim()==='uciok') {
-          engine.postMessage('setoption name MultiPV value 10');
-          engine.postMessage('ucinewgame');
-          engine.postMessage('isready');
-        }
-        if (data.trim()==='readyok') {
-          engine.removeEventListener('message', setupPlay);
-        }
-      });
-
-      const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
-      evalEngine.postMessage('uci');
-      evalEngine.addEventListener('message', function setupEval({data}) {
-        if (data.trim()==='uciok') {
-          evalEngine.postMessage('ucinewgame');
-          evalEngine.postMessage('setoption name UCI_LimitStrength value false');
-          evalEngine.postMessage('isready');
-        }
-        if (data.trim()==='readyok') {
-          evalEngine.removeEventListener('message', setupEval);
-        }
-      });
+      function thresholdSelect(candidates, sigma) {
+        const bestCp = candidates[0].cp;
+        const x = Math.abs(randomGaussian() * sigma);
+        const allowed = candidates.filter(c => (bestCp - c.cp) <= x);
+        return allowed.length > 0
+          ? allowed[Math.floor(Math.random() * allowed.length)]
+          : candidates[0];
+      }
 
       $('#levelSelect').on('change', function() {
         currentLevel = +this.value;
       });
 
-      const game  = new Chess();
+      const game = new Chess();
       const board = Chessboard('board', {
         draggable: true,
         position: 'start',
@@ -413,10 +365,9 @@
         if (game.game_over()) return false;
         const turn = game.turn();
         if (!isHumanBlack) {
-          return piece[0]==='w' && turn==='w';
+          return piece[0] === 'w' && turn === 'w';
         }
-        if (waitingForEngineFirst) return false;
-        return piece[0]==='b' && turn==='b';
+        return !waitingForEngineFirst && piece[0] === 'b' && turn === 'b';
       }
       function onSnapEnd() {
         board.position(game.fen(), false);
@@ -428,10 +379,24 @@
         handleEngineMove(src, tgt);
       }
 
+      const engine = new Worker('engine/stockfish-17-lite-single.js');
+      engine.postMessage('uci');
+      engine.addEventListener('message', function setupPlay({data}) {
+        if (data.trim() === 'uciok') {
+          engine.postMessage('setoption name MultiPV value 10');
+          engine.postMessage('ucinewgame');
+          engine.postMessage('isready');
+        }
+        if (data.trim() === 'readyok') {
+          engine.removeEventListener('message', setupPlay);
+        }
+      });
+
       function handleEngineMove(src, tgt) {
         highlightMove(src, tgt, 'white');
         hideOutputs();
         statusDiv.textContent = '';
+
         const nodes     = nodesByLevel[currentLevel] || 500000;
         const baseSigma = sigmaByLevel[currentLevel] || 0;
         const candMap   = {};
@@ -444,12 +409,10 @@
             const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
             const cpm = line.match(/score cp\s+(-?\d+)/);
             const mat = line.match(/score mate\s+(-?\d+)/);
-            if (mpv && pv && (cpm||mat)) {
+            if (mpv && pv && (cpm || mat)) {
               const cp = cpm
                 ? +cpm[1]
-                : (mat[1]>0
-                   ? 100000 - +mat[1]*100
-                   : -100000 - +mat[1]*100);
+                : (mat[1] > 0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
               candMap[+mpv[1]] = { move: pv[1], cp };
               seenScore = true;
             }
@@ -457,10 +420,10 @@
           if (line.startsWith('bestmove')) {
             engine.removeEventListener('message', onInfo);
             if (!seenScore) return;
-            const pick = gaussianSelect(Object.values(candMap), baseSigma);
-            if (!pick) return;
-            const f = pick.move.slice(0,2),
-                  t = pick.move.slice(2,4);
+            const choices = Object.values(candMap);
+            const pick = thresholdSelect(choices, baseSigma);
+            const f    = pick.move.slice(0,2);
+            const t    = pick.move.slice(2,4);
             highlightMove(f, t, 'black');
             game.move({ from: f, to: t, promotion: 'q' });
             board.position(game.fen(), false);
@@ -486,12 +449,10 @@
             const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
             const cpm = line.match(/score cp\s+(-?\d+)/);
             const mat = line.match(/score mate\s+(-?\d+)/);
-            if (mpv && pv && (cpm||mat)) {
+            if (mpv && pv && (cpm || mat)) {
               const cp = cpm
                 ? +cpm[1]
-                : (mat[1]>0
-                   ? 100000 - +mat[1]*100
-                   : -100000 - +mat[1]*100);
+                : (mat[1] > 0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
               candMap[+mpv[1]] = { move: pv[1], cp };
               seenAny = true;
             }
@@ -499,15 +460,14 @@
           if (line.startsWith('bestmove')) {
             engine.removeEventListener('message', listener);
             if (!seenAny) return;
-            const pick = gaussianSelect(Object.values(candMap), baseSigma);
-            if (pick) {
-              const f    = pick.move.slice(0,2),
-                    t    = pick.move.slice(2,4),
-                    col  = game.turn()==='w'? 'black':'white';
-              game.move({ from: f, to: t, promotion: 'q' });
-              highlightMove(f, t, col);
-              board.position(game.fen(), false);
-            }
+            const choices = Object.values(candMap);
+            const pick    = thresholdSelect(choices, baseSigma);
+            const f       = pick.move.slice(0,2);
+            const t       = pick.move.slice(2,4);
+            const col     = game.turn() === 'w' ? 'black' : 'white';
+            game.move({ from: f, to: t, promotion: 'q' });
+            highlightMove(f, t, col); 
+            board.position(game.fen(), false);
             waitingForEngineFirst = false;
           }
         }
@@ -517,38 +477,18 @@
         engine.postMessage('go nodes ' + nodes);
       }
 
-      function shuffle(a) {
-        for (let i=a.length-1;i>0;i--){
-          const j = Math.floor(Math.random()*(i+1));
-          [a[i],a[j]] = [a[j],a[i]];
-        }
-        return a;
-      }
-      function generateBackRank() {
-        const P = ['r','n','b','q','k','b','n','r'];
-        let R, b;
-        do {
-          R = shuffle(P.slice());
-          b = [R.indexOf('b'), R.lastIndexOf('b')];
-        } while ((b[0]%2)===(b[1]%2));
-        return R.join('');
-      }
-      function generateJChessFEN() {
-        const W = generateBackRank().toUpperCase();
-        const B = generateBackRank().toLowerCase();
-        return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
-      }
-
+      // Get FEN
       document.getElementById('getFenBtn').addEventListener('click', () => {
         outFen.value = game.fen();
         fenDiv.style.display = 'block';
         outFen.select();
       });
 
+      // Undo (full move if needed)
       document.getElementById('undoBtn').addEventListener('click', () => {
         const turn = game.turn();
         const first = game.undo();
-        const second = (turn === (isHumanBlack?'b':'w'))? game.undo() : null;
+        if (turn === (isHumanBlack ? 'b' : 'w')) game.undo();
         if (first) {
           board.position(game.fen(), false);
           clearHighlights();
@@ -557,33 +497,37 @@
         }
       });
 
+      // Get PGN
       document.getElementById('getPgnBtn').addEventListener('click', () => {
         outPgn.value = game.pgn() || '(no moves yet)';
         pgnDiv.style.display = 'block';
         outPgn.select();
       });
 
+      // Play as White
       document.getElementById('playWhiteBtn').addEventListener('click', () => {
         hideOutputs();
         isHumanBlack = false;
         waitingForEngineFirst = false;
         game.load(startFen);
-        setOrientation();
         board.position(startFen, false);
+        setOrientation();
         clearHighlights();
       });
 
+      // Play as Black
       document.getElementById('playBlackBtn').addEventListener('click', () => {
         hideOutputs();
         isHumanBlack = true;
         waitingForEngineFirst = true;
         game.load(startFen);
-        setOrientation();
         board.position(startFen, false);
+        setOrientation();
         clearHighlights();
         engineReplyFromCurrent();
       });
 
+      // Variant buttons
       $('#standardBtn').click(() => {
         hideOutputs();
         isJChessMode = false;
@@ -593,7 +537,6 @@
         board.position(startFen, false);
         clearHighlights();
         if (isHumanBlack) {
-          waitingForEngineFirst = true;
           setOrientation();
           engineReplyFromCurrent();
         } else {
@@ -611,7 +554,6 @@
         board.position(fen, false);
         clearHighlights();
         if (isHumanBlack) {
-          waitingForEngineFirst = true;
           setOrientation();
           engineReplyFromCurrent();
         } else {
@@ -629,6 +571,7 @@
         tryNextFair();
       });
 
+      // Fair generation logic unchanged…
       function tryNextFair() {
         const fen = generateJChessFEN();
         statusDiv.textContent += fen + '\n';
@@ -662,7 +605,6 @@
               searchingFair = false;
               $('#loadingSpinner').hide();
               if (isHumanBlack) {
-                waitingForEngineFirst = true;
                 setOrientation();
                 engineReplyFromCurrent();
               } else {
@@ -675,6 +617,29 @@
         }
 
         evalEngine.addEventListener('message', onEval);
+      }
+
+      // J‑Chess FEN generator unchanged…
+      function shuffle(a) {
+        for (let i=a.length-1;i>0;i--){
+          const j = Math.floor(Math.random()*(i+1));
+          [a[i],a[j]] = [a[j],a[i]];
+        }
+        return a;
+      }
+      function generateBackRank() {
+        const P = ['r','n','b','q','k','b','n','r'];
+        let R, b;
+        do {
+          R = shuffle(P.slice());
+          b = [R.indexOf('b'), R.lastIndexOf('b')];
+        } while ((b[0]%2)===(b[1]%2));
+        return R.join('');
+      }
+      function generateJChessFEN() {
+        const W = generateBackRank().toUpperCase();
+        const B = generateBackRank().toLowerCase();
+        return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
       }
     });
   </script>
