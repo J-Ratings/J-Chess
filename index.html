@@ -399,7 +399,7 @@
 
         const nodes     = nodesByLevel[currentLevel] || 500000;
 let baseSigma = sigmaByLevel[currentLevel] || 0;
-const ply = game.history().length + 1;
+const fullMoves = Math.floor(game.history().length / 2) + 1;
 
 if (currentLevel >= 3 && currentLevel <= 4) {
   if (ply <= 5) baseSigma = baseSigma / 5;
@@ -456,7 +456,7 @@ else if (currentLevel >= 7) {
         hideOutputs();
         const nodes     = nodesByLevel[currentLevel] || 500000;
 let baseSigma = sigmaByLevel[currentLevel] || 0;
-const ply = game.history().length + 1;
+const fullMoves = Math.floor(game.history().length / 2) + 1;
 
 if (currentLevel >= 3 && currentLevel <= 4) {
   if (ply <= 5) baseSigma = baseSigma / 5;
