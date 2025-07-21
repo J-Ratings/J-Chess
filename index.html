@@ -248,8 +248,14 @@
     </div>
 
     <button id="getFenBtn">Get FEN</button>
+    <button id="undoBtn">Undo</button>
+    <button id="getPgnBtn">Get PGN</button>
     <div id="fenContainer">
       <textarea id="fenOutput" readonly rows="2"></textarea>
+    </div>
+
+    <div id="pgnContainer" style="display: none;">
+      <textarea id="pgnOutput" readonly rows="4"></textarea>
     </div>
 
     <div id="fairStatus"></div>
@@ -633,6 +639,30 @@ function effectiveSigma(baseSigma) {
         fenDiv.style.display = 'block';
         out.select();
       });
+
+
+// grab the new elements
+const undoBtn      = document.getElementById('undoBtn');
+const getPgnBtn    = document.getElementById('getPgnBtn');
+const pgnContainer = document.getElementById('pgnContainer');
+const pgnOutput    = document.getElementById('pgnOutput');
+
+undoBtn.addEventListener('click', () => {
+  if (game.undo()) {                     // undo last half‑move
+    board.position(game.fen(), false);   // redraw the board
+    clearHighlights();
+    fenDiv.style.display     = 'none';   // hide FEN output
+    pgnContainer.style.display = 'none'; // hide PGN textarea
+  }
+});
+
+getPgnBtn.addEventListener('click', () => {
+  const pgn = game.pgn() || '(no moves yet)';
+  pgnOutput.value = pgn;                // fill textarea
+  pgnContainer.style.display = 'block'; // show it
+  pgnOutput.select();                   // select text
+});
+
 
       document.getElementById('playWhiteBtn').addEventListener('click', () => {
         fenDiv.style.display  = 'none';
