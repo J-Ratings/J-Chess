@@ -41,14 +41,16 @@
   line-height: 1.2;
 }
 
-.site-bar h1 a {
-  text-decoration: none;
+.site-bar h1 a,
+.site-bar h1 a:visited,
+.site-bar nav a:link,
+.site-bar nav a:visited {
+  color: var(--brand-fg); /* always white */
 }
 
-.site-bar nav {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+.site-bar nav a.active {
+  background: #ffffff;
+  color: var(--brand-bg);
 }
 
 /* Base link styles */
