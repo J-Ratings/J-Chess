@@ -19,54 +19,67 @@
       color: #222;
       -webkit-font-smoothing: antialiased;
     }
-    .site-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1.25rem;
-      background: var(--brand-bg);
-      color: var(--brand-fg);
-      padding: 0.65rem clamp(1rem, 4vw, 2.2rem);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-      flex-wrap: wrap;
-      position: relative;
-      z-index: 10;
-    }
-    .site-bar h1 {
-      margin: 0;
-      font-weight: 700;
-      font-size: clamp(1.1rem, 2.2vw + 0.6rem, 1.55rem);
-      letter-spacing: .5px;
-      line-height: 1.2;
-    }
-    .site-bar h1 a {
-      color: var(--brand-fg);
-      text-decoration: none;
-    }
-    .site-bar h1 a:hover,
-    .site-bar h1 a:focus-visible { text-decoration: underline; }
-    .site-bar nav {
-      display: flex;
-      gap: 0.6rem;
-      flex-wrap: wrap;
-    }
-    .site-bar nav a {
-      text-decoration: none;
-      color: var(--brand-fg);
-      font-weight: 600;
-      font-size: clamp(0.85rem, 1vw + 0.55rem, 0.95rem);
-      padding: 0.45rem 0.85rem;
-      border-radius: 4px;
-      line-height: 1.1;
-      transition: background .15s, color .15s;
-      outline: none;
-    }
-    .site-bar nav a:hover,
-    .site-bar nav a:focus-visible { background: rgba(255,255,255,0.18); }
-    .site-bar nav a.active {
-      background: #ffffff;
-      color: var(--brand-bg);
-    }
+.site-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  background: var(--brand-bg);
+  color: var(--brand-fg);
+  padding: 0.65rem clamp(1rem, 4vw, 2.2rem);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 10;
+}
+
+.site-bar h1 {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(1.1rem, 2.2vw + 0.6rem, 1.55rem);
+  letter-spacing: .5px;
+  line-height: 1.2;
+}
+
+.site-bar h1 a {
+  text-decoration: none;
+}
+
+.site-bar nav {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* Base link styles */
+.site-bar nav a {
+  text-decoration: none;
+  font-weight: 600;
+  font-size: clamp(0.85rem, 1vw + 0.55rem, 0.95rem);
+  padding: 0.45rem 0.85rem;
+  border-radius: 4px;
+  line-height: 1.1;
+  transition: background .15s, color .15s;
+  outline: none;
+}
+
+/* Force unvisited and visited links to stay white */
+.site-bar nav a:link,
+.site-bar nav a:visited {
+  color: var(--brand-fg);
+}
+
+/* Hover/focus */
+.site-bar nav a:hover,
+.site-bar nav a:focus-visible {
+  background: rgba(255,255,255,0.18);
+}
+
+/* Active tab */
+.site-bar nav a.active {
+  background: #ffffff;
+  color: var(--brand-bg);
+}
     .container {
       max-width: var(--content-max);
       margin: 0 auto;
