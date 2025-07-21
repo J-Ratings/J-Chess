@@ -398,7 +398,24 @@
         statusDiv.textContent = '';
 
         const nodes     = nodesByLevel[currentLevel] || 500000;
-        const baseSigma = sigmaByLevel[currentLevel] || 0;
+let baseSigma = sigmaByLevel[currentLevel] || 0;
+const ply = game.history().length + 1;
+
+if (currentLevel >= 3 && currentLevel <= 4) {
+  if (ply <= 5) baseSigma = baseSigma / 5;
+}
+else if (currentLevel >= 5 && currentLevel <= 6) {
+  if (ply <= 5) baseSigma = baseSigma / 5;
+  else if (ply === 6) baseSigma = baseSigma / 4;
+  else if (ply === 7) baseSigma = baseSigma / 3;
+  else if (ply === 8) baseSigma = baseSigma / 2;
+}
+else if (currentLevel >= 7) {
+  if (ply <= 5) baseSigma = baseSigma / 8;
+  else if (ply === 6) baseSigma = baseSigma / 6;
+  else if (ply === 7) baseSigma = baseSigma / 4;
+  else if (ply === 8) baseSigma = baseSigma / 2;
+}
         const candMap   = {};
         let seenScore   = false;
 
@@ -438,7 +455,24 @@
       function engineReplyFromCurrent() {
         hideOutputs();
         const nodes     = nodesByLevel[currentLevel] || 500000;
-        const baseSigma = sigmaByLevel[currentLevel] || 0;
+let baseSigma = sigmaByLevel[currentLevel] || 0;
+const ply = game.history().length + 1;
+
+if (currentLevel >= 3 && currentLevel <= 4) {
+  if (ply <= 5) baseSigma = baseSigma / 5;
+}
+else if (currentLevel >= 5 && currentLevel <= 6) {
+  if (ply <= 5) baseSigma = baseSigma / 5;
+  else if (ply === 6) baseSigma = baseSigma / 4;
+  else if (ply === 7) baseSigma = baseSigma / 3;
+  else if (ply === 8) baseSigma = baseSigma / 2;
+}
+else if (currentLevel >= 7) {
+  if (ply <= 5) baseSigma = baseSigma / 8;
+  else if (ply === 6) baseSigma = baseSigma / 6;
+  else if (ply === 7) baseSigma = baseSigma / 4;
+  else if (ply === 8) baseSigma = baseSigma / 2;
+}
         const candMap   = {};
         let seenAny     = false;
 
