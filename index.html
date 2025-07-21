@@ -648,11 +648,19 @@ const pgnContainer = document.getElementById('pgnContainer');
 const pgnOutput    = document.getElementById('pgnOutput');
 
 undoBtn.addEventListener('click', () => {
-  if (game.undo()) {                     // undo last half‑move
-    board.position(game.fen(), false);   // redraw the board
+  const turn = game.turn(); // 'w' if it's White's turn, 'b' if Black's
+
+  // If it's your turn, then engine has already moved → undo twice (both moves)
+  // If it's the engine's turn, you just moved → undo once
+  const undid1 = game.undo();
+  const undid2 = (turn === (isHumanBlack ? 'b' : 'w')) ? game.undo() : null;
+
+  if (undid1) {
+    board.position(game.fen(), false);
     clearHighlights();
-    fenDiv.style.display     = 'none';   // hide FEN output
-    pgnContainer.style.display = 'none'; // hide PGN textarea
+    fenDiv.style.display = 'none';
+    pgnContainer.style.display = 'none';
+    waitingForEngineFirst = false;
   }
 });
 
