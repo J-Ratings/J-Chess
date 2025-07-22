@@ -320,14 +320,43 @@
         return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
       }
 
-      function thresholdSelect(candidates, sigma) {
-        const bestCp = candidates[0].cp;
-        const x = Math.abs(randomGaussian() * sigma);
-        const allowed = candidates.filter(c => (bestCp - c.cp) <= x);
-        return allowed.length > 0
-          ? allowed[Math.floor(Math.random() * allowed.length)]
-          : candidates[0];
-      }
+function thresholdSelect(candidates, sigma) {
+  const bestCp = candidates[0].cp;
+  const x = Math.abs(randomGaussian() * sigma);
+  const allowed = candidates.filter(c => (bestCp - c.cp) <= x);
+  const selected = allowed.length > 0
+    ? allowed[Math.floor(Math.random() * allowed.length)]
+    : candidates[0];
+
+  // Compute the z-score for the normal distribution
+  const z = x / sigma;
+  const p = 1 - erf(z / Math.SQRT2); // two-tailed survival function
+  const pPct = (p * 100).toFixed(2);
+
+  // Show result
+  const fairDiv = document.getElementById('fairStatus');
+  if (fairDiv) {
+    fairDiv.textContent = `x = ${x.toFixed(2)}, P(x ≥ ${x.toFixed(2)}) ≈ ${pPct}%`;
+  }
+
+  return selected;
+}
+
+function erf(x) {
+  // Approximation of the error function
+  const sign = x >= 0 ? 1 : -1;
+  x = Math.abs(x);
+  const a1 =  0.254829592;
+  const a2 = -0.284496736;
+  const a3 =  1.421413741;
+  const a4 = -1.453152027;
+  const a5 =  1.061405429;
+  const p  =  0.3275911;
+
+  const t = 1 / (1 + p * x);
+  const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  return sign * y;
+}
 
       $('#levelSelect').on('change', function() {
         currentLevel = +this.value;
