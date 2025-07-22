@@ -336,7 +336,7 @@ function thresholdSelect(candidates, sigma) {
   // Show result
   const fairDiv = document.getElementById('fairStatus');
   if (fairDiv) {
-    fairDiv.textContent = `x = ${x.toFixed(2)}, P(x ≥ ${x.toFixed(2)}) ≈ ${pPct}%`;
+    fairDiv.textContent = `σ = ${sigma}, x = ${x.toFixed(2)}, P(x ≥ ${x.toFixed(2)}) ≈ ${pPct}%`;
   }
 
   return selected;
