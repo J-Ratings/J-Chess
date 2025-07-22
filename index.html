@@ -530,10 +530,12 @@ const t = pick.move.slice(2,4);
           if (line.startsWith('bestmove')) {
             engine.removeEventListener('message', listener);
             if (!seenAny) return;
-            const choices = Object.values(candMap);
-            const pick = thresholdSelect(choices, baseSigma);
-            const f = pick.move.slice(0,2);
-            const t = pick.move.slice(2,4);
+const choices = Object.values(candMap);
+const { selected: pick, x, pTail } = thresholdSelect(choices, baseSigma);
+renderDecision(choices, pick, baseSigma, x, pTail);
+
+const f = pick.move.slice(0,2);
+const t = pick.move.slice(2,4);
             const col = game.turn() === 'w' ? 'black' : 'white';
             game.move({ from: f, to: t, promotion: 'q' });
             highlightMove(f, t, col);
