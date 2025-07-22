@@ -320,27 +320,36 @@
         return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
       }
 
+
+
 function thresholdSelect(candidates, sigma) {
   const bestCp = candidates[0].cp;
   const x = Math.abs(randomGaussian() * sigma);
   const allowed = candidates.filter(c => (bestCp - c.cp) <= x);
-  const selected = allowed.length > 0
+  const selected = allowed.length
     ? allowed[Math.floor(Math.random() * allowed.length)]
     : candidates[0];
 
-  // Compute the z-score for the normal distribution
   const z = x / sigma;
-  const p = 1 - erf(z / Math.SQRT2); // two-tailed survival function
-  const pPct = (p * 100).toFixed(2);
+  const pTail = 1 - erf(z / Math.SQRT2); // half‑normal survival
 
-  // Show result
-  const fairDiv = document.getElementById('fairStatus');
-  if (fairDiv) {
-    fairDiv.textContent = `σ = ${sigma}, x = ${x.toFixed(2)}, P(x ≥ ${x.toFixed(2)}) ≈ ${pPct}%`;
-  }
-
-  return selected;
+  return { selected, x, pTail };
 }
+
+function renderDecision(cands, chosen, sigma, x, pTail) {
+  // Use the already-declared statusDiv
+  const lines = [...cands]
+    .sort((a,b) => b.cp - a.cp)
+    .map(c => {
+      const evalStr = (c.cp/100).toFixed(2).padStart(6,' ');
+      const mark = c.move === chosen.move ? '  ←' : '';
+      return `(${evalStr}) ${c.move}${mark}`;
+    });
+
+  const header = `σ = ${sigma}, x = ${x.toFixed(2)}, P(x ≥ ${x.toFixed(2)}) ≈ ${(pTail*100).toFixed(2)}%`;
+  statusDiv.textContent = header + '\n' + lines.join('\n') + '\n';
+}
+
 
 function erf(x) {
   // Approximation of the error function
@@ -479,10 +488,12 @@ function erf(x) {
           if (line.startsWith('bestmove')) {
             engine.removeEventListener('message', onInfo);
             if (!seenScore) return;
-            const choices = Object.values(candMap);
-            const pick = thresholdSelect(choices, baseSigma);
-            const f = pick.move.slice(0,2);
-            const t = pick.move.slice(2,4);
+const choices = Object.values(candMap);
+const { selected: pick, x, pTail } = thresholdSelect(choices, baseSigma);
+renderDecision(choices, pick, baseSigma, x, pTail);
+
+const f = pick.move.slice(0,2);
+const t = pick.move.slice(2,4);
             highlightMove(f, t, 'black');
             game.move({ from: f, to: t, promotion: 'q' });
             board.position(game.fen(), false);
