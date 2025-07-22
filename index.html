@@ -337,18 +337,20 @@ function thresholdSelect(candidates, sigma) {
 }
 
 function renderDecision(cands, chosen, sigma, x, pTail) {
-  // Use the already-declared statusDiv
-  const lines = [...cands]
-    .sort((a,b) => b.cp - a.cp)
-    .map(c => {
-      const evalStr = (c.cp/100).toFixed(2).padStart(6,' ');
-      const mark = c.move === chosen.move ? '  ←' : '';
-      return `(${evalStr}) ${c.move}${mark}`;
-    });
+  const list = [...cands].sort((a,b) => b.cp - a.cp);
+  const bestCp = list[0].cp;
+
+  const lines = list.map(c => {
+    const evalStr = (c.cp/100).toFixed(2).padStart(6,' ');
+    const diffStr = ((bestCp - c.cp)/100).toFixed(2).padStart(6,' ');
+    const mark = c.move === chosen.move ? '  ←' : '';
+    return `(${evalStr}) (${diffStr}) ${c.move}${mark}`;
+  });
 
   const header = `σ = ${sigma}, x = ${x.toFixed(2)}, P(x ≥ ${x.toFixed(2)}) ≈ ${(pTail*100).toFixed(2)}%`;
   statusDiv.textContent = header + '\n' + lines.join('\n') + '\n';
 }
+
 
 
 function erf(x) {
