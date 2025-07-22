@@ -343,12 +343,12 @@ function renderDecision(cands, chosen, sigma, x, pTail, allowedMoves) {
   const bestCp = list[0].cp;
 
   const lines = list.map(c => {
-    const evalStr = (c.cp/100).toFixed(2);                       // no padStart
-    const diffStr = ((bestCp - c.cp)/100).toFixed(2);
+    const evalCp = Math.round(c.cp);                 // already cp units
+    const diffCp = Math.round(bestCp - c.cp);        // cp difference from best
     let mark = '';
     if (allowedMoves.has(c.move)) mark += '*';
     if (c.move === chosen.move) mark += ' ←';
-    return `(${evalStr}) (${diffStr}) ${c.move}${mark}`;
+    return `(${evalCp}) (${diffCp}) ${c.move}${mark}`;
   });
 
   const header = `σ = ${sigma}, x = ${x.toFixed(2)}, P(x ≥ ${x.toFixed(2)}) ≈ ${(pTail*100).toFixed(2)}%`;
