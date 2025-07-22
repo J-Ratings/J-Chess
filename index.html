@@ -324,32 +324,37 @@
 
 function thresholdSelect(candidates, sigma) {
   const bestCp = candidates[0].cp;
-  const x = Math.abs(randomGaussian() * sigma);
+  const x = Math.abs(randomGaussian() * sigma);          // cp threshold
   const allowed = candidates.filter(c => (bestCp - c.cp) <= x);
+
   const selected = allowed.length
     ? allowed[Math.floor(Math.random() * allowed.length)]
     : candidates[0];
 
   const z = x / sigma;
-  const pTail = 1 - erf(z / Math.SQRT2); // half‑normal survival
+  const pTail = 1 - erf(z / Math.SQRT2);                 // half‑normal survival
 
-  return { selected, x, pTail };
+  return { selected, x, pTail, allowedMoves: new Set(allowed.map(c => c.move)) };
 }
 
-function renderDecision(cands, chosen, sigma, x, pTail) {
+
+function renderDecision(cands, chosen, sigma, x, pTail, allowedMoves) {
   const list = [...cands].sort((a,b) => b.cp - a.cp);
   const bestCp = list[0].cp;
 
   const lines = list.map(c => {
-    const evalStr = (c.cp/100).toFixed(0).padStart(6,' ');
-    const diffStr = ((bestCp - c.cp)/100).toFixed(0).padStart(6,' ');
-    const mark = c.move === chosen.move ? '  ←' : '';
+    const evalStr = (c.cp/100).toFixed(2);                       // no padStart
+    const diffStr = ((bestCp - c.cp)/100).toFixed(2);
+    let mark = '';
+    if (allowedMoves.has(c.move)) mark += '*';
+    if (c.move === chosen.move) mark += ' ←';
     return `(${evalStr}) (${diffStr}) ${c.move}${mark}`;
   });
 
   const header = `σ = ${sigma}, x = ${x.toFixed(2)}, P(x ≥ ${x.toFixed(2)}) ≈ ${(pTail*100).toFixed(2)}%`;
   statusDiv.textContent = header + '\n' + lines.join('\n') + '\n';
 }
+
 
 
 
@@ -491,8 +496,8 @@ function erf(x) {
             engine.removeEventListener('message', onInfo);
             if (!seenScore) return;
 const choices = Object.values(candMap);
-const { selected: pick, x, pTail } = thresholdSelect(choices, baseSigma);
-renderDecision(choices, pick, baseSigma, x, pTail);
+const { selected: pick, x, pTail, allowedMoves } = thresholdSelect(choices, baseSigma);
+renderDecision(choices, pick, baseSigma, x, pTail, allowedMoves);
 
 const f = pick.move.slice(0,2);
 const t = pick.move.slice(2,4);
@@ -533,8 +538,8 @@ const t = pick.move.slice(2,4);
             engine.removeEventListener('message', listener);
             if (!seenAny) return;
 const choices = Object.values(candMap);
-const { selected: pick, x, pTail } = thresholdSelect(choices, baseSigma);
-renderDecision(choices, pick, baseSigma, x, pTail);
+const { selected: pick, x, pTail, allowedMoves } = thresholdSelect(choices, baseSigma);
+renderDecision(choices, pick, baseSigma, x, pTail, allowedMoves);
 
 const f = pick.move.slice(0,2);
 const t = pick.move.slice(2,4);
