@@ -420,7 +420,7 @@
       engine.postMessage('uci');
       engine.addEventListener('message', function setupPlay({data}) {
         if (data.trim() === 'uciok') {
-          engine.postMessage('setoption name MultiPV value 10');
+          engine.postMessage('setoption name MultiPV value 50');
           engine.postMessage('ucinewgame');
           engine.postMessage('isready');
         }
