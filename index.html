@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "30c4e45a2b5e450c80d42a89a35e209d"}'></script><!-- End Cloudflare Web Analytics -->
+  <!-- Cloudflare Web Analytics -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon='{"token":"30c4e45a2b5e450c80d42a89a35e209d"}'></script>
+  <!-- End Cloudflare Web Analytics -->
   <meta charset="UTF-8" />
-  <title>J-Chess</title>
-  <meta name="description" content="J-Chess is Chess960 on steroids! Over 8 million possible positions. Play against the engine online." />
+  <title>J‑Chess</title>
+  <meta name="description" content="J‑Chess is Chess960 on steroids! Over 8 million possible positions. Play against the engine online." />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
@@ -21,14 +24,13 @@
       color: #222;
       -webkit-font-smoothing: antialiased;
     }
-
     .site-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1.25rem;
       background: var(--brand-bg);
-      padding: 0.65rem clamp(1rem, 4vw, 2.2rem);
+      padding: 0.65rem clamp(1rem,4vw,2.2rem);
       box-shadow: 0 2px 4px rgba(0,0,0,0.15);
       flex-wrap: wrap;
       position: relative;
@@ -37,7 +39,7 @@
     .site-bar h1 {
       margin: 0;
       font-weight: 700;
-      font-size: clamp(1.1rem, 2.2vw + 0.6rem, 1.55rem);
+      font-size: clamp(1.1rem,2.2vw+0.6rem,1.55rem);
       letter-spacing: .5px;
       line-height: 1.2;
     }
@@ -50,7 +52,6 @@
     .site-bar h1 a:focus-visible {
       text-decoration: underline;
     }
-
     .site-bar nav {
       display: flex;
       gap: 0.6rem;
@@ -59,7 +60,7 @@
     .site-bar nav a {
       text-decoration: none;
       font-weight: 600;
-      font-size: clamp(0.85rem, 1vw + 0.55rem, 0.95rem);
+      font-size: clamp(0.85rem,1vw+0.55rem,0.95rem);
       padding: 0.45rem 0.85rem;
       border-radius: 4px;
       line-height: 1.1;
@@ -78,11 +79,10 @@
       background: #ffffff;
       color: var(--brand-bg);
     }
-
     .container {
       max-width: var(--content-max);
       margin: 0 auto;
-      padding: 1.2rem clamp(1rem, 4vw, 2.2rem) 2.5rem;
+      padding: 1.2rem clamp(1rem,4vw,2.2rem) 2.5rem;
       text-align: center;
     }
     #controlRows { margin-bottom: 1.1rem; }
@@ -111,11 +111,7 @@
       gap: 0.4rem;
       flex-wrap: nowrap;
     }
-    .field label {
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-
+    .field label { font-weight: 600; font-size: 0.95rem; }
     #board-container {
       position: relative;
       width: 100%;
@@ -123,76 +119,69 @@
       margin: 0 auto;
       aspect-ratio: 1;
     }
-    @media (max-width: 620px) {
-      #board-container { max-width: min(96vw, 520px); }
+    @media (max-width:620px) {
+      #board-container { max-width: min(96vw,520px); }
     }
-    #board { width: 100%; height: 100%; touch-action: none; }
-    #getFenBtn { margin-top: 0.85rem; }
-
+    #board { width:100%; height:100%; touch-action:none; }
+    #getFenBtn { margin-top:0.85rem; }
     #loadingSpinner {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 56px; height: 56px;
-      border: 6px solid #eee;
-      border-top: 6px solid #0077cc;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      transform: translate(-50%, -50%);
-      display: none;
-      z-index: 10;
-      pointer-events: none;
+      position:absolute; top:50%; left:50%;
+      width:56px; height:56px;
+      border:6px solid #eee;
+      border-top:6px solid #0077cc;
+      border-radius:50%;
+      animation:spin .8s linear infinite;
+      transform:translate(-50%,-50%);
+      display:none; z-index:10; pointer-events:none;
     }
     @keyframes spin {
-      0% { transform: translate(-50%, -50%) rotate(0deg); }
-      100% { transform: translate(-50%, -50%) rotate(360deg); }
+      0% { transform:translate(-50%,-50%) rotate(0deg); }
+      100% { transform:translate(-50%,-50%) rotate(360deg); }
     }
-
-    #fenContainer, #pgnContainer {
-      margin: 0.6rem auto 0;
-      max-width: 520px;
-      display: none;
+    #fenContainer,#pgnContainer {
+      margin:0.6rem auto 0;
+      max-width:520px;
+      display:none;
     }
-    #fenOutput, #pgnOutput {
-      width: 100%;
-      padding: 0.55rem 0.65rem;
-      font-family: ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
-      font-size: 0.9rem;
-      resize: vertical;
+    #fenOutput,#pgnOutput {
+      width:100%;
+      padding:0.55rem 0.65rem;
+      font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+      font-size:0.9rem;
+      resize:vertical;
     }
-
     #fairStatus {
-      margin: 1rem auto 0;
-      max-width: 520px;
-      text-align: left;
-      font-family: ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
-      white-space: pre-wrap;
-      background: #fff;
-      border: 1px solid #ddd;
-      padding: 0.6rem 0.7rem;
-      border-radius: 4px;
-      min-height: 2rem;
+      margin:1rem auto 0;
+      max-width:520px;
+      text-align:left;
+      font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+      white-space:pre-wrap;
+      background:#fff;
+      border:1px solid #ddd;
+      padding:0.6rem 0.7rem;
+      border-radius:4px;
+      min-height:2rem;
     }
-
     #stats {
-      margin-top: 1.2rem;
-      text-align: center;
+      margin-top:1.2rem;
+      text-align:center;
     }
     #stats h2 {
-      margin: 0.35rem 0;
-      font-size: clamp(1rem, 0.85rem + 0.6vw, 1.25rem);
-      font-weight: 600;
+      margin:0.35rem 0;
+      font-size:clamp(1rem,0.85rem+0.6vw,1.25rem);
+      font-weight:600;
     }
     .highlight-white {
-      box-shadow: inset 0 0 3px 3px rgba(255,255,0,0.85) !important;
+      box-shadow:inset 0 0 3px 3px rgba(255,255,0,0.85)!important;
     }
     .highlight-black {
-      box-shadow: inset 0 0 3px 3px rgba(0,0,255,0.85) !important;
+      box-shadow:inset 0 0 3px 3px rgba(0,0,255,0.85)!important;
     }
   </style>
 </head>
 <body>
   <header class="site-bar">
-    <h1><a href="/">J-Chess</a></h1>
+    <h1><a href="/">J‑Chess</a></h1>
     <nav>
       <a href="/" class="active">Play</a>
       <a href="/info/">Info</a>
@@ -203,16 +192,16 @@
     <div id="controlRows">
       <div class="control-row" id="row1">
         <button id="standardBtn">Standard Chess</button>
-        <button id="randomiseBtn">J-Chess</button>
-        <button id="fairBtn">Fair J-Chess</button>
+        <button id="randomiseBtn">J‑Chess</button>
+        <button id="fairBtn">Fair J‑Chess</button>
         <div class="field">
           <label for="timeSelect">Generation Time:</label>
           <select id="timeSelect">
-            <option value="250">0.25 s</option>
-            <option value="500">0.5 s</option>
-            <option value="1000" selected>1 s</option>
-            <option value="2000">2 s</option>
-            <option value="5000">5 s</option>
+            <option value="250">0.25 s</option>
+            <option value="500">0.5 s</option>
+            <option value="1000" selected>1 s</option>
+            <option value="2000">2 s</option>
+            <option value="5000">5 s</option>
           </select>
         </div>
       </div>
@@ -222,21 +211,21 @@
         <div class="field">
           <label for="levelSelect">Level:</label>
           <select id="levelSelect">
-            <option value="1">Lv. 1 (600)</option>
-            <option value="2">Lv. 2 (800)</option>
-            <option value="3">Lv. 3 (1000)</option>
-            <option value="4">Lv. 4 (1200)</option>
-            <option value="5" selected>Lv. 5 (1400)</option>
-            <option value="6">Lv. 6 (1600)</option>
-            <option value="7">Lv. 7 (1800)</option>
-            <option value="8">Lv. 8 (2000)</option>
-            <option value="9">Lv. 9 (2200)</option>
-            <option value="10">Lv. 10 (2400)</option>
-            <option value="11">Lv. 11 (2600)</option>
-            <option value="12">Lv. 12 (2800)</option>
-            <option value="13">Lv. 13 (3000)</option>
-            <option value="14">Lv. 14 (3300)</option>
-            <option value="15">Lv. 15 (3600)</option>
+            <option value="1">Lv. 1 (600)</option>
+            <option value="2">Lv. 2 (800)</option>
+            <option value="3">Lv. 3 (1000)</option>
+            <option value="4">Lv. 4 (1200)</option>
+            <option value="5" selected>Lv. 5 (1400)</option>
+            <option value="6">Lv. 6 (1600)</option>
+            <option value="7">Lv. 7 (1800)</option>
+            <option value="8">Lv. 8 (2000)</option>
+            <option value="9">Lv. 9 (2200)</option>
+            <option value="10">Lv. 10 (2400)</option>
+            <option value="11">Lv. 11 (2600)</option>
+            <option value="12">Lv. 12 (2800)</option>
+            <option value="13">Lv. 13 (3000)</option>
+            <option value="14">Lv. 14 (3300)</option>
+            <option value="15">Lv. 15 (3600)</option>
           </select>
         </div>
       </div>
@@ -249,6 +238,7 @@
 
     <button id="getFenBtn">Get FEN</button>
     <button id="undoBtn">Undo</button>
+    <button id="flipBtn">Flip</button>
     <button id="getPgnBtn">Get PGN</button>
 
     <div id="fenContainer">
@@ -261,8 +251,8 @@
     <div id="fairStatus"></div>
 
     <div id="stats">
-      <h2>~8.3 million starting positions</h2>
-      <h2>~1.8 million fair starting positions</h2>
+      <h2>~8.3 million starting positions</h2>
+      <h2>~1.8 million fair starting positions</h2>
     </div>
   </div>
 
@@ -281,21 +271,9 @@
         13:2000000,14:2000000,15:2000000
       };
       const sigmaByLevel = {
-        1:1000,
-        2:500,
-        3:250,
-        4:180,
-        5:120,
-        6:90,
-        7:70,
-        8:55,
-        9:47,
-        10:38,
-        11:29,
-        12:24,
-        13:15,
-        14:7,
-        15:0
+        1:1000,2:500,3:250,4:180,5:130,
+        6:90,7:70,8:55,9:47,10:38,
+        11:29,12:24,13:15,14:10,15:0
       };
       const baseRatings = {
         1:600,2:800,3:1000,4:1200,5:1400,
@@ -309,6 +287,7 @@
       let startFen;
       let isHumanBlack = false;
       let waitingForEngineFirst = false;
+      let manualFlip = false;  // track flip state
 
       const fenDiv = document.getElementById('fenContainer');
       const pgnDiv = document.getElementById('pgnContainer');
@@ -318,7 +297,8 @@
       const $board = $('#board');
 
       function clearHighlights() {
-        $board.find('.square-55d63').removeClass('highlight-white highlight-black');
+        $board.find('.square-55d63')
+          .removeClass('highlight-white highlight-black');
       }
       function highlightMove(f, t, col) {
         clearHighlights();
@@ -329,6 +309,21 @@
         fenDiv.style.display = 'none';
         pgnDiv.style.display = 'none';
       }
+
+      function setOrientation() {
+        // if manually flipped, invert the default orientation
+        if (manualFlip) {
+          board.orientation(isHumanBlack ? 'white' : 'black');
+        } else {
+          board.orientation(isHumanBlack ? 'black' : 'white');
+        }
+      }
+
+      document.getElementById('flipBtn')
+        .addEventListener('click', () => {
+          manualFlip = !manualFlip;
+          setOrientation();
+        });
 
       function randomGaussian() {
         let u = 0, v = 0;
@@ -341,31 +336,23 @@
         const bestCp = candidates[0].cp;
         const x = Math.abs(randomGaussian() * sigma);
         const allowed = candidates.filter(c => (bestCp - c.cp) <= x);
-
         const selected = allowed.length
           ? allowed[Math.floor(Math.random() * allowed.length)]
           : candidates[0];
-
         const z = x / sigma;
         const pTail = 1 - erf(z / Math.SQRT2);
         return { selected, x, pTail, allowedMoves: new Set(allowed.map(c => c.move)) };
       }
 
-      // Stubbed: no UI output
-      function renderDecision(){ /* debug disabled */ }
-
       function erf(x) {
         const sign = x >= 0 ? 1 : -1;
         x = Math.abs(x);
-        const a1 = 0.254829592;
-        const a2 = -0.284496736;
-        const a3 = 1.421413741;
-        const a4 = -1.453152027;
-        const a5 = 1.061405429;
-        const p  = 0.3275911;
-
+        const a1 = 0.254829592, a2 = -0.284496736,
+              a3 = 1.421413741, a4 = -1.453152027,
+              a5 = 1.061405429, p = 0.3275911;
         const t = 1 / (1 + p * x);
-        const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+        const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1)
+                  * t * Math.exp(-x * x);
         return sign * y;
       }
 
@@ -382,15 +369,12 @@
       });
       $(window).resize(board.resize);
 
-      function setOrientation() {
-        board.orientation(isHumanBlack ? 'black' : 'white');
-      }
       function refreshLevelLabels() {
         const sel = document.getElementById('levelSelect');
         Array.from(sel.options).forEach(opt => {
           const lvl = +opt.value;
           const base = baseRatings[lvl];
-          opt.textContent = `Lv. ${lvl} (${isJChessMode ? base+200 : base})`;
+          opt.textContent = `Lv. ${lvl} (${isJChessMode ? base + 200 : base})`;
         });
       }
 
@@ -418,7 +402,7 @@
 
       const engine = new Worker('engine/stockfish-17-lite-single.js');
       engine.postMessage('uci');
-      engine.addEventListener('message', function setupPlay({data}) {
+      engine.addEventListener('message', function setupPlay({ data }) {
         if (data.trim() === 'uciok') {
           engine.postMessage('setoption name MultiPV value 50');
           engine.postMessage('ucinewgame');
@@ -429,10 +413,9 @@
         }
       });
 
-      // Separate evaluation engine for Fair J‑Chess
       const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
       evalEngine.postMessage('uci');
-      evalEngine.addEventListener('message', function setupEval({data}) {
+      evalEngine.addEventListener('message', function setupEval({ data }) {
         if (data.trim() === 'uciok') {
           evalEngine.postMessage('ucinewgame');
           evalEngine.postMessage('setoption name UCI_LimitStrength value false');
@@ -446,7 +429,6 @@
       function adjustSigma(base) {
         const fullMoves = Math.floor(game.history().length / 2) + 1;
 
-        // Lv 3–6
         if (currentLevel >= 3 && currentLevel <= 6) {
           if (fullMoves <= 3) return base / 5;
           if (fullMoves === 4) return base / 4;
@@ -455,12 +437,11 @@
           return base;
         }
 
-        // Lv 7–14
         if (currentLevel >= 7 && currentLevel <= 14) {
-          if (fullMoves <= 5) return base / 8;
-          if (fullMoves === 6) return base / 6;
-          if (fullMoves === 7) return base / 4;
-          if (fullMoves === 8) return base / 2;
+          if (fullMoves <= 6) return base / 8;
+          if (fullMoves === 7) return base / 6;
+          if (fullMoves === 8) return base / 4;
+          if (fullMoves === 9) return base / 2;
           return base;
         }
 
@@ -472,11 +453,11 @@
         hideOutputs();
 
         const nodes = nodesByLevel[currentLevel] || 500000;
-        let baseSigma = adjustSigma(sigmaByLevel[currentLevel] || 0);
+        const baseSigma = adjustSigma(sigmaByLevel[currentLevel] || 0);
         const candMap = {};
         let seenScore = false;
 
-        function onInfo({data}) {
+        function onInfo({ data }) {
           const line = data.trim();
           if (line.startsWith('info') && line.includes('multipv')) {
             const mpv = line.match(/multipv\s+(\d+)/);
@@ -486,7 +467,7 @@
             if (mpv && pv && (cpm || mat)) {
               const cp = cpm
                 ? +cpm[1]
-                : (mat[1] > 0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
+                : (mat[1] > 0 ? 100000 - +mat[1] * 100 : -100000 - +mat[1] * 100);
               candMap[+mpv[1]] = { move: pv[1], cp };
               seenScore = true;
             }
@@ -496,9 +477,7 @@
             if (!seenScore) return;
 
             const choices = Object.values(candMap);
-            const { selected: pick, x, pTail, allowedMoves } =
-              thresholdSelect(choices, baseSigma);
-            renderDecision(choices, pick, baseSigma, x, pTail, allowedMoves);
+            const { selected: pick } = thresholdSelect(choices, baseSigma);
 
             const f = pick.move.slice(0,2);
             const t = pick.move.slice(2,4);
@@ -516,11 +495,11 @@
       function engineReplyFromCurrent() {
         hideOutputs();
         const nodes = nodesByLevel[currentLevel] || 500000;
-        let baseSigma = adjustSigma(sigmaByLevel[currentLevel] || 0);
+        const baseSigma = adjustSigma(sigmaByLevel[currentLevel] || 0);
         const candMap = {};
         let seenAny = false;
 
-        function listener({data}) {
+        function listener({ data }) {
           const line = data.trim();
           if (line.startsWith('info') && line.includes('multipv')) {
             const mpv = line.match(/multipv\s+(\d+)/);
@@ -530,7 +509,7 @@
             if (mpv && pv && (cpm || mat)) {
               const cp = cpm
                 ? +cpm[1]
-                : (mat[1] > 0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
+                : (mat[1] > 0 ? 100000 - +mat[1] * 100 : -100000 - +mat[1] * 100);
               candMap[+mpv[1]] = { move: pv[1], cp };
               seenAny = true;
             }
@@ -540,15 +519,13 @@
             if (!seenAny) return;
 
             const choices = Object.values(candMap);
-            const { selected: pick, x, pTail, allowedMoves } =
-              thresholdSelect(choices, baseSigma);
-            renderDecision(choices, pick, baseSigma, x, pTail, allowedMoves);
+            const { selected: pick } = thresholdSelect(choices, baseSigma);
 
             const f = pick.move.slice(0,2);
             const t = pick.move.slice(2,4);
             const col = game.turn() === 'w' ? 'black' : 'white';
-            game.move({ from: f, to: t, promotion: 'q' });
             highlightMove(f, t, col);
+            game.move({ from: f, to: t, promotion: 'q' });
             board.position(game.fen(), false);
             waitingForEngineFirst = false;
           }
@@ -587,6 +564,7 @@
         hideOutputs();
         isHumanBlack = false;
         waitingForEngineFirst = false;
+        manualFlip = false;
         game.load(startFen);
         board.position(startFen, false);
         setOrientation();
@@ -597,6 +575,7 @@
         hideOutputs();
         isHumanBlack = true;
         waitingForEngineFirst = true;
+        manualFlip = false;
         game.load(startFen);
         board.position(startFen, false);
         setOrientation();
@@ -607,40 +586,35 @@
       $('#standardBtn').click(() => {
         hideOutputs();
         isJChessMode = false;
+        manualFlip = false;
         refreshLevelLabels();
         game.reset();
         startFen = game.fen();
         board.position(startFen, false);
         clearHighlights();
-        if (isHumanBlack) {
-          setOrientation();
-          engineReplyFromCurrent();
-        } else {
-          setOrientation();
-        }
+        setOrientation();
+        if (isHumanBlack) engineReplyFromCurrent();
       });
 
       $('#randomiseBtn').click(() => {
         hideOutputs();
         isJChessMode = true;
+        manualFlip = false;
         refreshLevelLabels();
         const fen = generateJChessFEN();
         game.load(fen);
         startFen = fen;
         board.position(fen, false);
         clearHighlights();
-        if (isHumanBlack) {
-          setOrientation();
-          engineReplyFromCurrent();
-        } else {
-          setOrientation();
-        }
+        setOrientation();
+        if (isHumanBlack) engineReplyFromCurrent();
       });
 
       $('#fairBtn').click(() => {
         if (searchingFair) return;
         hideOutputs();
         isJChessMode = true;
+        manualFlip = false;
         refreshLevelLabels();
         searchingFair = true;
         $('#loadingSpinner').show();
@@ -656,7 +630,7 @@
         evalEngine.postMessage('position fen ' + fen);
         evalEngine.postMessage('go movetime ' + ms);
 
-        function onEval({data}) {
+        function onEval({ data }) {
           const line = data.trim();
           if (line.startsWith('info') && line.includes('score cp')) {
             lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
@@ -667,10 +641,9 @@
           }
           if (line.startsWith('bestmove')) {
             evalEngine.removeEventListener('message', onEval);
-            const raw   = lastCp===null ? 0 : lastCp;
-            const score = (raw/100).toFixed(2);
-            const fair  = Math.abs(raw) <= 40;
-            statusDiv.textContent += `${score} => ${fair?'Fair':'Unfair'}\n\n`;
+            const raw  = lastCp === null ? 0 : lastCp;
+            const fair = Math.abs(raw) <= 40;
+            statusDiv.textContent += `${(raw/100).toFixed(2)} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
             if (fair) {
               hideOutputs();
               game.load(fen);
@@ -679,12 +652,9 @@
               startFen = fen;
               searchingFair = false;
               $('#loadingSpinner').hide();
-              if (isHumanBlack) {
-                setOrientation();
-                engineReplyFromCurrent();
-              } else {
-                setOrientation();
-              }
+              manualFlip = false;
+              setOrientation();
+              if (isHumanBlack) engineReplyFromCurrent();
             } else {
               setTimeout(tryNextFair, 30);
             }
@@ -695,21 +665,23 @@
       }
 
       function shuffle(a) {
-        for (let i=a.length-1;i>0;i--){
-          const j = Math.floor(Math.random()*(i+1));
-          [a[i],a[j]] = [a[j],a[i]];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
         }
         return a;
       }
+
       function generateBackRank() {
         const P = ['r','n','b','q','k','b','n','r'];
         let R, b;
         do {
           R = shuffle(P.slice());
           b = [R.indexOf('b'), R.lastIndexOf('b')];
-        } while ((b[0]%2)===(b[1]%2));
+        } while ((b[0] % 2) === (b[1] % 2));
         return R.join('');
       }
+
       function generateJChessFEN() {
         const W = generateBackRank().toUpperCase();
         const B = generateBackRank().toLowerCase();
