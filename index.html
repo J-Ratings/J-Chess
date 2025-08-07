@@ -48,33 +48,6 @@
       color: var(--brand-fg);
       text-decoration: none;
     }
-    .site-bar h1 a:hover,
-    .site-bar h1 a:focus-visible {
-      text-decoration: underline;
-    }
-    .site-bar nav {
-      display: flex;
-      gap: 0.6rem;
-      flex-wrap: wrap;
-    }
-    .site-bar nav a {
-      text-decoration: none;
-      font-weight: 600;
-      font-size: clamp(0.85rem,1vw+0.55rem,0.95rem);
-      padding: 0.45rem 0.85rem;
-      border-radius: 4px;
-      line-height: 1.1;
-      transition: background .15s, color .15s;
-      outline: none;
-    }
-    .site-bar nav a:link,
-    .site-bar nav a:visited {
-      color: var(--brand-fg);
-    }
-    .site-bar nav a:hover,
-    .site-bar nav a:focus-visible {
-      background: rgba(255,255,255,0.18);
-    }
     .site-bar nav a.active {
       background: #ffffff;
       color: var(--brand-bg);
@@ -84,9 +57,6 @@
       margin: 0 auto;
       padding: 1.2rem clamp(1rem,4vw,2.2rem) 2.5rem;
       text-align: center;
-    }
-    #stats {
-      margin-bottom: 1.2rem;
     }
     #stats h2 {
       margin: 0.35rem 0;
@@ -130,7 +100,12 @@
       #board-container { max-width: min(96vw,520px); }
     }
     #board { width:100%; height:100%; touch-action:none; }
-    #getFenBtn { margin-bottom:0.5rem; }
+    #copyMsg {
+      margin-top: 0.75rem;
+      color: #007700;
+      font-weight: 600;
+      display: none;
+    }
     #loadingSpinner {
       position:absolute; top:50%; left:50%;
       width:56px; height:56px;
@@ -141,9 +116,7 @@
       transform:translate(-50%,-50%);
       display:none; z-index:10; pointer-events:none;
     }
-    @keyframes spin {
-      to { transform:translate(-50%,-50%) rotate(360deg); }
-    }
+    @keyframes spin { to { transform:translate(-50%,-50%) rotate(360deg); } }
     #fairStatus {
       margin-top:1rem;
       max-width:520px;
@@ -227,10 +200,11 @@
       <div id="loadingSpinner"></div>
     </div>
 
-    <button id="getFenBtn">Get FEN</button>
+    <button id="getFenBtn">Copy FEN</button>
     <button id="undoBtn">Undo</button>
     <button id="flipBtn">Flip</button>
-    <button id="getPgnBtn">Get PGN</button>
+    <button id="getPgnBtn">Copy PGN</button>
+    <div id="copyMsg">Copied!</div>
 
     <div id="fairStatus"></div>
   </div>
@@ -283,44 +257,19 @@
         $board.find(`.square-${t}`).addClass(`highlight-${col}`);
       }
 
-      function showCopiedMessage(text) {
-        const msg = document.createElement('div');
-        msg.textContent = text;
-        Object.assign(msg.style, {
-          position: 'fixed',
-          top: '1.2rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'var(--brand-bg)',
-          color: '#fff',
-          padding: '0.6rem 1rem',
-          borderRadius: '6px',
-          boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-          fontSize: '0.95rem',
-          zIndex: 1000,
-          opacity: 0,
-          transition: 'opacity 0.2s ease-in-out'
-        });
-        document.body.appendChild(msg);
-        requestAnimationFrame(() => { msg.style.opacity = 1 });
-        setTimeout(() => {
-          msg.style.opacity = 0;
-          setTimeout(() => msg.remove(), 500);
-        }, 1500);
+      function showCopyMessage() {
+        const msg = document.getElementById('copyMsg');
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 1500);
       }
 
       document.getElementById('getFenBtn').addEventListener('click', () => {
-        const txt = game.fen();
-        navigator.clipboard.writeText(txt).then(() => {
-          showCopiedMessage('FEN copied to clipboard');
-        });
+        navigator.clipboard.writeText(game.fen()).then(showCopyMessage);
       });
 
       document.getElementById('getPgnBtn').addEventListener('click', () => {
-        const txt = game.pgn() || '(no moves yet)';
-        navigator.clipboard.writeText(txt).then(() => {
-          showCopiedMessage('PGN copied to clipboard');
-        });
+        const pgn = game.pgn() || '(no moves yet)';
+        navigator.clipboard.writeText(pgn).then(showCopyMessage);
       });
 
       document.getElementById('flipBtn').addEventListener('click', () => {
@@ -376,7 +325,6 @@
         handleEngineMove(src, tgt);
       }
 
-      // Stockfish worker for play
       const engine = new Worker('engine/stockfish-17-lite-single.js');
       engine.postMessage('uci');
       engine.addEventListener('message', function setupPlay({ data }) {
@@ -390,7 +338,6 @@
         }
       });
 
-      // Stockfish worker for fair-check
       const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
       evalEngine.postMessage('uci');
       evalEngine.addEventListener('message', function setupEval({ data }) {
@@ -415,11 +362,9 @@
         const bestCp = candidates[0].cp;
         const x = Math.abs(randomGaussian() * sigma);
         const allowed = candidates.filter(c => (bestCp - c.cp) <= x);
-        return {
-          selected: allowed.length
-            ? allowed[Math.floor(Math.random() * allowed.length)]
-            : candidates[0]
-        };
+        return allowed.length
+          ? allowed[Math.floor(Math.random() * allowed.length)]
+          : candidates[0];
       }
 
       function adjustSigma(base) {
@@ -445,8 +390,8 @@
         highlightMove(src, tgt, 'white');
         hideOutputs();
         const nodes = nodesByLevel[currentLevel];
-        const baseSigma = adjustSigma(sigmaByLevel[currentLevel]);
-        const candMap = {};
+        const sigma = adjustSigma(sigmaByLevel[currentLevel]);
+        const cand = {};
         let seen = false;
 
         function onInfo({ data }) {
@@ -460,16 +405,15 @@
               const cp = cpm
                 ? +cpm[1]
                 : (mat[1] > 0 ? 100000 - +mat[1] * 100 : -100000 - +mat[1] * 100);
-              candMap[mpv] = { move: pv, cp };
+              cand[mpv] = { move: pv, cp };
               seen = true;
             }
           }
           if (line.startsWith('bestmove')) {
             engine.removeEventListener('message', onInfo);
             if (!seen) return;
-            const choices = Object.values(candMap);
-            const pick = thresholdSelect(choices, baseSigma).selected;
-            const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+            const choice = thresholdSelect(Object.values(cand), sigma);
+            const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
             highlightMove(f, t, 'black');
             game.move({ from: f, to: t, promotion: 'q' });
             board.position(game.fen(), false);
@@ -484,8 +428,8 @@
       function engineReplyFromCurrent() {
         hideOutputs();
         const nodes = nodesByLevel[currentLevel];
-        const baseSigma = adjustSigma(sigmaByLevel[currentLevel]);
-        const candMap = {};
+        const sigma = adjustSigma(sigmaByLevel[currentLevel]);
+        const cand = {};
         let seenAny = false;
 
         function listener({ data }) {
@@ -499,16 +443,15 @@
               const cp = cpm
                 ? +cpm[1]
                 : (mat[1] > 0 ? 100000 - +mat[1] * 100 : -100000 - +mat[1] * 100);
-              candMap[mpv] = { move: pv, cp };
+              cand[mpv] = { move: pv, cp };
               seenAny = true;
             }
           }
           if (line.startsWith('bestmove')) {
             engine.removeEventListener('message', listener);
             if (!seenAny) return;
-            const choices = Object.values(candMap);
-            const pick = thresholdSelect(choices, baseSigma).selected;
-            const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+            const choice = thresholdSelect(Object.values(cand), sigma);
+            const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
             const col = game.turn() === 'w' ? 'black' : 'white';
             highlightMove(f, t, col);
             game.move({ from: f, to: t, promotion: 'q' });
@@ -660,7 +603,6 @@
         return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
       }
 
-      // set initial startFen
       startFen = game.fen();
       setOrientation();
       refreshLevelLabels();
