@@ -244,13 +244,25 @@
       }
 
       // Analysis: send full move list
-      document.getElementById('analysisBtn').addEventListener('click', () => {
-        let pgn = game.pgn() || '';
-        pgn = pgn.replace(/\d+\.(\.\.)?/g,'').trim();
-        if (!pgn) return;
-        const moves = pgn.split(/\s+/).join('_');
-        window.open(`https://lichess.org/analysis/pgn/${encodeURIComponent(moves)}`, '_blank');
-      });
+// Analysis: replay the whole game from the J-Chess start position
+document.getElementById('analysisBtn').addEventListener('click', () => {
+  // 1. Always start from the original J-Chess FEN
+  const fen = startFen;
+  const pathFen = fen.split(' ').join('_'); 
+
+  // 2. Build a list of UCI moves (e2e4, g1f3, etc.) from the game history
+  const moves = game.history({ verbose: true })
+    .map(m => m.from + m.to + (m.promotion || ''))
+    .join('_');
+
+  // 3. Construct the URL: /analysis/standard/<FEN>?moves=<move1_move2_...>
+  let url = `https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`;
+  if (moves) url += `?moves=${encodeURIComponent(moves)}`;
+
+  // 4. Open it
+  window.open(url, '_blank');
+});
+
 
       // Editor: always start position
       document.getElementById('editorBtn').addEventListener('click', () => {
