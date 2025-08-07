@@ -100,12 +100,6 @@
       #board-container { max-width: min(96vw,520px); }
     }
     #board { width:100%; height:100%; touch-action:none; }
-    #copyMsg {
-      margin-top: 0.75rem;
-      color: #007700;
-      font-weight: 600;
-      display: none;
-    }
     #loadingSpinner {
       position:absolute; top:50%; left:50%;
       width:56px; height:56px;
@@ -136,6 +130,14 @@
     }
     .highlight-black {
       box-shadow: inset 0 0 3px 3px rgba(0,0,255,0.85) !important;
+    }
+    /* Button bar under board */
+    #buttonBar {
+      text-align: center;
+      margin-top: 1rem;
+    }
+    #buttonBar button {
+      margin: 0 0.3rem;
     }
   </style>
 </head>
@@ -200,11 +202,12 @@
       <div id="loadingSpinner"></div>
     </div>
 
-    <button id="getFenBtn">Copy FEN</button>
-    <button id="undoBtn">Undo</button>
-    <button id="flipBtn">Flip</button>
-    <button id="getPgnBtn">Copy PGN</button>
-    <div id="copyMsg">Copied!</div>
+    <div id="buttonBar">
+      <button id="undoBtn">Undo</button>
+      <button id="flipBtn">Flip</button>
+      <button id="analysisBtn">Analysis</button>
+      <button id="editorBtn">Editor</button>
+    </div>
 
     <div id="fairStatus"></div>
   </div>
@@ -231,47 +234,45 @@
         11:2600,12:2800,13:3000,14:3300,15:3600
       };
 
-      let isJChessMode = false;
-      let currentLevel = 5;
-      let searchingFair = false;
-      let startFen;
-      let isHumanBlack = false;
-      let waitingForEngineFirst = false;
-      let manualFlip = false;
+      let isJChessMode = false, currentLevel = 5, searchingFair = false;
+      let startFen, isHumanBlack = false, waitingForEngineFirst = false, manualFlip = false;
 
       const statusDiv = document.getElementById('fairStatus');
       const $board = $('#board');
 
-      function hideOutputs() {
-        // no-op
-      }
-
+      function hideOutputs() { /* no-op */ }
       function clearHighlights() {
-        $board.find('.square-55d63')
-          .removeClass('highlight-white highlight-black');
+        $board.find('.square-55d63').removeClass('highlight-white highlight-black');
       }
-
       function highlightMove(f, t, col) {
         clearHighlights();
         $board.find(`.square-${f}`).addClass(`highlight-${col}`);
         $board.find(`.square-${t}`).addClass(`highlight-${col}`);
       }
 
-      function showCopyMessage() {
-        const msg = document.getElementById('copyMsg');
-        msg.style.display = 'block';
-        setTimeout(() => { msg.style.display = 'none'; }, 1500);
-      }
-
-      document.getElementById('getFenBtn').addEventListener('click', () => {
-        navigator.clipboard.writeText(game.fen()).then(showCopyMessage);
+      // Lichess buttons
+      document.getElementById('analysisBtn').addEventListener('click', () => {
+        const fen = game.fen();
+        const pathFen = fen.split(' ').join('_');
+        window.open(`https://lichess.org/analysis/standard/${encodeURI(pathFen)}`, '_blank');
+      });
+      document.getElementById('editorBtn').addEventListener('click', () => {
+        const fen = game.fen();
+        const pathFen = fen.split(' ').join('_');
+        window.open(`https://lichess.org/editor/${encodeURI(pathFen)}?color=white`, '_blank');
       });
 
-      document.getElementById('getPgnBtn').addEventListener('click', () => {
-        const pgn = game.pgn() || '(no moves yet)';
-        navigator.clipboard.writeText(pgn).then(showCopyMessage);
+      // Undo & Flip
+      document.getElementById('undoBtn').addEventListener('click', () => {
+        const turn = game.turn();
+        const first = game.undo();
+        if (turn === (isHumanBlack ? 'b' : 'w')) game.undo();
+        if (first) {
+          board.position(game.fen(), false);
+          clearHighlights();
+          waitingForEngineFirst = false;
+        }
       });
-
       document.getElementById('flipBtn').addEventListener('click', () => {
         manualFlip = !manualFlip;
         setOrientation();
@@ -298,89 +299,67 @@
           opt.textContent = `Lv. ${lvl} (${isJChessMode ? base + 200 : base})`;
         });
       }
-
       function setOrientation() {
-        if (manualFlip) {
-          board.orientation(isHumanBlack ? 'white' : 'black');
-        } else {
-          board.orientation(isHumanBlack ? 'black' : 'white');
-        }
+        board.orientation(manualFlip
+          ? (isHumanBlack ? 'white' : 'black')
+          : (isHumanBlack ? 'black' : 'white'));
       }
-
       function onDragStart(src, piece) {
         if (game.game_over()) return false;
-        const turn = game.turn();
-        if (!isHumanBlack) return piece[0] === 'w' && turn === 'w';
-        return !waitingForEngineFirst && piece[0] === 'b' && turn === 'b';
+        const t = game.turn();
+        return (!isHumanBlack && piece[0]==='w' && t==='w')
+            || (isHumanBlack && !waitingForEngineFirst && piece[0]==='b' && t==='b');
       }
-
-      function onSnapEnd() {
-        board.position(game.fen(), false);
-      }
-
+      function onSnapEnd() { board.position(game.fen(), false); }
       function onDrop(src, tgt) {
-        hideOutputs();
         const mv = game.move({ from: src, to: tgt, promotion: 'q' });
         if (!mv) return 'snapback';
         handleEngineMove(src, tgt);
       }
 
+      // Stockfish for play
       const engine = new Worker('engine/stockfish-17-lite-single.js');
-      engine.postMessage('uci');
-      engine.addEventListener('message', function setupPlay({ data }) {
-        if (data.trim() === 'uciok') {
+      engine.postMessage('uci'); engine.addEventListener('message', function setup({ data }) {
+        if (data.trim()==='uciok') {
           engine.postMessage('setoption name MultiPV value 50');
-          engine.postMessage('ucinewgame');
-          engine.postMessage('isready');
+          engine.postMessage('ucinewgame'); engine.postMessage('isready');
         }
-        if (data.trim() === 'readyok') {
-          engine.removeEventListener('message', setupPlay);
-        }
+        if (data.trim()==='readyok') engine.removeEventListener('message', setup);
       });
-
+      // Stockfish for fair-check
       const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
-      evalEngine.postMessage('uci');
-      evalEngine.addEventListener('message', function setupEval({ data }) {
-        if (data.trim() === 'uciok') {
+      evalEngine.postMessage('uci'); evalEngine.addEventListener('message', function setupE({ data }) {
+        if (data.trim()==='uciok') {
           evalEngine.postMessage('ucinewgame');
           evalEngine.postMessage('setoption name UCI_LimitStrength value false');
           evalEngine.postMessage('isready');
         }
-        if (data.trim() === 'readyok') {
-          evalEngine.removeEventListener('message', setupEval);
-        }
+        if (data.trim()==='readyok') evalEngine.removeEventListener('message', setupE);
       });
 
       function randomGaussian() {
-        let u = 0, v = 0;
-        while (u === 0) u = Math.random();
-        while (v === 0) v = Math.random();
-        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random();
+        return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
       }
-
-      function thresholdSelect(candidates, sigma) {
-        const bestCp = candidates[0].cp;
-        const x = Math.abs(randomGaussian() * sigma);
-        const allowed = candidates.filter(c => (bestCp - c.cp) <= x);
-        return allowed.length
-          ? allowed[Math.floor(Math.random() * allowed.length)]
-          : candidates[0];
+      function thresholdSelect(cands, sigma) {
+        const best = cands[0].cp, x = Math.abs(randomGaussian()*sigma);
+        const allowed = cands.filter(c=>best-c.cp<=x);
+        return allowed.length? allowed[Math.floor(Math.random()*allowed.length)] : cands[0];
       }
-
       function adjustSigma(base) {
-        const moves = Math.floor(game.history().length / 2) + 1;
-        if (currentLevel >= 3 && currentLevel <= 6) {
-          if (moves <= 3) return base / 5;
-          if (moves === 4) return base / 4;
-          if (moves === 5) return base / 3;
-          if (moves === 6) return base / 2;
+        const moves = Math.floor(game.history().length/2)+1;
+        if (currentLevel>=3 && currentLevel<=6) {
+          if (moves<=3) return base/5;
+          if (moves===4) return base/4;
+          if (moves===5) return base/3;
+          if (moves===6) return base/2;
           return base;
         }
-        if (currentLevel >= 7 && currentLevel <= 14) {
-          if (moves <= 6) return base / 8;
-          if (moves === 7) return base / 6;
-          if (moves === 8) return base / 4;
-          if (moves === 9) return base / 2;
+        if (currentLevel>=7 && currentLevel<=14) {
+          if (moves<=6) return base/8;
+          if (moves===7) return base/6;
+          if (moves===8) return base/4;
+          if (moves===9) return base/2;
           return base;
         }
         return base;
@@ -388,218 +367,154 @@
 
       function handleEngineMove(src, tgt) {
         highlightMove(src, tgt, 'white');
-        hideOutputs();
         const nodes = nodesByLevel[currentLevel];
         const sigma = adjustSigma(sigmaByLevel[currentLevel]);
-        const cand = {};
-        let seen = false;
-
+        const candMap = {}; let seen=false;
         function onInfo({ data }) {
-          const line = data.trim();
+          const line=data.trim();
           if (line.startsWith('info') && line.includes('multipv')) {
-            const mpv = +line.match(/multipv\s+(\d+)/)[1];
-            const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
-            const cpm = line.match(/score cp\s+(-?\d+)/);
-            const mat = line.match(/score mate\s+(-?\d+)/);
-            if (mpv && pv && (cpm || mat)) {
-              const cp = cpm
-                ? +cpm[1]
-                : (mat[1] > 0 ? 100000 - +mat[1] * 100 : -100000 - +mat[1] * 100);
-              cand[mpv] = { move: pv, cp };
-              seen = true;
+            const mpv=+line.match(/multipv\s+(\d+)/)[1];
+            const pv=line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
+            const cpm=line.match(/score cp\s+(-?\d+)/);
+            const mat=line.match(/score mate\s+(-?\d+)/);
+            if (mpv && pv && (cpm||mat)) {
+              const cp=cpm? +cpm[1] : (mat[1]>0?100000-mat[1]*100:-100000-mat[1]*100);
+              candMap[mpv]={move:pv,cp}; seen=true;
             }
           }
           if (line.startsWith('bestmove')) {
             engine.removeEventListener('message', onInfo);
             if (!seen) return;
-            const choice = thresholdSelect(Object.values(cand), sigma);
-            const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
-            highlightMove(f, t, 'black');
-            game.move({ from: f, to: t, promotion: 'q' });
-            board.position(game.fen(), false);
+            const pick = thresholdSelect(Object.values(candMap), sigma);
+            const f=pick.move.slice(0,2), t=pick.move.slice(2,4);
+            highlightMove(f,t,'black');
+            game.move({from:f,to:t,promotion:'q'});
+            board.position(game.fen(),false);
           }
         }
-
         engine.addEventListener('message', onInfo);
-        engine.postMessage('position fen ' + game.fen());
-        engine.postMessage('go nodes ' + nodes);
+        engine.postMessage('position fen '+game.fen());
+        engine.postMessage('go nodes '+nodes);
       }
 
       function engineReplyFromCurrent() {
-        hideOutputs();
         const nodes = nodesByLevel[currentLevel];
         const sigma = adjustSigma(sigmaByLevel[currentLevel]);
-        const cand = {};
-        let seenAny = false;
-
+        const candMap = {}; let seenAny=false;
         function listener({ data }) {
-          const line = data.trim();
+          const line=data.trim();
           if (line.startsWith('info') && line.includes('multipv')) {
-            const mpv = +line.match(/multipv\s+(\d+)/)[1];
-            const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
-            const cpm = line.match(/score cp\s+(-?\d+)/);
-            const mat = line.match(/score mate\s+(-?\d+)/);
-            if (mpv && pv && (cpm || mat)) {
-              const cp = cpm
-                ? +cpm[1]
-                : (mat[1] > 0 ? 100000 - +mat[1] * 100 : -100000 - +mat[1] * 100);
-              cand[mpv] = { move: pv, cp };
-              seenAny = true;
+            const mpv=+line.match(/multipv\s+(\d+)/)[1];
+            const pv=line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
+            const cpm=line.match(/score cp\s+(-?\d+)/);
+            const mat=line.match(/score mate\s+(-?\d+)/);
+            if (mpv && pv && (cpm||mat)) {
+              const cp=cpm? +cpm[1] : (mat[1]>0?100000-mat[1]*100:-100000-mat[1]*100);
+              candMap[mpv]={move:pv,cp}; seenAny=true;
             }
           }
           if (line.startsWith('bestmove')) {
             engine.removeEventListener('message', listener);
             if (!seenAny) return;
-            const choice = thresholdSelect(Object.values(cand), sigma);
-            const f = choice.move.slice(0,2), t = choice.move.slice(2,4);
-            const col = game.turn() === 'w' ? 'black' : 'white';
-            highlightMove(f, t, col);
-            game.move({ from: f, to: t, promotion: 'q' });
-            board.position(game.fen(), false);
-            waitingForEngineFirst = false;
+            const pick=thresholdSelect(Object.values(candMap), sigma);
+            const f=pick.move.slice(0,2), t=pick.move.slice(2,4);
+            const col = game.turn()==='w'?'black':'white';
+            highlightMove(f,t,col);
+            game.move({from:f,to:t,promotion:'q'});
+            board.position(game.fen(),false);
+            waitingForEngineFirst=false;
           }
         }
-
         engine.addEventListener('message', listener);
-        engine.postMessage('position fen ' + game.fen());
-        engine.postMessage('go nodes ' + nodes);
+        engine.postMessage('position fen '+game.fen());
+        engine.postMessage('go nodes '+nodes);
       }
 
-      document.getElementById('undoBtn').addEventListener('click', () => {
-        const turn = game.turn();
-        const first = game.undo();
-        if (turn === (isHumanBlack ? 'b' : 'w')) game.undo();
-        if (first) {
-          board.position(game.fen(), false);
-          clearHighlights();
-          hideOutputs();
-          waitingForEngineFirst = false;
-        }
-      });
-
       document.getElementById('playWhiteBtn').addEventListener('click', () => {
-        hideOutputs();
-        isHumanBlack = false;
-        waitingForEngineFirst = false;
-        manualFlip = false;
-        game.load(startFen);
-        board.position(startFen, false);
-        setOrientation();
-        clearHighlights();
+        isHumanBlack = false; waitingForEngineFirst = false; manualFlip = false;
+        game.load(startFen); board.position(startFen,false);
+        setOrientation(); clearHighlights();
       });
-
       document.getElementById('playBlackBtn').addEventListener('click', () => {
-        hideOutputs();
-        isHumanBlack = true;
-        waitingForEngineFirst = true;
-        manualFlip = false;
-        game.load(startFen);
-        board.position(startFen, false);
-        setOrientation();
-        clearHighlights();
-        engineReplyFromCurrent();
+        isHumanBlack = true; waitingForEngineFirst = true; manualFlip = false;
+        game.load(startFen); board.position(startFen,false);
+        setOrientation(); clearHighlights(); engineReplyFromCurrent();
       });
 
       $('#standardBtn').click(() => {
-        hideOutputs();
-        isJChessMode = false;
-        manualFlip = false;
-        refreshLevelLabels();
-        game.reset();
-        startFen = game.fen();
-        board.position(startFen, false);
-        clearHighlights();
-        setOrientation();
-        if (isHumanBlack) engineReplyFromCurrent();
+        isJChessMode=false; manualFlip=false; refreshLevelLabels();
+        game.reset(); startFen=game.fen();
+        board.position(startFen,false); clearHighlights();
+        setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
       });
-
       $('#randomiseBtn').click(() => {
-        hideOutputs();
-        isJChessMode = true;
-        manualFlip = false;
-        refreshLevelLabels();
-        const fen = generateJChessFEN();
-        game.load(fen);
-        startFen = fen;
-        board.position(fen, false);
-        clearHighlights();
-        setOrientation();
-        if (isHumanBlack) engineReplyFromCurrent();
+        isJChessMode=true; manualFlip=false; refreshLevelLabels();
+        const fen=generateJChessFEN();
+        game.load(fen); startFen=fen;
+        board.position(fen,false); clearHighlights();
+        setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
       });
-
       $('#fairBtn').click(() => {
-        if (searchingFair) return;
-        hideOutputs();
-        isJChessMode = true;
-        manualFlip = false;
-        refreshLevelLabels();
-        searchingFair = true;
-        $('#loadingSpinner').show();
+        if(searchingFair) return;
+        isJChessMode=true; manualFlip=false; refreshLevelLabels();
+        searchingFair=true; $('#loadingSpinner').show();
         tryNextFair();
       });
 
       function tryNextFair() {
-        const fen = generateJChessFEN();
-        statusDiv.textContent += fen + '\n';
-        let lastCp = null;
-        const ms = +$('#timeSelect').val();
-        evalEngine.postMessage('position fen ' + fen);
-        evalEngine.postMessage('go movetime ' + ms);
+        const fen=generateJChessFEN();
+        statusDiv.textContent+=fen+'\n';
+        let lastCp=null;
+        const ms=+$('#timeSelect').val();
+        evalEngine.postMessage('position fen '+fen);
+        evalEngine.postMessage('go movetime '+ms);
 
         function onEval({ data }) {
-          const line = data.trim();
-          if (line.startsWith('info') && line.includes('score cp')) {
-            lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
+          const line=data.trim();
+          if(line.startsWith('info')&&line.includes('score cp')) {
+            lastCp=+line.match(/score cp\s+(-?\d+)/)[1];
           }
-          if (line.startsWith('info') && line.includes('score mate')) {
-            const m = +line.match(/score mate\s+(-?\d+)/)[1];
-            lastCp = m > 0 ? 5000 : -5000;
+          if(line.startsWith('info')&&line.includes('score mate')) {
+            const m=+line.match(/score mate\s+(-?\d+)/)[1];
+            lastCp=m>0?5000:-5000;
           }
-          if (line.startsWith('bestmove')) {
-            evalEngine.removeEventListener('message', onEval);
-            const raw = lastCp === null ? 0 : lastCp;
-            const fair = Math.abs(raw) <= 40;
-            statusDiv.textContent += `${(raw/100).toFixed(2)} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
-            if (fair) {
-              hideOutputs();
-              game.load(fen);
-              board.position(fen, false);
-              clearHighlights();
-              startFen = fen;
-              searchingFair = false;
-              $('#loadingSpinner').hide();
-              setOrientation();
-              if (isHumanBlack) engineReplyFromCurrent();
+          if(line.startsWith('bestmove')) {
+            evalEngine.removeEventListener('message',onEval);
+            const raw = lastCp===null?0:lastCp;
+            const fair = Math.abs(raw)<=40;
+            statusDiv.textContent+=`${(raw/100).toFixed(2)} => ${fair?'Fair':'Unfair'}\n\n`;
+            if(fair) {
+              game.load(fen); board.position(fen,false);
+              clearHighlights(); startFen=fen;
+              searchingFair=false; $('#loadingSpinner').hide();
+              setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
             } else {
-              setTimeout(tryNextFair, 30);
+              setTimeout(tryNextFair,30);
             }
           }
         }
-
-        evalEngine.addEventListener('message', onEval);
+        evalEngine.addEventListener('message',onEval);
       }
 
       function shuffle(a) {
-        for (let i = a.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [a[i], a[j]] = [a[j], a[i]];
+        for(let i=a.length-1;i>0;i--){
+          const j=Math.floor(Math.random()*(i+1));
+          [a[i],a[j]]=[a[j],a[i]];
         }
         return a;
       }
-
       function generateBackRank() {
-        const P = ['r','n','b','q','k','b','n','r'];
+        const P=['r','n','b','q','k','b','n','r'];
         let R, bs;
         do {
           R = shuffle(P.slice());
           bs = [R.indexOf('b'), R.lastIndexOf('b')];
-        } while ((bs[0] % 2) === (bs[1] % 2));
+        } while((bs[0]%2)===(bs[1]%2));
         return R.join('');
       }
-
       function generateJChessFEN() {
-        const W = generateBackRank().toUpperCase();
-        const B = generateBackRank().toLowerCase();
+        const W=generateBackRank().toUpperCase();
+        const B=generateBackRank().toLowerCase();
         return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
       }
 
