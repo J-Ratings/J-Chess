@@ -6,8 +6,8 @@
           data-cf-beacon='{"token":"30c4e45a2b5e450c80d42a89a35e209d"}'></script>
   <!-- End Cloudflare Web Analytics -->
   <meta charset="UTF-8" />
-  <title>J‑Chess</title>
-  <meta name="description" content="J‑Chess is Chess960 on steroids! Over 8 million possible positions. Play against the engine online." />
+  <title>J-Chess</title>
+  <meta name="description" content="J-Chess is Chess960 on steroids! Over 8 million possible positions. Play against the engine online." />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
@@ -19,7 +19,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       background: #f5f5f5;
       color: #222;
       -webkit-font-smoothing: antialiased;
@@ -87,19 +87,18 @@
     }
     #stats {
       margin-bottom: 1.2rem;
-      text-align: center;
     }
     #stats h2 {
       margin: 0.35rem 0;
       font-size: clamp(1rem,0.85rem+0.6vw,1.25rem);
       font-weight: 600;
     }
-    #controlRows { margin-bottom: 1.1rem; }
     .control-row {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 0.65rem 0.9rem;
+      margin-bottom: 1.1rem;
     }
     button, select {
       font: inherit;
@@ -118,21 +117,20 @@
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      flex-wrap: nowrap;
     }
     .field label { font-weight: 600; font-size: 0.95rem; }
     #board-container {
       position: relative;
       width: 100%;
       max-width: 520px;
-      margin: 0 auto;
+      margin: 0 auto 1rem;
       aspect-ratio: 1;
     }
     @media (max-width:620px) {
       #board-container { max-width: min(96vw,520px); }
     }
     #board { width:100%; height:100%; touch-action:none; }
-    #getFenBtn { margin-top:0.85rem; }
+    #getFenBtn { margin-bottom:0.5rem; }
     #loadingSpinner {
       position:absolute; top:50%; left:50%;
       width:56px; height:56px;
@@ -144,44 +142,33 @@
       display:none; z-index:10; pointer-events:none;
     }
     @keyframes spin {
-      0% { transform:translate(-50%,-50%) rotate(0deg); }
-      100% { transform:translate(-50%,-50%) rotate(360deg); }
-    }
-    #fenContainer,#pgnContainer {
-      margin:0.6rem auto 0;
-      max-width:520px;
-      display:none;
-    }
-    #fenOutput,#pgnOutput {
-      width:100%;
-      padding:0.55rem 0.65rem;
-      font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
-      font-size:0.9rem;
-      resize:vertical;
+      to { transform:translate(-50%,-50%) rotate(360deg); }
     }
     #fairStatus {
-      margin:1rem auto 0;
+      margin-top:1rem;
       max-width:520px;
       text-align:left;
-      font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
-      white-space:pre-wrap;
-      background:#fff;
-      border:1px solid #ddd;
-      padding:0.6rem 0.7rem;
-      border-radius:4px;
-      min-height:2rem;
+      font-family: ui-monospace, Consolas, Menlo, monospace;
+      white-space: pre-wrap;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 0.6rem 0.7rem;
+      border-radius: 4px;
+      min-height: 2rem;
+      margin-left: auto;
+      margin-right: auto;
     }
     .highlight-white {
-      box-shadow:inset 0 0 3px 3px rgba(255,255,0,0.85)!important;
+      box-shadow: inset 0 0 3px 3px rgba(255,255,0,0.85) !important;
     }
     .highlight-black {
-      box-shadow:inset 0 0 3px 3px rgba(0,0,255,0.85)!important;
+      box-shadow: inset 0 0 3px 3px rgba(0,0,255,0.85) !important;
     }
   </style>
 </head>
 <body>
   <header class="site-bar">
-    <h1><a href="/">J‑Chess</a></h1>
+    <h1><a href="/">J-Chess</a></h1>
     <nav>
       <a href="/" class="active">Play</a>
       <a href="/info/">Info</a>
@@ -190,49 +177,48 @@
 
   <div class="container">
     <div id="stats">
-      <h2>~8.3 million starting positions</h2>
-      <h2>~1.8 million fair starting positions</h2>
+      <h2>~8.3 million starting positions</h2>
+      <h2>~1.8 million fair starting positions</h2>
     </div>
 
-    <div id="controlRows">
-      <div class="control-row" id="row1">
-        <button id="standardBtn">Standard Chess</button>
-        <button id="randomiseBtn">J‑Chess</button>
-        <button id="fairBtn">Fair J‑Chess</button>
-        <div class="field">
-          <label for="timeSelect">Generation Time:</label>
-          <select id="timeSelect">
-            <option value="250">0.25 s</option>
-            <option value="500">0.5 s</option>
-            <option value="1000" selected>1 s</option>
-            <option value="2000">2 s</option>
-            <option value="5000">5 s</option>
-          </select>
-        </div>
+    <div class="control-row">
+      <button id="standardBtn">Standard Chess</button>
+      <button id="randomiseBtn">J-Chess</button>
+      <button id="fairBtn">Fair J-Chess</button>
+      <div class="field">
+        <label for="timeSelect">Generation Time:</label>
+        <select id="timeSelect">
+          <option value="250">0.25 s</option>
+          <option value="500">0.5 s</option>
+          <option value="1000" selected>1 s</option>
+          <option value="2000">2 s</option>
+          <option value="5000">5 s</option>
+        </select>
       </div>
-      <div class="control-row" id="row2">
-        <button id="playWhiteBtn">Play White</button>
-        <button id="playBlackBtn">Play Black</button>
-        <div class="field">
-          <label for="levelSelect">Level:</label>
-          <select id="levelSelect">
-            <option value="1">Lv. 1 (600)</option>
-            <option value="2">Lv. 2 (800)</option>
-            <option value="3">Lv. 3 (1000)</option>
-            <option value="4">Lv. 4 (1200)</option>
-            <option value="5" selected>Lv. 5 (1400)</option>
-            <option value="6">Lv. 6 (1600)</option>
-            <option value="7">Lv. 7 (1800)</option>
-            <option value="8">Lv. 8 (2000)</option>
-            <option value="9">Lv. 9 (2200)</option>
-            <option value="10">Lv. 10 (2400)</option>
-            <option value="11">Lv. 11 (2600)</option>
-            <option value="12">Lv. 12 (2800)</option>
-            <option value="13">Lv. 13 (3000)</option>
-            <option value="14">Lv. 14 (3300)</option>
-            <option value="15">Lv. 15 (3600)</option>
-          </select>
-        </div>
+    </div>
+
+    <div class="control-row">
+      <button id="playWhiteBtn">Play White</button>
+      <button id="playBlackBtn">Play Black</button>
+      <div class="field">
+        <label for="levelSelect">Level:</label>
+        <select id="levelSelect">
+          <option value="1">Lv. 1 (600)</option>
+          <option value="2">Lv. 2 (800)</option>
+          <option value="3">Lv. 3 (1000)</option>
+          <option value="4">Lv. 4 (1200)</option>
+          <option value="5" selected>Lv. 5 (1400)</option>
+          <option value="6">Lv. 6 (1600)</option>
+          <option value="7">Lv. 7 (1800)</option>
+          <option value="8">Lv. 8 (2000)</option>
+          <option value="9">Lv. 9 (2200)</option>
+          <option value="10">Lv. 10 (2400)</option>
+          <option value="11">Lv. 11 (2600)</option>
+          <option value="12">Lv. 12 (2800)</option>
+          <option value="13">Lv. 13 (3000)</option>
+          <option value="14">Lv. 14 (3300)</option>
+          <option value="15">Lv. 15 (3600)</option>
+        </select>
       </div>
     </div>
 
@@ -246,17 +232,14 @@
     <button id="flipBtn">Flip</button>
     <button id="getPgnBtn">Get PGN</button>
 
-
     <div id="fairStatus"></div>
-  </div><!-- end .container -->
+  </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const SHOW_ENGINE_DEBUG = false;
-
       const nodesByLevel = {
         1:1000000,2:1000000,3:1000000,4:1000000,
         5:1000000,6:1000000,7:1500000,8:1500000,
@@ -285,50 +268,65 @@
       const statusDiv = document.getElementById('fairStatus');
       const $board = $('#board');
 
+      function hideOutputs() {
+        // no-op
+      }
+
       function clearHighlights() {
         $board.find('.square-55d63')
           .removeClass('highlight-white highlight-black');
       }
+
       function highlightMove(f, t, col) {
         clearHighlights();
         $board.find(`.square-${f}`).addClass(`highlight-${col}`);
         $board.find(`.square-${t}`).addClass(`highlight-${col}`);
       }
-      function hideOutputs() {
-        fenDiv.style.display = 'none';
-        pgnDiv.style.display = 'none';
-      }
 
-      function setOrientation() {
-        if (manualFlip) {
-          board.orientation(isHumanBlack ? 'white' : 'black');
-        } else {
-          board.orientation(isHumanBlack ? 'black' : 'white');
-        }
-      }
-
-      document.getElementById('flipBtn')
-        .addEventListener('click', () => {
-          manualFlip = !manualFlip;
-          setOrientation();
+      function showCopiedMessage(text) {
+        const msg = document.createElement('div');
+        msg.textContent = text;
+        Object.assign(msg.style, {
+          position: 'fixed',
+          top: '1.2rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--brand-bg)',
+          color: '#fff',
+          padding: '0.6rem 1rem',
+          borderRadius: '6px',
+          boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+          fontSize: '0.95rem',
+          zIndex: 1000,
+          opacity: 0,
+          transition: 'opacity 0.2s ease-in-out'
         });
-
-      function randomGaussian() {
-        let u = 0, v = 0;
-        while (u === 0) u = Math.random();
-        while (v === 0) v = Math.random();
-        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        document.body.appendChild(msg);
+        requestAnimationFrame(() => { msg.style.opacity = 1 });
+        setTimeout(() => {
+          msg.style.opacity = 0;
+          setTimeout(() => msg.remove(), 500);
+        }, 1500);
       }
 
-      function thresholdSelect(candidates, sigma) {
-        const bestCp = candidates[0].cp;
-        const x = Math.abs(randomGaussian() * sigma);
-        const allowed = candidates.filter(c => (bestCp - c.cp) <= x);
-        const selected = allowed.length
-          ? allowed[Math.floor(Math.random() * allowed.length)]
-          : candidates[0];
-        return { selected, x };
-      }
+      document.getElementById('getFenBtn').addEventListener('click', () => {
+        const txt = game.fen();
+        navigator.clipboard.writeText(txt).then(() => {
+          showCopiedMessage('FEN copied to clipboard');
+        });
+      });
+
+      document.getElementById('getPgnBtn').addEventListener('click', () => {
+        const txt = game.pgn() || '(no moves yet)';
+        navigator.clipboard.writeText(txt).then(() => {
+          showCopiedMessage('PGN copied to clipboard');
+        });
+      });
+
+      document.getElementById('flipBtn').addEventListener('click', () => {
+        manualFlip = !manualFlip;
+        setOrientation();
+      });
 
       $('#levelSelect').on('change', function() {
         currentLevel = +this.value;
@@ -352,21 +350,25 @@
         });
       }
 
-      startFen = game.fen();
-      setOrientation();
-      refreshLevelLabels();
+      function setOrientation() {
+        if (manualFlip) {
+          board.orientation(isHumanBlack ? 'white' : 'black');
+        } else {
+          board.orientation(isHumanBlack ? 'black' : 'white');
+        }
+      }
 
       function onDragStart(src, piece) {
         if (game.game_over()) return false;
         const turn = game.turn();
-        if (!isHumanBlack) {
-          return piece[0] === 'w' && turn === 'w';
-        }
+        if (!isHumanBlack) return piece[0] === 'w' && turn === 'w';
         return !waitingForEngineFirst && piece[0] === 'b' && turn === 'b';
       }
+
       function onSnapEnd() {
         board.position(game.fen(), false);
       }
+
       function onDrop(src, tgt) {
         hideOutputs();
         const mv = game.move({ from: src, to: tgt, promotion: 'q' });
@@ -374,6 +376,7 @@
         handleEngineMove(src, tgt);
       }
 
+      // Stockfish worker for play
       const engine = new Worker('engine/stockfish-17-lite-single.js');
       engine.postMessage('uci');
       engine.addEventListener('message', function setupPlay({ data }) {
@@ -387,6 +390,7 @@
         }
       });
 
+      // Stockfish worker for fair-check
       const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
       evalEngine.postMessage('uci');
       evalEngine.addEventListener('message', function setupEval({ data }) {
@@ -400,20 +404,38 @@
         }
       });
 
+      function randomGaussian() {
+        let u = 0, v = 0;
+        while (u === 0) u = Math.random();
+        while (v === 0) v = Math.random();
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+      }
+
+      function thresholdSelect(candidates, sigma) {
+        const bestCp = candidates[0].cp;
+        const x = Math.abs(randomGaussian() * sigma);
+        const allowed = candidates.filter(c => (bestCp - c.cp) <= x);
+        return {
+          selected: allowed.length
+            ? allowed[Math.floor(Math.random() * allowed.length)]
+            : candidates[0]
+        };
+      }
+
       function adjustSigma(base) {
-        const fullMoves = Math.floor(game.history().length / 2) + 1;
+        const moves = Math.floor(game.history().length / 2) + 1;
         if (currentLevel >= 3 && currentLevel <= 6) {
-          if (fullMoves <= 3) return base / 5;
-          if (fullMoves === 4) return base / 4;
-          if (fullMoves === 5) return base / 3;
-          if (fullMoves === 6) return base / 2;
+          if (moves <= 3) return base / 5;
+          if (moves === 4) return base / 4;
+          if (moves === 5) return base / 3;
+          if (moves === 6) return base / 2;
           return base;
         }
         if (currentLevel >= 7 && currentLevel <= 14) {
-          if (fullMoves <= 6) return base / 8;
-          if (fullMoves === 7) return base / 6;
-          if (fullMoves === 8) return base / 4;
-          if (fullMoves === 9) return base / 2;
+          if (moves <= 6) return base / 8;
+          if (moves === 7) return base / 6;
+          if (moves === 8) return base / 4;
+          if (moves === 9) return base / 2;
           return base;
         }
         return base;
@@ -422,37 +444,38 @@
       function handleEngineMove(src, tgt) {
         highlightMove(src, tgt, 'white');
         hideOutputs();
-        const nodes = nodesByLevel[currentLevel] || 500000;
-        const baseSigma = adjustSigma(sigmaByLevel[currentLevel] || 0);
+        const nodes = nodesByLevel[currentLevel];
+        const baseSigma = adjustSigma(sigmaByLevel[currentLevel]);
         const candMap = {};
-        let seenScore = false;
+        let seen = false;
+
         function onInfo({ data }) {
           const line = data.trim();
           if (line.startsWith('info') && line.includes('multipv')) {
-            const mpv = line.match(/multipv\s+(\d+)/);
-            const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+            const mpv = +line.match(/multipv\s+(\d+)/)[1];
+            const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
             const cpm = line.match(/score cp\s+(-?\d+)/);
             const mat = line.match(/score mate\s+(-?\d+)/);
             if (mpv && pv && (cpm || mat)) {
               const cp = cpm
                 ? +cpm[1]
                 : (mat[1] > 0 ? 100000 - +mat[1] * 100 : -100000 - +mat[1] * 100);
-              candMap[+mpv[1]] = { move: pv[1], cp };
-              seenScore = true;
+              candMap[mpv] = { move: pv, cp };
+              seen = true;
             }
           }
           if (line.startsWith('bestmove')) {
             engine.removeEventListener('message', onInfo);
-            if (!seenScore) return;
+            if (!seen) return;
             const choices = Object.values(candMap);
-            const { selected: pick } = thresholdSelect(choices, baseSigma);
-            const f = pick.move.slice(0,2);
-            const t = pick.move.slice(2,4);
+            const pick = thresholdSelect(choices, baseSigma).selected;
+            const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
             highlightMove(f, t, 'black');
             game.move({ from: f, to: t, promotion: 'q' });
             board.position(game.fen(), false);
           }
         }
+
         engine.addEventListener('message', onInfo);
         engine.postMessage('position fen ' + game.fen());
         engine.postMessage('go nodes ' + nodes);
@@ -460,22 +483,23 @@
 
       function engineReplyFromCurrent() {
         hideOutputs();
-        const nodes = nodesByLevel[currentLevel] || 500000;
-        const baseSigma = adjustSigma(sigmaByLevel[currentLevel] || 0);
+        const nodes = nodesByLevel[currentLevel];
+        const baseSigma = adjustSigma(sigmaByLevel[currentLevel]);
         const candMap = {};
         let seenAny = false;
+
         function listener({ data }) {
           const line = data.trim();
           if (line.startsWith('info') && line.includes('multipv')) {
-            const mpv = line.match(/multipv\s+(\d+)/);
-            const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+            const mpv = +line.match(/multipv\s+(\d+)/)[1];
+            const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
             const cpm = line.match(/score cp\s+(-?\d+)/);
             const mat = line.match(/score mate\s+(-?\d+)/);
             if (mpv && pv && (cpm || mat)) {
               const cp = cpm
                 ? +cpm[1]
                 : (mat[1] > 0 ? 100000 - +mat[1] * 100 : -100000 - +mat[1] * 100);
-              candMap[+mpv[1]] = { move: pv[1], cp };
+              candMap[mpv] = { move: pv, cp };
               seenAny = true;
             }
           }
@@ -483,9 +507,8 @@
             engine.removeEventListener('message', listener);
             if (!seenAny) return;
             const choices = Object.values(candMap);
-            const { selected: pick } = thresholdSelect(choices, baseSigma);
-            const f = pick.move.slice(0,2);
-            const t = pick.move.slice(2,4);
+            const pick = thresholdSelect(choices, baseSigma).selected;
+            const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
             const col = game.turn() === 'w' ? 'black' : 'white';
             highlightMove(f, t, col);
             game.move({ from: f, to: t, promotion: 'q' });
@@ -493,51 +516,11 @@
             waitingForEngineFirst = false;
           }
         }
+
         engine.addEventListener('message', listener);
         engine.postMessage('position fen ' + game.fen());
         engine.postMessage('go nodes ' + nodes);
       }
-
-function showCopiedMessage(text) {
-  const msg = document.createElement('div');
-  msg.textContent = text;
-  Object.assign(msg.style, {
-    position: 'fixed',
-    top: '1.2rem',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    background: '#0d3f66',
-    color: '#fff',
-    padding: '0.6rem 1rem',
-    borderRadius: '6px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-    fontSize: '0.95rem',
-    zIndex: 1000,
-    opacity: 0,
-    transition: 'opacity 0.2s ease-in-out'
-  });
-  document.body.appendChild(msg);
-  requestAnimationFrame(() => { msg.style.opacity = 1; });
-  setTimeout(() => {
-    msg.style.opacity = 0;
-    setTimeout(() => msg.remove(), 500);
-  }, 1500);
-}
-
-document.getElementById('getFenBtn').addEventListener('click', () => {
-  const text = game.fen();
-  navigator.clipboard.writeText(text).then(() => {
-    showCopiedMessage('FEN copied to clipboard');
-  });
-});
-
-document.getElementById('getPgnBtn').addEventListener('click', () => {
-  const text = game.pgn() || '(no moves yet)';
-  navigator.clipboard.writeText(text).then(() => {
-    showCopiedMessage('PGN copied to clipboard');
-  });
-});
-
 
       document.getElementById('undoBtn').addEventListener('click', () => {
         const turn = game.turn();
@@ -550,7 +533,6 @@ document.getElementById('getPgnBtn').addEventListener('click', () => {
           waitingForEngineFirst = false;
         }
       });
-
 
       document.getElementById('playWhiteBtn').addEventListener('click', () => {
         hideOutputs();
@@ -643,7 +625,6 @@ document.getElementById('getPgnBtn').addEventListener('click', () => {
               startFen = fen;
               searchingFair = false;
               $('#loadingSpinner').hide();
-              manualFlip = false;
               setOrientation();
               if (isHumanBlack) engineReplyFromCurrent();
             } else {
@@ -651,6 +632,7 @@ document.getElementById('getPgnBtn').addEventListener('click', () => {
             }
           }
         }
+
         evalEngine.addEventListener('message', onEval);
       }
 
@@ -664,11 +646,11 @@ document.getElementById('getPgnBtn').addEventListener('click', () => {
 
       function generateBackRank() {
         const P = ['r','n','b','q','k','b','n','r'];
-        let R, b;
+        let R, bs;
         do {
           R = shuffle(P.slice());
-          b = [R.indexOf('b'), R.lastIndexOf('b')];
-        } while ((b[0] % 2) === (b[1] % 2));
+          bs = [R.indexOf('b'), R.lastIndexOf('b')];
+        } while ((bs[0] % 2) === (bs[1] % 2));
         return R.join('');
       }
 
@@ -677,6 +659,11 @@ document.getElementById('getPgnBtn').addEventListener('click', () => {
         const B = generateBackRank().toLowerCase();
         return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
       }
+
+      // set initial startFen
+      startFen = game.fen();
+      setOrientation();
+      refreshLevelLabels();
     });
   </script>
 
