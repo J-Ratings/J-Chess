@@ -246,12 +246,6 @@
     <button id="flipBtn">Flip</button>
     <button id="getPgnBtn">Get PGN</button>
 
-    <div id="fenContainer">
-      <textarea id="fenOutput" readonly rows="2"></textarea>
-    </div>
-    <div id="pgnContainer">
-      <textarea id="pgnOutput" readonly rows="4"></textarea>
-    </div>
 
     <div id="fairStatus"></div>
   </div><!-- end .container -->
@@ -288,11 +282,7 @@
       let waitingForEngineFirst = false;
       let manualFlip = false;
 
-      const fenDiv = document.getElementById('fenContainer');
-      const pgnDiv = document.getElementById('pgnContainer');
       const statusDiv = document.getElementById('fairStatus');
-      const outFen = document.getElementById('fenOutput');
-      const outPgn = document.getElementById('pgnOutput');
       const $board = $('#board');
 
       function clearHighlights() {
@@ -508,11 +498,46 @@
         engine.postMessage('go nodes ' + nodes);
       }
 
-      document.getElementById('getFenBtn').addEventListener('click', () => {
-        outFen.value = game.fen();
-        fenDiv.style.display = 'block';
-        outFen.select();
-      });
+function showCopiedMessage(text) {
+  const msg = document.createElement('div');
+  msg.textContent = text;
+  Object.assign(msg.style, {
+    position: 'fixed',
+    top: '1.2rem',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: '#0d3f66',
+    color: '#fff',
+    padding: '0.6rem 1rem',
+    borderRadius: '6px',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+    fontSize: '0.95rem',
+    zIndex: 1000,
+    opacity: 0,
+    transition: 'opacity 0.2s ease-in-out'
+  });
+  document.body.appendChild(msg);
+  requestAnimationFrame(() => { msg.style.opacity = 1; });
+  setTimeout(() => {
+    msg.style.opacity = 0;
+    setTimeout(() => msg.remove(), 500);
+  }, 1500);
+}
+
+document.getElementById('getFenBtn').addEventListener('click', () => {
+  const text = game.fen();
+  navigator.clipboard.writeText(text).then(() => {
+    showCopiedMessage('FEN copied to clipboard');
+  });
+});
+
+document.getElementById('getPgnBtn').addEventListener('click', () => {
+  const text = game.pgn() || '(no moves yet)';
+  navigator.clipboard.writeText(text).then(() => {
+    showCopiedMessage('PGN copied to clipboard');
+  });
+});
+
 
       document.getElementById('undoBtn').addEventListener('click', () => {
         const turn = game.turn();
@@ -526,11 +551,6 @@
         }
       });
 
-      document.getElementById('getPgnBtn').addEventListener('click', () => {
-        outPgn.value = game.pgn() || '(no moves yet)';
-        pgnDiv.style.display = 'block';
-        outPgn.select();
-      });
 
       document.getElementById('playWhiteBtn').addEventListener('click', () => {
         hideOutputs();
