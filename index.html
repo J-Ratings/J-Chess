@@ -202,6 +202,7 @@
     <div id="buttonBar">
       <button id="undoBtn">Undo</button>
       <button id="flipBtn">Flip</button>
+      <button id="resetBtn">Reset</button>
       <button id="analysisBtn">Analysis</button>
       <button id="editorBtn">Editor</button>
       <button id="copyPgnBtn">Copy PGN</button>
@@ -270,6 +271,20 @@ document.getElementById('analysisBtn').addEventListener('click', () => {
         const pathFen = fen.split(' ').join('_');
         window.open(`https://lichess.org/editor/${encodeURIComponent(pathFen)}?color=white`, '_blank');
       });
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  game.load(startFen);  // Load the original starting position
+  board.position(startFen, false);  // Reset the board visually
+  clearHighlights();  // Clear any move highlights
+  setOrientation();   // Ensure board is facing the right way
+  if (isHumanBlack) {
+    waitingForEngineFirst = true;
+    engineReplyFromCurrent();  // Engine plays the first move if human is Black
+  } else {
+    waitingForEngineFirst = false;
+  }
+});
+
 
       // Copy PGN
       document.getElementById('copyPgnBtn').addEventListener('click', () => {
