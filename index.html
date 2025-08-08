@@ -391,24 +391,30 @@ document.getElementById('resetBtn').addEventListener('click', () => {
         return allowed.length ? allowed[Math.floor(Math.random()*allowed.length)] : cands[0];
       }
 
-      function adjustSigma(base) {
-        const moves = Math.floor(game.history().length/2)+1;
-        if (currentLevel>=3 && currentLevel<=6) {
-          if      (moves<=3) return base/5;
-          else if (moves===4) return base/4;
-          else if (moves===5) return base/3;
-          else if (moves===6) return base/2;
-          else return base;
-        }
-        if (currentLevel>=7 && currentLevel<=14) {
-          if      (moves<=6) return base/8;
-          else if (moves===7) return base/6;
-          else if (moves===8) return base/4;
-          else if (moves===9) return base/2;
-          else return base;
-        }
-        return base;
-      }
+function adjustSigma(base) {
+  if (isJChessMode) return base;  // Full variance in J-Chess
+
+  const moves = Math.floor(game.history().length / 2) + 1;
+
+  if (currentLevel >= 3 && currentLevel <= 6) {
+    if      (moves <= 3) return base / 5;
+    else if (moves === 4) return base / 4;
+    else if (moves === 5) return base / 3;
+    else if (moves === 6) return base / 2;
+    else return base;
+  }
+
+  if (currentLevel >= 7 && currentLevel <= 14) {
+    if      (moves <= 6) return base / 8;
+    else if (moves === 7) return base / 6;
+    else if (moves === 8) return base / 4;
+    else if (moves === 9) return base / 2;
+    else return base;
+  }
+
+  return base;
+}
+
 
       function handleEngineMove(src, tgt) {
         highlightMove(src, tgt, 'white');
