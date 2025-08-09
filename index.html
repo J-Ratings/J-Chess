@@ -8,6 +8,38 @@
   <title>J-Chess</title>
   <meta name="description" content="J-Chess is Chess960 on steroids! Over 8 million possible positions. Play against the engine online." />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Icons / branding -->
+  <link rel="icon" type="image/png" sizes="16x16" href="/Logo.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/Logo.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="/Logo.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/Logo.png">
+  <meta name="theme-color" content="#0d3f66">
+
+  <!-- Social previews (update the domain to your live URL) -->
+  <meta property="og:title" content="J-Chess">
+  <meta property="og:description" content="J-Chess is Chess960 on steroids! Over 8 million possible positions. Play against the engine online.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://your-domain.example/">
+  <meta property="og:image" content="https://your-domain.example/Logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="J-Chess">
+  <meta name="twitter:description" content="J-Chess is Chess960 on steroids! Over 8 million possible positions.">
+  <meta name="twitter:image" content="https://your-domain.example/Logo.png">
+
+  <!-- Structured data for logo (update URL to your live site) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "J-Chess",
+    "url": "https://your-domain.example/",
+    "logo": "https://your-domain.example/Logo.png",
+    "sameAs": []
+  }
+  </script>
+
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
     :root {
@@ -31,14 +63,22 @@
       padding: 0.65rem clamp(1rem,4vw,2.2rem);
       box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     }
+    .brand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      color: var(--brand-fg);
+      text-decoration: none;
+    }
+    .brand-link img {
+      width: 32px;
+      height: 32px;
+    }
     .site-bar h1 {
       margin: 0;
       font-size: clamp(1.1rem,2.2vw+0.6rem,1.55rem);
-    }
-    .site-bar h1 a,
-    .site-bar h1 a:visited {
+      display: inline-block;
       color: var(--brand-fg);
-      text-decoration: none;
     }
     .site-bar nav a {
       color: var(--brand-fg);
@@ -122,25 +162,18 @@
     .highlight-white { box-shadow: inset 0 0 3px 3px rgba(255,255,0,0.85)!important; }
     .highlight-black { box-shadow: inset 0 0 3px 3px rgba(0,0,255,0.85)!important; }
     /* button bar */
-    #buttonBar {
-      text-align:center;
-      margin-top:1rem;
-    }
-    #buttonBar button {
-      margin:0 0.3rem;
-    }
+    #buttonBar { text-align:center; margin-top:1rem; }
+    #buttonBar button { margin:0 0.3rem; }
     /* copy confirmation */
-    #copyMsg {
-      display: none;
-      margin-top: 0.5rem;
-      color: #007700;
-      font-weight: 600;
-    }
+    #copyMsg { display: none; margin-top: 0.5rem; color: #007700; font-weight: 600; }
   </style>
 </head>
 <body>
   <header class="site-bar">
-    <h1><a href="/">J-Chess</a></h1>
+    <a href="/" class="brand-link">
+      <img src="/Logo.png" alt="J-Chess logo">
+      <h1>J-Chess</h1>
+    </a>
     <nav>
       <a href="/" class="active">Play</a>
       <a href="/info/">Info</a>
@@ -245,25 +278,24 @@
       }
 
       // Analysis: send full move list
-// Analysis: replay the whole game from the J-Chess start position
-document.getElementById('analysisBtn').addEventListener('click', () => {
-  // 1. Always start from the original J-Chess FEN
-  const fen = startFen;
-  const pathFen = fen.split(' ').join('_'); 
+      // Analysis: replay the whole game from the J-Chess start position
+      document.getElementById('analysisBtn').addEventListener('click', () => {
+        // 1. Always start from the original J-Chess FEN
+        const fen = startFen;
+        const pathFen = fen.split(' ').join('_'); 
 
-  // 2. Build a list of UCI moves (e2e4, g1f3, etc.) from the game history
-  const moves = game.history({ verbose: true })
-    .map(m => m.from + m.to + (m.promotion || ''))
-    .join('_');
+        // 2. Build a list of UCI moves (e2e4, g1f3, etc.) from the game history
+        const moves = game.history({ verbose: true })
+          .map(m => m.from + m.to + (m.promotion || ''))
+          .join('_');
 
-  // 3. Construct the URL: /analysis/standard/<FEN>?moves=<move1_move2_...>
-  let url = `https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`;
-  if (moves) url += `?moves=${encodeURIComponent(moves)}`;
+        // 3. Construct the URL: /analysis/standard/<FEN>?moves=<move1_move2_...>
+        let url = `https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`;
+        if (moves) url += `?moves=${encodeURIComponent(moves)}`;
 
-  // 4. Open it
-  window.open(url, '_blank');
-});
-
+        // 4. Open it
+        window.open(url, '_blank');
+      });
 
       // Editor: always start position
       document.getElementById('editorBtn').addEventListener('click', () => {
@@ -272,19 +304,18 @@ document.getElementById('analysisBtn').addEventListener('click', () => {
         window.open(`https://lichess.org/editor/${encodeURIComponent(pathFen)}?color=white`, '_blank');
       });
 
-document.getElementById('resetBtn').addEventListener('click', () => {
-  game.load(startFen);  // Load the original starting position
-  board.position(startFen, false);  // Reset the board visually
-  clearHighlights();  // Clear any move highlights
-  setOrientation();   // Ensure board is facing the right way
-  if (isHumanBlack) {
-    waitingForEngineFirst = true;
-    engineReplyFromCurrent();  // Engine plays the first move if human is Black
-  } else {
-    waitingForEngineFirst = false;
-  }
-});
-
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        game.load(startFen);  // Load the original starting position
+        board.position(startFen, false);  // Reset the board visually
+        clearHighlights();  // Clear any move highlights
+        setOrientation();   // Ensure board is facing the right way
+        if (isHumanBlack) {
+          waitingForEngineFirst = true;
+          engineReplyFromCurrent();  // Engine plays the first move if human is Black
+        } else {
+          waitingForEngineFirst = false;
+        }
+      });
 
       // Copy PGN
       document.getElementById('copyPgnBtn').addEventListener('click', () => {
@@ -391,30 +422,29 @@ document.getElementById('resetBtn').addEventListener('click', () => {
         return allowed.length ? allowed[Math.floor(Math.random()*allowed.length)] : cands[0];
       }
 
-function adjustSigma(base) {
-  if (isJChessMode) return base;  // Full variance in J-Chess
+      function adjustSigma(base) {
+        if (isJChessMode) return base;  // Full variance in J-Chess
 
-  const moves = Math.floor(game.history().length / 2) + 1;
+        const moves = Math.floor(game.history().length / 2) + 1;
 
-  if (currentLevel >= 3 && currentLevel <= 6) {
-    if      (moves <= 3) return base / 5;
-    else if (moves === 4) return base / 4;
-    else if (moves === 5) return base / 3;
-    else if (moves === 6) return base / 2;
-    else return base;
-  }
+        if (currentLevel >= 3 && currentLevel <= 6) {
+          if      (moves <= 3) return base / 5;
+          else if (moves === 4) return base / 4;
+          else if (moves === 5) return base / 3;
+          else if (moves === 6) return base / 2;
+          else return base;
+        }
 
-  if (currentLevel >= 7 && currentLevel <= 14) {
-    if      (moves <= 6) return base / 8;
-    else if (moves === 7) return base / 6;
-    else if (moves === 8) return base / 4;
-    else if (moves === 9) return base / 2;
-    else return base;
-  }
+        if (currentLevel >= 7 && currentLevel <= 14) {
+          if      (moves <= 6) return base / 8;
+          else if (moves === 7) return base / 6;
+          else if (moves === 8) return base / 4;
+          else if (moves === 9) return base / 2;
+          else return base;
+        }
 
-  return base;
-}
-
+        return base;
+      }
 
       function handleEngineMove(src, tgt) {
         highlightMove(src, tgt, 'white');
@@ -580,7 +610,7 @@ function adjustSigma(base) {
         return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
       }
 
-      // initialise
+      // create
       startFen = game.fen();
       setOrientation();
       refreshLevelLabels();
