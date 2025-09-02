@@ -265,9 +265,9 @@
       };
 
       // --- sounds (added) ---
-      const moveSnd    = new Audio('public_sound_standard_Move.mp3');
-      const capSnd     = new Audio('public_sound_standard_Capture.mp3');
-      const newgameSnd = new Audio('newgame.mp3');
+      const moveSnd    = new Audio('Move.mp3');
+      const capSnd     = new Audio('Capture.mp3');
+      const newgameSnd = new Audio('Start.mp3');
       [moveSnd, capSnd, newgameSnd].forEach(a => { a.preload = 'auto'; a.volume = 0.7; });
 
       // optional: unlock audio on first user interaction (mobile autoplay policies)
