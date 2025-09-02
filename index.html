@@ -10,31 +10,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <!-- Icons / branding -->
-<link rel="icon" type="image/png" sizes="16x16" href="/Logo.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/Logo.png">
-<link rel="icon" type="image/png" sizes="48x48" href="/Logo.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/Logo.png">
-<meta name="theme-color" content="#0d3f66">
+  <link rel="icon" type="image/png" sizes="16x16" href="/Logo.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/Logo.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="/Logo.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/Logo.png">
+  <meta name="theme-color" content="#0d3f66">
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "J-Chess",
-  "url": "https://j-chess.org/",
-  "logo": "https://j-chess.org/Logo.png"
-}
-</script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "J-Chess",
+    "url": "https://j-chess.org/",
+    "logo": "https://j-chess.org/Logo.png"
+  }
+  </script>
 
-<style>
-.site-bar a:link,
-.site-bar a:visited,
-.site-bar a:hover,
-.site-bar a:active {
-  color: white;
-  text-decoration: none;
-}
-</style>
+  <style>
+  .site-bar a:link,
+  .site-bar a:visited,
+  .site-bar a:hover,
+  .site-bar a:active {
+    color: white;
+    text-decoration: none;
+  }
+  </style>
 
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
   <style>
@@ -246,215 +246,412 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-// ---------------- basic parameters ----------------
-const nodesByLevel = { /* ... unchanged ... */ };
-const sigmaByLevel = { /* ... unchanged ... */ };
-const baseRatings  = { /* ... unchanged ... */ };
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // basic parameters
+      const nodesByLevel = {
+        1:1e5, 2:5e5, 3:5e5, 4:5e5, 5:5e5, 6:5e5, 7:5e5, 8:5e5, 9:5e5,
+        10:1e6, 11:1e6, 12:1e6, 13:1.5e6, 14:1.5e6,
+        15:1.5e6, 16:2e6, 17:2e6, 18:2e6, 19:2e6, 20:3e6
+      };
+      const sigmaByLevel = {
+        1:10000, 2:5000, 3:2000, 4:1000, 5:500, 6:250, 7:215, 8:170, 9:120,
+        10:80, 11:65, 12:55, 13:46, 14:38, 15:31, 16:24, 17:16, 18:10, 19:4, 20:0
+      };
+      const baseRatings = {
+        1:0, 2:200, 3:400, 4:600, 5:800, 6:1000, 7:1200, 8:1400, 9:1600,
+        10:1800, 11:2000, 12:2200, 13:2400, 14:2600, 15:2800, 16:3000,
+        17:3200, 18:3400, 19:3600, 20:3800
+      };
 
-// ---------------- sounds ----------------
-const moveSnd    = new Audio('public_sound_standard_Move.mp3');
-const capSnd     = new Audio('public_sound_standard_Capture.mp3');
-const newgameSnd = new Audio('newgame.mp3');
-[moveSnd, capSnd, newgameSnd].forEach(a => { a.preload = 'auto'; a.volume = 0.7; });
+      // --- sounds (added) ---
+      const moveSnd    = new Audio('public_sound_standard_Move.mp3');
+      const capSnd     = new Audio('public_sound_standard_Capture.mp3');
+      const newgameSnd = new Audio('newgame.mp3');
+      [moveSnd, capSnd, newgameSnd].forEach(a => { a.preload = 'auto'; a.volume = 0.7; });
 
-function playForMove(mv) {
-  if (!mv) return;
-  if (mv.flags.includes('c') || mv.flags.includes('e')) capSnd.play();
-  else moveSnd.play();
-}
+      // optional: unlock audio on first user interaction (mobile autoplay policies)
+      window.addEventListener('pointerdown', function unlockOnce() {
+        [moveSnd, capSnd, newgameSnd].forEach(a => {
+          a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(()=>{});
+        });
+        window.removeEventListener('pointerdown', unlockOnce, { once: true });
+      }, { once: true });
 
-// ---------------- globals ----------------
-let isJChessMode = false;
-let currentLevel = 8;
-let searchingFair = false;
-let startFen;
-let isHumanBlack = false;
-let waitingForEngineFirst = false;
-let manualFlip = false;
-
-const statusDiv = document.getElementById('fairStatus');
-const $board = $('#board');
-const copyMsg = document.getElementById('copyMsg');
-
-function clearHighlights() { /* ... unchanged ... */ }
-function highlightMove(f,t,col) { /* ... unchanged ... */ }
-
-// ---------------- board setup ----------------
-const game = new Chess();
-const board = Chessboard('board', {
-  draggable: true,
-  position: 'start',
-  pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-  onDragStart, onDrop, onSnapEnd
-});
-$(window).resize(board.resize);
-
-function onDrop(src, tgt) {
-  const mv = game.move({ from: src, to: tgt, promotion: 'q' });
-  if (!mv) return 'snapback';
-  playForMove(mv);            // play sound for human move
-  handleEngineMove(src, tgt);
-}
-
-// ---------------- reset ----------------
-document.getElementById('resetBtn').addEventListener('click', () => {
-  game.load(startFen);
-  board.position(startFen, false);
-  clearHighlights();
-  setOrientation();
-  newgameSnd.play();          // play new game sound
-  if (isHumanBlack) {
-    waitingForEngineFirst = true;
-    engineReplyFromCurrent();
-  } else {
-    waitingForEngineFirst = false;
-  }
-});
-
-// ---------------- engine move ----------------
-function handleEngineMove(src, tgt) {
-  highlightMove(src, tgt, 'white');
-  const nodes = nodesByLevel[currentLevel];
-  const sigma = adjustSigma(sigmaByLevel[currentLevel]);
-  const cand = {}; let seen=false;
-
-  function onInfo({ data }) {
-    const line = data.trim();
-    if (line.startsWith('info') && line.includes('multipv')) {
-      const mpv = +line.match(/multipv\s+(\d+)/)[1];
-      const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
-      const cpm = line.match(/score cp\s+(-?\d+)/);
-      const mat = line.match(/score mate\s+(-?\d+)/);
-      if (mpv && pv && (cpm||mat)) {
-        const cp = cpm
-          ? +cpm[1]
-          : (mat[1]>0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
-        cand[mpv] = { move: pv, cp }; seen=true;
+      function playForMove(mv) {
+        if (!mv) return;
+        if (mv.flags.includes('c') || mv.flags.includes('e')) capSnd.play();
+        else moveSnd.play();
       }
-    }
-    if (line.startsWith('bestmove')) {
-      engine.removeEventListener('message', onInfo);
-      if (!seen) return;
-      const pick = thresholdSelect(Object.values(cand), sigma);
-      const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
-      highlightMove(f, t, 'black');
-      const emv = game.move({ from: f, to: t, promotion: 'q' });
-      board.position(game.fen(), false);
-      playForMove(emv);       // play sound for engine move
-    }
-  }
 
-  engine.addEventListener('message', onInfo);
-  engine.postMessage('position fen '+game.fen());
-  engine.postMessage('go nodes '+nodes);
-}
+      let isJChessMode = false;
+      let currentLevel = 8;   // default Level 8
+      let searchingFair = false;
+      let startFen;
+      let isHumanBlack = false;
+      let waitingForEngineFirst = false;
+      let manualFlip = false;
 
-function engineReplyFromCurrent() {
-  const nodes = nodesByLevel[currentLevel];
-  const sigma = adjustSigma(sigmaByLevel[currentLevel]);
-  const cand = {}; let seenAny=false;
+      const statusDiv = document.getElementById('fairStatus');
+      const $board = $('#board');
+      const copyMsg = document.getElementById('copyMsg');
 
-  function listener({ data }) {
-    const line = data.trim();
-    if (line.startsWith('info') && line.includes('multipv')) {
-      const mpv = +line.match(/multipv\s+(\d+)/)[1];
-      const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
-      const cpm = line.match(/score cp\s+(-?\d+)/);
-      const mat = line.match(/score mate\s+(-?\d+)/);
-      if (mpv && pv && (cpm||mat)) {
-        const cp = cpm
-          ? +cpm[1]
-          : (mat[1]>0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
-        cand[mpv] = { move: pv, cp }; seenAny=true;
+      function hideOutputs() {}
+      function clearHighlights() {
+        $board.find('.square-55d63').removeClass('highlight-white highlight-black');
       }
-    }
-    if (line.startsWith('bestmove')) {
-      engine.removeEventListener('message', listener);
-      if (!seenAny) return;
-      const pick = thresholdSelect(Object.values(cand), sigma);
-      const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
-      const col = game.turn()==='w'? 'black':'white';
-      highlightMove(f, t, col);
-      const emv = game.move({ from: f, to: t, promotion: 'q' });
-      board.position(game.fen(), false);
-      waitingForEngineFirst = false;
-      playForMove(emv);       // play sound for engine move
-    }
-  }
+      function highlightMove(f, t, col) {
+        clearHighlights();
+        $board.find(`.square-${f}`).addClass(`highlight-${col}`);
+        $board.find(`.square-${t}`).addClass(`highlight-${col}`);
+      }
 
-  engine.addEventListener('message', listener);
-  engine.postMessage('position fen '+game.fen());
-  engine.postMessage('go nodes '+nodes);
-}
+      // Analysis: send full move list
+      // Analysis: replay the whole game from the J-Chess start position
+      document.getElementById('analysisBtn').addEventListener('click', () => {
+        // 1. Always start from the original J-Chess FEN
+        const fen = startFen;
+        const pathFen = fen.split(' ').join('_'); 
 
-// ---------------- new game buttons ----------------
-$('#standardBtn').click(() => {
-  isJChessMode=false; manualFlip=false; refreshLevelLabels();
-  game.reset(); startFen=game.fen();
-  board.position(startFen,false); clearHighlights();
-  setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
-  newgameSnd.play();          // sound
-});
-$('#randomiseBtn').click(() => {
-  isJChessMode=true; manualFlip=false; refreshLevelLabels();
-  const fen = generateJChessFEN();
-  game.load(fen); startFen=fen;
-  board.position(fen,false); clearHighlights();
-  setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
-  newgameSnd.play();          // sound
-});
-$('#fairBtn').click(() => {
-  if (searchingFair) return;
-  isJChessMode=true; manualFlip=false; refreshLevelLabels();
-  searchingFair=true; $('#loadingSpinner').show();
-  tryNextFair();
-});
+        // 2. Build a list of UCI moves (e2e4, g1f3, etc.) from the game history
+        const moves = game.history({ verbose: true })
+          .map(m => m.from + m.to + (m.promotion || ''))
+          .join('_');
 
-function tryNextFair() {
-  const fen = generateJChessFEN();
-  statusDiv.textContent += fen + '\n';
-  let lastCp=null;
-  const ms = +$('#timeSelect').val();
-  evalEngine.postMessage('position fen '+fen);
-  evalEngine.postMessage('go movetime '+ms);
+        // 3. Construct the URL: /analysis/standard/<FEN>?moves=<move1_move2_...>
+        let url = `https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`;
+        if (moves) url += `?moves=${encodeURIComponent(moves)}`;
 
-  function onEval({ data }) {
-    const line = data.trim();
-    if (line.startsWith('info')&&line.includes('score cp')) {
-      lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
-    }
-    if (line.startsWith('info')&&line.includes('score mate')) {
-      const m = +line.match(/score mate\s+(-?\d+)/)[1];
-      lastCp = m>0?5000:-5000;
-    }
-    if (line.startsWith('bestmove')) {
-      evalEngine.removeEventListener('message', onEval);
-      const raw = lastCp===null?0:lastCp;
-      const fair = Math.abs(raw)<=40;
-      statusDiv.textContent += `${(raw/100).toFixed(2)} => ${fair?'Fair':'Unfair'}\n\n`;
-      if (fair) {
-        game.load(fen); board.position(fen,false);
-        clearHighlights(); startFen=fen;
-        searchingFair=false; $('#loadingSpinner').hide();
+        // 4. Open it
+        window.open(url, '_blank');
+      });
+
+      // Editor: always start position
+      document.getElementById('editorBtn').addEventListener('click', () => {
+        const fen = startFen;
+        const pathFen = fen.split(' ').join('_');
+        window.open(`https://lichess.org/editor/${encodeURIComponent(pathFen)}?color=white`, '_blank');
+      });
+
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        game.load(startFen);  // Load the original starting position
+        board.position(startFen, false);  // Reset the board visually
+        clearHighlights();  // Clear any move highlights
+        setOrientation();   // Ensure board is facing the right way
+        newgameSnd.play();  // (added) new game sound
+        if (isHumanBlack) {
+          waitingForEngineFirst = true;
+          engineReplyFromCurrent();  // Engine plays the first move if human is Black
+        } else {
+          waitingForEngineFirst = false;
+        }
+      });
+
+      // Copy PGN
+      document.getElementById('copyPgnBtn').addEventListener('click', () => {
+        const pgn = game.pgn() || '';
+        navigator.clipboard.writeText(pgn).then(() => {
+          copyMsg.style.display = 'block';
+          setTimeout(() => { copyMsg.style.display = 'none'; }, 1500);
+        });
+      });
+
+      // Undo
+      document.getElementById('undoBtn').addEventListener('click', () => {
+        const turn = game.turn();
+        const first = game.undo();
+        if (turn === (isHumanBlack ? 'b' : 'w')) game.undo();
+        if (first) {
+          board.position(game.fen(), false);
+          clearHighlights();
+          waitingForEngineFirst = false;
+        }
+      });
+
+      // Flip
+      document.getElementById('flipBtn').addEventListener('click', () => {
+        manualFlip = !manualFlip;
+        setOrientation();
+      });
+
+      $('#levelSelect').on('change', function() {
+        currentLevel = +this.value;
+      });
+
+      // chess.js + chessboard.js setup
+      const game = new Chess();
+      const board = Chessboard('board', {
+        draggable: true,
+        position: 'start',
+        pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+        onDragStart, onDrop, onSnapEnd
+      });
+      $(window).resize(board.resize);
+
+      function refreshLevelLabels() {
+        const sel = document.getElementById('levelSelect');
+        Array.from(sel.options).forEach(opt => {
+          const lvl = +opt.value;
+          const base = baseRatings[lvl];
+          opt.textContent = `Lv. ${lvl} (${isJChessMode ? base+200 : base})`;
+        });
+      }
+
+      function setOrientation() {
+        board.orientation(manualFlip
+          ? (isHumanBlack ? 'white' : 'black')
+          : (isHumanBlack ? 'black' : 'white'));
+      }
+
+      function onDragStart(src, piece) {
+        if (game.game_over()) return false;
+        const t = game.turn();
+        if (!isHumanBlack) return piece[0]==='w' && t==='w';
+        return !waitingForEngineFirst && piece[0]==='b' && t==='b';
+      }
+      function onSnapEnd() {
+        board.position(game.fen(), false);
+      }
+      function onDrop(src, tgt) {
+        const mv = game.move({ from: src, to: tgt, promotion: 'q' });
+        if (!mv) return 'snapback';
+        playForMove(mv);                  // (added) play sound for human move
+        handleEngineMove(src, tgt);
+      }
+
+      // Stockfish workers
+      const engine = new Worker('engine/stockfish-17-lite-single.js');
+      engine.postMessage('uci');
+      engine.addEventListener('message', function init({ data }) {
+        if (data.trim()==='uciok') {
+          engine.postMessage('setoption name MultiPV value 50');
+          engine.postMessage('ucinewgame');
+          engine.postMessage('isready');
+        }
+        if (data.trim()==='readyok') engine.removeEventListener('message', init);
+      });
+      const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
+      evalEngine.postMessage('uci');
+      evalEngine.addEventListener('message', function initE({ data }) {
+        if (data.trim()==='uciok') {
+          evalEngine.postMessage('ucinewgame');
+          evalEngine.postMessage('setoption name UCI_LimitStrength value false');
+          evalEngine.postMessage('isready');
+        }
+        if (data.trim()==='readyok') evalEngine.removeEventListener('message', initE);
+      });
+
+      function randomGaussian() {
+        let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random();
+        return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+      }
+
+      function thresholdSelect(cands, sigma) {
+        const best = cands[0].cp;
+        const x = Math.abs(randomGaussian()*sigma);
+        const allowed = cands.filter(c => (best - c.cp) <= x);
+        return allowed.length ? allowed[Math.floor(Math.random()*allowed.length)] : cands[0];
+      }
+
+      function adjustSigma(base) {
+        if (isJChessMode) return base;  // Full variance in J-Chess
+
+        const moves = Math.floor(game.history().length / 2) + 1;
+
+        if (currentLevel >= 3 && currentLevel <= 6) {
+          if      (moves <= 3) return base / 5;
+          else if (moves === 4) return base / 4;
+          else if (moves === 5) return base / 3;
+          else if (moves === 6) return base / 2;
+          else return base;
+        }
+
+        if (currentLevel >= 7 && currentLevel <= 14) {
+          if      (moves <= 6) return base / 8;
+          else if (moves === 7) return base / 6;
+          else if (moves === 8) return base / 4;
+          else if (moves === 9) return base / 2;
+          else return base;
+        }
+
+        return base;
+      }
+
+      function handleEngineMove(src, tgt) {
+        highlightMove(src, tgt, 'white');
+        const nodes = nodesByLevel[currentLevel];
+        const sigma = adjustSigma(sigmaByLevel[currentLevel]);
+        const cand = {}; let seen=false;
+
+        function onInfo({ data }) {
+          const line = data.trim();
+          if (line.startsWith('info') && line.includes('multipv')) {
+            const mpv = +line.match(/multipv\s+(\d+)/)[1];
+            const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
+            const cpm = line.match(/score cp\s+(-?\d+)/);
+            const mat = line.match(/score mate\s+(-?\d+)/);
+            if (mpv && pv && (cpm||mat)) {
+              const cp = cpm
+                ? +cpm[1]
+                : (mat[1]>0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
+              cand[mpv] = { move: pv, cp }; seen=true;
+            }
+          }
+          if (line.startsWith('bestmove')) {
+            engine.removeEventListener('message', onInfo);
+            if (!seen) return;
+            const pick = thresholdSelect(Object.values(cand), sigma);
+            const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+            highlightMove(f, t, 'black');
+            const emv = game.move({ from: f, to: t, promotion: 'q' });
+            board.position(game.fen(), false);
+            playForMove(emv);            // (added) sound for engine move
+          }
+        }
+
+        engine.addEventListener('message', onInfo);
+        engine.postMessage('position fen '+game.fen());
+        engine.postMessage('go nodes '+nodes);
+      }
+
+      function engineReplyFromCurrent() {
+        hideOutputs();
+        const nodes = nodesByLevel[currentLevel];
+        const sigma = adjustSigma(sigmaByLevel[currentLevel]);
+        const cand = {}; let seenAny=false;
+
+        function listener({ data }) {
+          const line = data.trim();
+          if (line.startsWith('info') && line.includes('multipv')) {
+            const mpv = +line.match(/multipv\s+(\d+)/)[1];
+            const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
+            const cpm = line.match(/score cp\s+(-?\d+)/);
+            const mat = line.match(/score mate\s+(-?\d+)/);
+            if (mpv && pv && (cpm||mat)) {
+              const cp = cpm
+                ? +cpm[1]
+                : (mat[1]>0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
+              cand[mpv] = { move: pv, cp }; seenAny=true;
+            }
+          }
+          if (line.startsWith('bestmove')) {
+            engine.removeEventListener('message', listener);
+            if (!seenAny) return;
+            const pick = thresholdSelect(Object.values(cand), sigma);
+            const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+            const col = game.turn()==='w'? 'black':'white';
+            highlightMove(f, t, col);
+            const emv = game.move({ from: f, to: t, promotion: 'q' });
+            board.position(game.fen(), false);
+            waitingForEngineFirst = false;
+            playForMove(emv);           // (added) sound for engine move
+          }
+        }
+
+        engine.addEventListener('message', listener);
+        engine.postMessage('position fen '+game.fen());
+        engine.postMessage('go nodes '+nodes);
+      }
+
+      // play controls
+      document.getElementById('playWhiteBtn').addEventListener('click', () => {
+        isHumanBlack=false; waitingForEngineFirst=false; manualFlip=false;
+        game.load(startFen); board.position(startFen,false);
+        setOrientation(); clearHighlights();
+      });
+      document.getElementById('playBlackBtn').addEventListener('click', () => {
+        isHumanBlack=true; waitingForEngineFirst=true; manualFlip=false;
+        game.load(startFen); board.position(startFen,false);
+        setOrientation(); clearHighlights();
+        engineReplyFromCurrent();
+      });
+
+      $('#standardBtn').click(() => {
+        isJChessMode=false; manualFlip=false; refreshLevelLabels();
+        game.reset(); startFen=game.fen();
+        board.position(startFen,false); clearHighlights();
         setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
-        newgameSnd.play();  // sound
-      } else {
-        setTimeout(tryNextFair,30);
+        newgameSnd.play();  // (added)
+      });
+      $('#randomiseBtn').click(() => {
+        isJChessMode=true; manualFlip=false; refreshLevelLabels();
+        const fen = generateJChessFEN();
+        game.load(fen); startFen=fen;
+        board.position(fen,false); clearHighlights();
+        setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
+        newgameSnd.play();  // (added)
+      });
+      $('#fairBtn').click(() => {
+        if (searchingFair) return;
+        isJChessMode=true; manualFlip=false; refreshLevelLabels();
+        searchingFair=true; $('#loadingSpinner').show();
+        tryNextFair();
+      });
+
+      function tryNextFair() {
+        const fen = generateJChessFEN();
+        statusDiv.textContent += fen + '\n';
+        let lastCp=null;
+        const ms = +$('#timeSelect').val();
+        evalEngine.postMessage('position fen '+fen);
+        evalEngine.postMessage('go movetime '+ms);
+
+        function onEval({ data }) {
+          const line = data.trim();
+          if (line.startsWith('info')&&line.includes('score cp')) {
+            lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
+          }
+          if (line.startsWith('info')&&line.includes('score mate')) {
+            const m = +line.match(/score mate\s+(-?\d+)/)[1];
+            lastCp = m>0?5000:-5000;
+          }
+          if (line.startsWith('bestmove')) {
+            evalEngine.removeEventListener('message', onEval);
+            const raw = lastCp===null?0:lastCp;
+            const fair = Math.abs(raw)<=40;
+            statusDiv.textContent += `${(raw/100).toFixed(2)} => ${fair?'Fair':'Unfair'}\n\n`;
+            if (fair) {
+              game.load(fen); board.position(fen,false);
+              clearHighlights(); startFen=fen;
+              searchingFair=false; $('#loadingSpinner').hide();
+              setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
+              newgameSnd.play();  // (added)
+            } else {
+              setTimeout(tryNextFair,30);
+            }
+          }
+        }
+        evalEngine.addEventListener('message', onEval);
       }
-    }
-  }
-  evalEngine.addEventListener('message', onEval);
-}
 
-// ---------------- init ----------------
-startFen = game.fen();
-setOrientation();
-refreshLevelLabels();
-});
-</script>
+      function shuffle(a) {
+        for (let i=a.length-1;i>0;i--) {
+          const j = Math.floor(Math.random()*(i+1));
+          [a[i],a[j]]=[a[j],a[i]];
+        }
+        return a;
+      }
+      function generateBackRank() {
+        const P=['r','n','b','q','k','b','n','r'];
+        let R, bs;
+        do {
+          R = shuffle(P.slice());
+          bs = [R.indexOf('b'),R.lastIndexOf('b')];
+        } while((bs[0]%2)===(bs[1]%2));
+        return R.join('');
+      }
+      function generateJChessFEN() {
+        const W=generateBackRank().toUpperCase();
+        const B=generateBackRank().toLowerCase();
+        return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+      }
 
+      // create
+      startFen = game.fen();
+      setOrientation();
+      refreshLevelLabels();
+    });
+  </script>
 
   <footer style="margin-top:3rem; text-align:center; padding:1rem 0; background:#0d3f66; color:#ffffff; font-size:0.95rem;">
     Contact: <a href="mailto:stjukes@gmail.com" style="color:#ffffff; text-decoration:underline;">stjukes@gmail.com</a>
