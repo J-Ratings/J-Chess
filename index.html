@@ -27,13 +27,13 @@
   </script>
 
   <style>
-  .site-bar a:link,
-  .site-bar a:visited,
-  .site-bar a:hover,
-  .site-bar a:active {
-    color: white;
-    text-decoration: none;
-  }
+.site-bar a:link,
+.site-bar a:visited,
+.site-bar a:hover,
+.site-bar a:active {
+  color: white;
+  text-decoration: none;
+}
   </style>
 
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
@@ -264,16 +264,16 @@
         17:3200, 18:3400, 19:3600, 20:3800
       };
 
-      // --- sounds (added) ---
-      const moveSnd    = new Audio('Move.mp3');
-      const capSnd     = new Audio('Capture.mp3');
-      const newgameSnd = new Audio('Start.mp3');
+      // --- sounds ---
+      const moveSnd    = new Audio('public_sound_standard_Move.mp3');
+      const capSnd     = new Audio('public_sound_standard_Capture.mp3');
+      const newgameSnd = new Audio('newgame.mp3');
       [moveSnd, capSnd, newgameSnd].forEach(a => { a.preload = 'auto'; a.volume = 0.7; });
 
-      // optional: unlock audio on first user interaction (mobile autoplay policies)
+      // unlock audio after first interaction (mobile autoplay policies)
       window.addEventListener('pointerdown', function unlockOnce() {
         [moveSnd, capSnd, newgameSnd].forEach(a => {
-          a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(()=>{});
+          a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(() => {});
         });
         window.removeEventListener('pointerdown', unlockOnce, { once: true });
       }, { once: true });
@@ -309,20 +309,13 @@
       // Analysis: send full move list
       // Analysis: replay the whole game from the J-Chess start position
       document.getElementById('analysisBtn').addEventListener('click', () => {
-        // 1. Always start from the original J-Chess FEN
         const fen = startFen;
         const pathFen = fen.split(' ').join('_'); 
-
-        // 2. Build a list of UCI moves (e2e4, g1f3, etc.) from the game history
         const moves = game.history({ verbose: true })
           .map(m => m.from + m.to + (m.promotion || ''))
           .join('_');
-
-        // 3. Construct the URL: /analysis/standard/<FEN>?moves=<move1_move2_...>
         let url = `https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`;
         if (moves) url += `?moves=${encodeURIComponent(moves)}`;
-
-        // 4. Open it
         window.open(url, '_blank');
       });
 
@@ -338,7 +331,7 @@
         board.position(startFen, false);  // Reset the board visually
         clearHighlights();  // Clear any move highlights
         setOrientation();   // Ensure board is facing the right way
-        newgameSnd.play();  // (added) new game sound
+        newgameSnd.play();
         if (isHumanBlack) {
           waitingForEngineFirst = true;
           engineReplyFromCurrent();  // Engine plays the first move if human is Black
@@ -388,6 +381,12 @@
       });
       $(window).resize(board.resize);
 
+      // Preload piece images once to avoid first-move image fetch causing a blink
+      ['wP','wN','wB','wR','wQ','wK','bP','bN','bB','bR','bQ','bK'].forEach(p => {
+        const img = new Image();
+        img.src = `chessboardjs-1.0.0/img/chesspieces/wikipedia/${p}.png`;
+      });
+
       function refreshLevelLabels() {
         const sel = document.getElementById('levelSelect');
         Array.from(sel.options).forEach(opt => {
@@ -410,12 +409,13 @@
         return !waitingForEngineFirst && piece[0]==='b' && t==='b';
       }
       function onSnapEnd() {
-        board.position(game.fen(), false);
+        // no-op: prevents extra full redraw that caused flicker
       }
       function onDrop(src, tgt) {
         const mv = game.move({ from: src, to: tgt, promotion: 'q' });
         if (!mv) return 'snapback';
-        playForMove(mv);                  // (added) play sound for human move
+        board.position(game.fen(), true);   // animate update, no flash
+        playForMove(mv);
         handleEngineMove(src, tgt);
       }
 
@@ -504,8 +504,8 @@
             const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
             highlightMove(f, t, 'black');
             const emv = game.move({ from: f, to: t, promotion: 'q' });
-            board.position(game.fen(), false);
-            playForMove(emv);            // (added) sound for engine move
+            board.position(game.fen(), true);   // animate engine move
+            playForMove(emv);
           }
         }
 
@@ -542,9 +542,9 @@
             const col = game.turn()==='w'? 'black':'white';
             highlightMove(f, t, col);
             const emv = game.move({ from: f, to: t, promotion: 'q' });
-            board.position(game.fen(), false);
+            board.position(game.fen(), true);   // animate engine move
             waitingForEngineFirst = false;
-            playForMove(emv);           // (added) sound for engine move
+            playForMove(emv);
           }
         }
 
@@ -571,7 +571,7 @@
         game.reset(); startFen=game.fen();
         board.position(startFen,false); clearHighlights();
         setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
-        newgameSnd.play();  // (added)
+        newgameSnd.play();
       });
       $('#randomiseBtn').click(() => {
         isJChessMode=true; manualFlip=false; refreshLevelLabels();
@@ -579,7 +579,7 @@
         game.load(fen); startFen=fen;
         board.position(fen,false); clearHighlights();
         setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
-        newgameSnd.play();  // (added)
+        newgameSnd.play();
       });
       $('#fairBtn').click(() => {
         if (searchingFair) return;
@@ -615,7 +615,7 @@
               clearHighlights(); startFen=fen;
               searchingFair=false; $('#loadingSpinner').hide();
               setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
-              newgameSnd.play();  // (added)
+              newgameSnd.play();
             } else {
               setTimeout(tryNextFair,30);
             }
