@@ -582,10 +582,12 @@ $('#standardBtn').click(() => {
 });
 
   // J-Chess (counts)
-  $('#jchessBtn').click(() => {
-    isJChessMode = true;
-    manualFlip = false;
-    refreshLevelLabels();
+$('#jchessBtn').click(() => {
+  isJChessMode = true;
+  manualFlip = false;
+  refreshLevelLabels();
+  $('#loadingSpinner').show();                    // show spinner
+  setTimeout(() => {                              // delay block
     const fen = generateJChessFEN();
     game.load(fen);
     startFen = fen;
@@ -594,14 +596,17 @@ $('#standardBtn').click(() => {
     setOrientation();
     if (isHumanBlack) engineReplyFromCurrent();
     newgameSnd.play();
-    recordPosition(fen);
-  });
+    recordPosition(fen);                          // record position count
+    $('#loadingSpinner').hide();                  // hide spinner after done
+  }, 1000); // artificial 1-second delay
+});
 
-  // Symmetric J-Chess (counts)
-  $('#symJchessBtn').click(() => {
-    isJChessMode = true;
-    manualFlip = false;
-    refreshLevelLabels();
+$('#symJchessBtn').click(() => {
+  isJChessMode = true;
+  manualFlip = false;
+  refreshLevelLabels();
+  $('#loadingSpinner').show();                    // show spinner
+  setTimeout(() => {
     const fen = generateSymmetricJChessFEN();
     game.load(fen);
     startFen = fen;
@@ -610,8 +615,10 @@ $('#standardBtn').click(() => {
     setOrientation();
     if (isHumanBlack) engineReplyFromCurrent();
     newgameSnd.play();
-    recordPosition(fen);
-  });
+    recordPosition(fen);                          // record position count
+    $('#loadingSpinner').hide();                  // hide spinner
+  }, 1000); // 1 second
+});
 
   // Fair J-Chess (counts when fair found)
   $('#fairBtn').click(() => {
