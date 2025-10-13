@@ -179,21 +179,37 @@
       <h2>~1.8 million fair starting positions</h2>
     </div>
 
-    <div class="control-row">
-      <button id="standardBtn">Standard Chess</button>
-      <button id="randomiseBtn">J-Chess</button>
-      <button id="fairBtn">Fair J-Chess</button>
-      <div class="field">
-        <label for="timeSelect">Generation Time:</label>
-        <select id="timeSelect">
-          <option value="250">0.25 s</option>
-          <option value="500">0.5 s</option>
-          <option value="1000" selected>1 s</option>
-          <option value="2000">2 s</option>
-          <option value="5000">5 s</option>
-        </select>
-      </div>
-    </div>
+<div id="controls">
+  <!-- Row 1 -->
+  <div>
+    <button id="standardBtn">Standard Chess</button>
+    <button id="jchessBtn">J-Chess</button>
+    <button id="symJchessBtn">Symmetric J-Chess</button>
+  </div>
+
+  <!-- Row 2 -->
+  <div style="margin-top:6px;">
+    <button id="fairBtn">Fair J-Chess</button>
+    <label for="timeSelect" style="margin-left:8px;">Generation Time:</label>
+    <select id="timeSelect">
+      <option>1 s</option>
+      <option>2 s</option>
+      <option>3 s</option>
+    </select>
+  </div>
+
+  <!-- Row 3 -->
+  <div style="margin-top:6px;">
+    <button id="playWhiteBtn">Play White</button>
+    <button id="playBlackBtn">Play Black</button>
+    <label for="levelSelect" style="margin-left:8px;">Level:</label>
+    <select id="levelSelect">
+      <option>Lv. 8 (1600)</option>
+      <!-- Add more levels if you had them before -->
+    </select>
+  </div>
+</div>
+
 
     <div class="control-row">
       <button id="playWhiteBtn">Play White</button>
@@ -295,6 +311,27 @@
       const statusDiv = document.getElementById('fairStatus');
       const $board = $('#board');
       const copyMsg = document.getElementById('copyMsg');
+
+      function recordPosition(fen) {
+        fetch(`https://round-frost-df74.stjukes.workers.dev/?fen=${encodeURIComponent(fen)}`)
+          .then(res => res.json())
+          .then(data => {
+            const count = data.count || 0;
+
+            // Function to add ordinal suffix
+            const getOrdinal = (n) => {
+              const s = ["th", "st", "nd", "rd"];
+              const v = n % 100;
+              return n + (s[(v - 20) % 10] || s[v] || s[0]);
+            };
+
+            statusDiv.textContent = `You are the ${getOrdinal(count)} to reach this position.`;
+          })
+          .catch(() => {
+            statusDiv.textContent = '(Could not load position count)';
+          });
+      }
+
 
       function hideOutputs() {}
       function clearHighlights() {
@@ -587,6 +624,22 @@
         searchingFair=true; $('#loadingSpinner').show();
         tryNextFair();
       });
+$('#symJchessBtn').click(() => {
+  isJChessMode = true;
+  manualFlip = false;
+  refreshLevelLabels();
+  const fen = generateSymmetricJChessFEN();
+  game.load(fen);
+  startFen = fen;
+  board.position(fen, false);
+  clearHighlights();
+  setOrientation();
+  if (isHumanBlack) engineReplyFromCurrent();
+  newgameSnd.play();  // play new game sound
+  recordPosition(fen); // record position count
+});
+
+      
 
       function tryNextFair() {
         const fen = generateJChessFEN();
@@ -645,6 +698,13 @@
         const B=generateBackRank().toLowerCase();
         return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
       }
+
+      function generateSymmetricJChessFEN() {
+  const W = generateBackRank().toUpperCase();
+  const B = W.toLowerCase(); // same layout for black
+  return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+}
+
 
       // create
       startFen = game.fen();
