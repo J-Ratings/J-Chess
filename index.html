@@ -59,17 +59,6 @@
       padding: 0.65rem clamp(1rem,4vw,2.2rem);
       box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     }
-    .brand-link {
-      display: inline-flex;
-      align-items: center;
-      gap: .6rem;
-      color: var(--brand-fg);
-      text-decoration: none;
-    }
-    .brand-link img {
-      width: 32px;
-      height: 32px;
-    }
     .site-bar h1 {
       margin: 0;
       font-size: clamp(1.1rem,2.2vw+0.6rem,1.55rem);
@@ -98,13 +87,6 @@
       font-size: clamp(1rem,0.85rem+0.6vw,1.25rem);
       font-weight: 600;
     }
-    .control-row {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.65rem 0.9rem;
-      margin-bottom: 1.1rem;
-    }
     button, select {
       font: inherit;
       padding: 0.5rem 0.9rem;
@@ -119,7 +101,7 @@
       border-color: #999;
     }
     .field {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.4rem;
     }
@@ -154,567 +136,563 @@
       font-family:ui-monospace, Consolas, Menlo, monospace;
       white-space:pre-wrap;
       min-height:2rem;
+      text-align:left;
     }
     .highlight-white { box-shadow: inset 0 0 3px 3px rgba(255,255,0,0.85)!important; }
     .highlight-black { box-shadow: inset 0 0 3px 3px rgba(0,0,255,0.85)!important; }
-    /* button bar */
     #buttonBar { text-align:center; margin-top:1rem; }
     #buttonBar button { margin:0 0.3rem; }
-    /* copy confirmation */
     #copyMsg { display: none; margin-top: 0.5rem; color: #007700; font-weight: 600; }
+
+    /* rows */
+    #controls { margin-bottom: 1.1rem; }
+    #controls .row { display:flex; gap:.6rem; flex-wrap:wrap; justify-content:center; align-items:center; margin-top:.35rem; }
+    #controls label { margin-left:8px; }
   </style>
 </head>
 <body>
 <header class="site-bar">
-  <h1><a href="/">J-Chess</a></h1>
-    <nav>
-      <a href="/" class="active">Play</a>
-      <a href="/info/">Info</a>
-    </nav>
-  </header>
+  <h1><a href="/" style="color:#fff; text-decoration:none;">J-Chess</a></h1>
+  <nav>
+    <a href="/" class="active">Play</a>
+    <a href="/info/">Info</a>
+  </nav>
+</header>
 
-  <div class="container">
-    <div id="stats">
-      <h2>~8.3 million starting positions</h2>
-      <h2>~1.8 million fair starting positions</h2>
+<div class="container">
+  <div id="stats">
+    <h2>~8.3 million starting positions</h2>
+    <h2>~1.8 million fair starting positions</h2>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls">
+    <!-- Row 1 -->
+    <div class="row">
+      <button id="standardBtn">Standard Chess</button>
+      <button id="jchessBtn">J-Chess</button>
+      <button id="symJchessBtn">Symmetric J-Chess</button>
     </div>
 
-<div id="controls">
-  <!-- Row 1 -->
-  <div>
-    <button id="standardBtn">Standard Chess</button>
-    <button id="jchessBtn">J-Chess</button>
-    <button id="symJchessBtn">Symmetric J-Chess</button>
-  </div>
+    <!-- Row 2 -->
+    <div class="row">
+      <button id="fairBtn">Fair J-Chess</button>
+      <label for="timeSelect">Generation Time:</label>
+      <select id="timeSelect">
+        <option value="250">0.25 s</option>
+        <option value="500">0.5 s</option>
+        <option value="1000" selected>1 s</option>
+        <option value="2000">2 s</option>
+        <option value="5000">5 s</option>
+      </select>
+    </div>
 
-  <!-- Row 2 -->
-  <div style="margin-top:6px;">
-    <button id="fairBtn">Fair J-Chess</button>
-    <label for="timeSelect" style="margin-left:8px;">Generation Time:</label>
-    <select id="timeSelect">
-      <option>1 s</option>
-      <option>2 s</option>
-      <option>3 s</option>
-    </select>
-  </div>
-
-  <!-- Row 3 -->
-  <div style="margin-top:6px;">
-    <button id="playWhiteBtn">Play White</button>
-    <button id="playBlackBtn">Play Black</button>
-    <label for="levelSelect" style="margin-left:8px;">Level:</label>
-    <select id="levelSelect">
-      <option>Lv. 8 (1600)</option>
-      <!-- Add more levels if you had them before -->
-    </select>
-  </div>
-</div>
-
-
-    <div class="control-row">
+    <!-- Row 3 -->
+    <div class="row">
       <button id="playWhiteBtn">Play White</button>
       <button id="playBlackBtn">Play Black</button>
-      <div class="field">
-<label for="levelSelect">Level:</label>
-<select id="levelSelect">
-  <option value="1">Lv. 1</option>
-  <option value="2">Lv. 2</option>
-  <option value="3">Lv. 3</option>
-  <option value="4">Lv. 4</option>
-  <option value="5">Lv. 5</option>
-  <option value="6">Lv. 6</option>
-  <option value="7">Lv. 7</option>
-  <option value="8" selected>Lv. 8</option>
-  <option value="9">Lv. 9</option>
-  <option value="10">Lv. 10</option>
-  <option value="11">Lv. 11</option>
-  <option value="12">Lv. 12</option>
-  <option value="13">Lv. 13</option>
-  <option value="14">Lv. 14</option>
-  <option value="15">Lv. 15</option>
-  <option value="16">Lv. 16</option>
-  <option value="17">Lv. 17</option>
-  <option value="18">Lv. 18</option>
-  <option value="19">Lv. 19</option>
-  <option value="20">Lv. 20</option>
-</select>
-      </div>
+      <label for="levelSelect">Level:</label>
+      <select id="levelSelect">
+        <option value="1">Lv. 1</option>
+        <option value="2">Lv. 2</option>
+        <option value="3">Lv. 3</option>
+        <option value="4">Lv. 4</option>
+        <option value="5">Lv. 5</option>
+        <option value="6">Lv. 6</option>
+        <option value="7">Lv. 7</option>
+        <option value="8" selected>Lv. 8</option>
+        <option value="9">Lv. 9</option>
+        <option value="10">Lv. 10</option>
+        <option value="11">Lv. 11</option>
+        <option value="12">Lv. 12</option>
+        <option value="13">Lv. 13</option>
+        <option value="14">Lv. 14</option>
+        <option value="15">Lv. 15</option>
+        <option value="16">Lv. 16</option>
+        <option value="17">Lv. 17</option>
+        <option value="18">Lv. 18</option>
+        <option value="19">Lv. 19</option>
+        <option value="20">Lv. 20</option>
+      </select>
     </div>
-
-    <div id="board-container">
-      <div id="board"></div>
-      <div id="loadingSpinner"></div>
-    </div>
-
-    <div id="buttonBar">
-      <button id="undoBtn">Undo</button>
-      <button id="flipBtn">Flip</button>
-      <button id="resetBtn">Reset</button>
-      <button id="analysisBtn">Analysis</button>
-      <button id="editorBtn">Editor</button>
-      <button id="copyPgnBtn">Copy PGN</button>
-      <div id="copyMsg">Copied!</div>
-    </div>
-
-    <div id="fairStatus"></div>
   </div>
 
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // basic parameters
-      const nodesByLevel = {
-        1:1e5, 2:5e5, 3:5e5, 4:5e5, 5:5e5, 6:5e5, 7:5e5, 8:5e5, 9:5e5,
-        10:1e6, 11:1e6, 12:1e6, 13:1.5e6, 14:1.5e6,
-        15:1.5e6, 16:2e6, 17:2e6, 18:2e6, 19:2e6, 20:3e6
-      };
-      const sigmaByLevel = {
-        1:10000, 2:5000, 3:2000, 4:1000, 5:500, 6:250, 7:225, 8:200, 9:150,
-        10:110, 11:80, 12:65, 13:46, 14:38, 15:31, 16:24, 17:16, 18:10, 19:4, 20:0
-      };
-      const baseRatings = {
-        1:0, 2:200, 3:400, 4:600, 5:800, 6:1000, 7:1200, 8:1400, 9:1600,
-        10:1800, 11:2000, 12:2200, 13:2400, 14:2600, 15:2800, 16:3000,
-        17:3200, 18:3400, 19:3600, 20:3800
-      };
+  <div id="board-container">
+    <div id="board"></div>
+    <div id="loadingSpinner"></div>
+  </div>
 
-      // --- sounds (added) ---
-      const moveSnd    = new Audio('Move.mp3');
-      const capSnd     = new Audio('Capture.mp3');
-      const newgameSnd = new Audio('newgame.mp3');
-      [moveSnd, capSnd, newgameSnd].forEach(a => { a.preload = 'auto'; a.volume = 0.7; });
+  <div id="buttonBar">
+    <button id="undoBtn">Undo</button>
+    <button id="flipBtn">Flip</button>
+    <button id="resetBtn">Reset</button>
+    <button id="analysisBtn">Analysis</button>
+    <button id="editorBtn">Editor</button>
+    <button id="copyPgnBtn">Copy PGN</button>
+    <div id="copyMsg">Copied!</div>
+  </div>
 
-      // optional: unlock audio on first user interaction (mobile autoplay policies)
-      window.addEventListener('pointerdown', function unlockOnce() {
-        [moveSnd, capSnd, newgameSnd].forEach(a => {
-          a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(()=>{});
-        });
-        window.removeEventListener('pointerdown', unlockOnce, { once: true });
-      }, { once: true });
+  <div id="fairStatus"></div>
+</div>
 
-      function playForMove(mv) {
-        if (!mv) return;
-        if (mv.flags.includes('c') || mv.flags.includes('e')) capSnd.play();
-        else moveSnd.play();
-      }
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // basic parameters
+  const nodesByLevel = {
+    1:1e5, 2:5e5, 3:5e5, 4:5e5, 5:5e5, 6:5e5, 7:5e5, 8:5e5, 9:5e5,
+    10:1e6, 11:1e6, 12:1e6, 13:1.5e6, 14:1.5e6,
+    15:1.5e6, 16:2e6, 17:2e6, 18:2e6, 19:2e6, 20:3e6
+  };
+  const sigmaByLevel = {
+    1:10000, 2:5000, 3:2000, 4:1000, 5:500, 6:250, 7:225, 8:200, 9:150,
+    10:110, 11:80, 12:65, 13:46, 14:38, 15:31, 16:24, 17:16, 18:10, 19:4, 20:0
+  };
+  const baseRatings = {
+    1:0, 2:200, 3:400, 4:600, 5:800, 6:1000, 7:1200, 8:1400, 9:1600,
+    10:1800, 11:2000, 12:2200, 13:2400, 14:2600, 15:2800, 16:3000,
+    17:3200, 18:3400, 19:3600, 20:3800
+  };
 
-      let isJChessMode = false;
-      let currentLevel = 8;   // default Level 8
-      let searchingFair = false;
-      let startFen;
-      let isHumanBlack = false;
-      let waitingForEngineFirst = false;
-      let manualFlip = false;
+  // sounds
+  const moveSnd = new Audio('Move.mp3');
+  const capSnd = new Audio('Capture.mp3');
+  const newgameSnd = new Audio('newgame.mp3');
+  [moveSnd, capSnd, newgameSnd].forEach(a => { a.preload = 'auto'; a.volume = 0.7; });
 
-      const statusDiv = document.getElementById('fairStatus');
-      const $board = $('#board');
-      const copyMsg = document.getElementById('copyMsg');
-
-      function recordPosition(fen) {
-        fetch(`https://round-frost-df74.stjukes.workers.dev/?fen=${encodeURIComponent(fen)}`)
-          .then(res => res.json())
-          .then(data => {
-            const count = data.count || 0;
-
-            // Function to add ordinal suffix
-            const getOrdinal = (n) => {
-              const s = ["th", "st", "nd", "rd"];
-              const v = n % 100;
-              return n + (s[(v - 20) % 10] || s[v] || s[0]);
-            };
-
-            statusDiv.textContent = `You are the ${getOrdinal(count)} to reach this position.`;
-          })
-          .catch(() => {
-            statusDiv.textContent = '(Could not load position count)';
-          });
-      }
-
-
-      function hideOutputs() {}
-      function clearHighlights() {
-        $board.find('.square-55d63').removeClass('highlight-white highlight-black');
-      }
-      function highlightMove(f, t, col) {
-        clearHighlights();
-        $board.find(`.square-${f}`).addClass(`highlight-${col}`);
-        $board.find(`.square-${t}`).addClass(`highlight-${col}`);
-      }
-
-      // Analysis: send full move list
-      // Analysis: replay the whole game from the J-Chess start position
-      document.getElementById('analysisBtn').addEventListener('click', () => {
-        // 1. Always start from the original J-Chess FEN
-        const fen = startFen;
-        const pathFen = fen.split(' ').join('_'); 
-
-        // 2. Build a list of UCI moves (e2e4, g1f3, etc.) from the game history
-        const moves = game.history({ verbose: true })
-          .map(m => m.from + m.to + (m.promotion || ''))
-          .join('_');
-
-        // 3. Construct the URL: /analysis/standard/<FEN>?moves=<move1_move2_...>
-        let url = `https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`;
-        if (moves) url += `?moves=${encodeURIComponent(moves)}`;
-
-        // 4. Open it
-        window.open(url, '_blank');
-      });
-
-      // Editor: always start position
-      document.getElementById('editorBtn').addEventListener('click', () => {
-        const fen = startFen;
-        const pathFen = fen.split(' ').join('_');
-        window.open(`https://lichess.org/editor/${encodeURIComponent(pathFen)}?color=white`, '_blank');
-      });
-
-      document.getElementById('resetBtn').addEventListener('click', () => {
-        game.load(startFen);  // Load the original starting position
-        board.position(startFen, false);  // Reset the board visually
-        clearHighlights();  // Clear any move highlights
-        setOrientation();   // Ensure board is facing the right way
-        newgameSnd.play();  // (added) new game sound
-        if (isHumanBlack) {
-          waitingForEngineFirst = true;
-          engineReplyFromCurrent();  // Engine plays the first move if human is Black
-        } else {
-          waitingForEngineFirst = false;
-        }
-      });
-
-      // Copy PGN
-      document.getElementById('copyPgnBtn').addEventListener('click', () => {
-        const pgn = game.pgn() || '';
-        navigator.clipboard.writeText(pgn).then(() => {
-          copyMsg.style.display = 'block';
-          setTimeout(() => { copyMsg.style.display = 'none'; }, 1500);
-        });
-      });
-
-      // Undo
-      document.getElementById('undoBtn').addEventListener('click', () => {
-        const turn = game.turn();
-        const first = game.undo();
-        if (turn === (isHumanBlack ? 'b' : 'w')) game.undo();
-        if (first) {
-          board.position(game.fen(), false);
-          clearHighlights();
-          waitingForEngineFirst = false;
-        }
-      });
-
-      // Flip
-      document.getElementById('flipBtn').addEventListener('click', () => {
-        manualFlip = !manualFlip;
-        setOrientation();
-      });
-
-      $('#levelSelect').on('change', function() {
-        currentLevel = +this.value;
-      });
-
-      // chess.js + chessboard.js setup
-      const game = new Chess();
-      const board = Chessboard('board', {
-        draggable: true,
-        position: 'start',
-        pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-        onDragStart, onDrop, onSnapEnd
-      });
-      $(window).resize(board.resize);
-
-      function refreshLevelLabels() {
-        const sel = document.getElementById('levelSelect');
-        Array.from(sel.options).forEach(opt => {
-          const lvl = +opt.value;
-          const base = baseRatings[lvl];
-          opt.textContent = `Lv. ${lvl} (${isJChessMode ? base+200 : base})`;
-        });
-      }
-
-      function setOrientation() {
-        board.orientation(manualFlip
-          ? (isHumanBlack ? 'white' : 'black')
-          : (isHumanBlack ? 'black' : 'white'));
-      }
-
-      function onDragStart(src, piece) {
-        if (game.game_over()) return false;
-        const t = game.turn();
-        if (!isHumanBlack) return piece[0]==='w' && t==='w';
-        return !waitingForEngineFirst && piece[0]==='b' && t==='b';
-      }
-      function onSnapEnd() {
-        board.position(game.fen(), false);
-      }
-      function onDrop(src, tgt) {
-        const mv = game.move({ from: src, to: tgt, promotion: 'q' });
-        if (!mv) return 'snapback';
-        playForMove(mv);                  // (added) play sound for human move
-        handleEngineMove(src, tgt);
-      }
-
-      // Stockfish workers
-      const engine = new Worker('engine/stockfish-17-lite-single.js');
-      engine.postMessage('uci');
-      engine.addEventListener('message', function init({ data }) {
-        if (data.trim()==='uciok') {
-          engine.postMessage('setoption name MultiPV value 50');
-          engine.postMessage('ucinewgame');
-          engine.postMessage('isready');
-        }
-        if (data.trim()==='readyok') engine.removeEventListener('message', init);
-      });
-      const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
-      evalEngine.postMessage('uci');
-      evalEngine.addEventListener('message', function initE({ data }) {
-        if (data.trim()==='uciok') {
-          evalEngine.postMessage('ucinewgame');
-          evalEngine.postMessage('setoption name UCI_LimitStrength value false');
-          evalEngine.postMessage('isready');
-        }
-        if (data.trim()==='readyok') evalEngine.removeEventListener('message', initE);
-      });
-
-      function randomGaussian() {
-        let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random();
-        return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
-      }
-
-      function thresholdSelect(cands, sigma) {
-        const best = cands[0].cp;
-        const x = Math.abs(randomGaussian()*sigma);
-        const allowed = cands.filter(c => (best - c.cp) <= x);
-        return allowed.length ? allowed[Math.floor(Math.random()*allowed.length)] : cands[0];
-      }
-
-      function adjustSigma(base) {
-        if (isJChessMode) return base;  // Full variance in J-Chess
-
-        const moves = Math.floor(game.history().length / 2) + 1;
-
-        if (currentLevel >= 3 && currentLevel <= 6) {
-          if      (moves <= 3) return base / 5;
-          else if (moves === 4) return base / 4;
-          else if (moves === 5) return base / 3;
-          else if (moves === 6) return base / 2;
-          else return base;
-        }
-
-        if (currentLevel >= 7 && currentLevel <= 14) {
-          if      (moves <= 6) return base / 8;
-          else if (moves === 7) return base / 6;
-          else if (moves === 8) return base / 4;
-          else if (moves === 9) return base / 2;
-          else return base;
-        }
-
-        return base;
-      }
-
-      function handleEngineMove(src, tgt) {
-        highlightMove(src, tgt, 'white');
-        const nodes = nodesByLevel[currentLevel];
-        const sigma = adjustSigma(sigmaByLevel[currentLevel]);
-        const cand = {}; let seen=false;
-
-        function onInfo({ data }) {
-          const line = data.trim();
-          if (line.startsWith('info') && line.includes('multipv')) {
-            const mpv = +line.match(/multipv\s+(\d+)/)[1];
-            const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
-            const cpm = line.match(/score cp\s+(-?\d+)/);
-            const mat = line.match(/score mate\s+(-?\d+)/);
-            if (mpv && pv && (cpm||mat)) {
-              const cp = cpm
-                ? +cpm[1]
-                : (mat[1]>0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
-              cand[mpv] = { move: pv, cp }; seen=true;
-            }
-          }
-          if (line.startsWith('bestmove')) {
-            engine.removeEventListener('message', onInfo);
-            if (!seen) return;
-            const pick = thresholdSelect(Object.values(cand), sigma);
-            const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
-            highlightMove(f, t, 'black');
-            const emv = game.move({ from: f, to: t, promotion: 'q' });
-            board.position(game.fen(), false);
-            playForMove(emv);            // (added) sound for engine move
-          }
-        }
-
-        engine.addEventListener('message', onInfo);
-        engine.postMessage('position fen '+game.fen());
-        engine.postMessage('go nodes '+nodes);
-      }
-
-      function engineReplyFromCurrent() {
-        hideOutputs();
-        const nodes = nodesByLevel[currentLevel];
-        const sigma = adjustSigma(sigmaByLevel[currentLevel]);
-        const cand = {}; let seenAny=false;
-
-        function listener({ data }) {
-          const line = data.trim();
-          if (line.startsWith('info') && line.includes('multipv')) {
-            const mpv = +line.match(/multipv\s+(\d+)/)[1];
-            const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
-            const cpm = line.match(/score cp\s+(-?\d+)/);
-            const mat = line.match(/score mate\s+(-?\d+)/);
-            if (mpv && pv && (cpm||mat)) {
-              const cp = cpm
-                ? +cpm[1]
-                : (mat[1]>0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
-              cand[mpv] = { move: pv, cp }; seenAny=true;
-            }
-          }
-          if (line.startsWith('bestmove')) {
-            engine.removeEventListener('message', listener);
-            if (!seenAny) return;
-            const pick = thresholdSelect(Object.values(cand), sigma);
-            const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
-            const col = game.turn()==='w'? 'black':'white';
-            highlightMove(f, t, col);
-            const emv = game.move({ from: f, to: t, promotion: 'q' });
-            board.position(game.fen(), false);
-            waitingForEngineFirst = false;
-            playForMove(emv);           // (added) sound for engine move
-          }
-        }
-
-        engine.addEventListener('message', listener);
-        engine.postMessage('position fen '+game.fen());
-        engine.postMessage('go nodes '+nodes);
-      }
-
-      // play controls
-      document.getElementById('playWhiteBtn').addEventListener('click', () => {
-        isHumanBlack=false; waitingForEngineFirst=false; manualFlip=false;
-        game.load(startFen); board.position(startFen,false);
-        setOrientation(); clearHighlights();
-      });
-      document.getElementById('playBlackBtn').addEventListener('click', () => {
-        isHumanBlack=true; waitingForEngineFirst=true; manualFlip=false;
-        game.load(startFen); board.position(startFen,false);
-        setOrientation(); clearHighlights();
-        engineReplyFromCurrent();
-      });
-
-      $('#standardBtn').click(() => {
-        isJChessMode=false; manualFlip=false; refreshLevelLabels();
-        game.reset(); startFen=game.fen();
-        board.position(startFen,false); clearHighlights();
-        setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
-        newgameSnd.play();  // (added)
-      });
-      $('#randomiseBtn').click(() => {
-        isJChessMode=true; manualFlip=false; refreshLevelLabels();
-        const fen = generateJChessFEN();
-        game.load(fen); startFen=fen;
-        board.position(fen,false); clearHighlights();
-        setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
-        newgameSnd.play();  // (added)
-      });
-      $('#fairBtn').click(() => {
-        if (searchingFair) return;
-        isJChessMode=true; manualFlip=false; refreshLevelLabels();
-        searchingFair=true; $('#loadingSpinner').show();
-        tryNextFair();
-      });
-$('#symJchessBtn').click(() => {
-  isJChessMode = true;
-  manualFlip = false;
-  refreshLevelLabels();
-  const fen = generateSymmetricJChessFEN();
-  game.load(fen);
-  startFen = fen;
-  board.position(fen, false);
-  clearHighlights();
-  setOrientation();
-  if (isHumanBlack) engineReplyFromCurrent();
-  newgameSnd.play();  // play new game sound
-  recordPosition(fen); // record position count
-});
-
-      
-
-      function tryNextFair() {
-        const fen = generateJChessFEN();
-        statusDiv.textContent += fen + '\n';
-        let lastCp=null;
-        const ms = +$('#timeSelect').val();
-        evalEngine.postMessage('position fen '+fen);
-        evalEngine.postMessage('go movetime '+ms);
-
-        function onEval({ data }) {
-          const line = data.trim();
-          if (line.startsWith('info')&&line.includes('score cp')) {
-            lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
-          }
-          if (line.startsWith('info')&&line.includes('score mate')) {
-            const m = +line.match(/score mate\s+(-?\d+)/)[1];
-            lastCp = m>0?5000:-5000;
-          }
-          if (line.startsWith('bestmove')) {
-            evalEngine.removeEventListener('message', onEval);
-            const raw = lastCp===null?0:lastCp;
-            const fair = Math.abs(raw)<=40;
-            statusDiv.textContent += `${(raw/100).toFixed(2)} => ${fair?'Fair':'Unfair'}\n\n`;
-            if (fair) {
-              game.load(fen); board.position(fen,false);
-              clearHighlights(); startFen=fen;
-              searchingFair=false; $('#loadingSpinner').hide();
-              setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
-              newgameSnd.play();  // (added)
-            } else {
-              setTimeout(tryNextFair,30);
-            }
-          }
-        }
-        evalEngine.addEventListener('message', onEval);
-      }
-
-      function shuffle(a) {
-        for (let i=a.length-1;i>0;i--) {
-          const j = Math.floor(Math.random()*(i+1));
-          [a[i],a[j]]=[a[j],a[i]];
-        }
-        return a;
-      }
-      function generateBackRank() {
-        const P=['r','n','b','q','k','b','n','r'];
-        let R, bs;
-        do {
-          R = shuffle(P.slice());
-          bs = [R.indexOf('b'),R.lastIndexOf('b')];
-        } while((bs[0]%2)===(bs[1]%2));
-        return R.join('');
-      }
-      function generateJChessFEN() {
-        const W=generateBackRank().toUpperCase();
-        const B=generateBackRank().toLowerCase();
-        return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
-      }
-
-      function generateSymmetricJChessFEN() {
-  const W = generateBackRank().toUpperCase();
-  const B = W.toLowerCase(); // same layout for black
-  return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
-}
-
-
-      // create
-      startFen = game.fen();
-      setOrientation();
-      refreshLevelLabels();
+  // unlock audio (mobile policy)
+  window.addEventListener('pointerdown', function unlockOnce() {
+    [moveSnd, capSnd, newgameSnd].forEach(a => {
+      a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(()=>{});
     });
-  </script>
+    window.removeEventListener('pointerdown', unlockOnce, { once: true });
+  }, { once: true });
 
-  <footer style="margin-top:3rem; text-align:center; padding:1rem 0; background:#0d3f66; color:#ffffff; font-size:0.95rem;">
-    Contact: <a href="mailto:stjukes@gmail.com" style="color:#ffffff; text-decoration:underline;">stjukes@gmail.com</a>
-  </footer>
+  function playForMove(mv) {
+    if (!mv) return;
+    if (mv.flags.includes('c') || mv.flags.includes('e')) capSnd.play();
+    else moveSnd.play();
+  }
+
+  let isJChessMode = false;
+  let currentLevel = 8;   // default Level 8
+  let searchingFair = false;
+  let startFen;
+  let isHumanBlack = false;
+  let waitingForEngineFirst = false;
+  let manualFlip = false;
+
+  const statusDiv = document.getElementById('fairStatus');
+  const $board = $('#board');
+  const copyMsg = document.getElementById('copyMsg');
+
+  // Counter
+  function recordPosition(fen) {
+    fetch(`https://round-frost-df74.stjukes.workers.dev/?fen=${encodeURIComponent(fen)}`)
+      .then(res => res.json())
+      .then(data => {
+        const count = data.count || 0;
+        const getOrdinal = (n) => {
+          const s = ["th", "st", "nd", "rd"];
+          const v = n % 100;
+          return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        };
+        statusDiv.textContent = `You are the ${getOrdinal(count)} to reach this position.`;
+      })
+      .catch(() => {
+        statusDiv.textContent = '(Could not load position count)';
+      });
+  }
+
+  function hideOutputs() {}
+  function clearHighlights() {
+    $board.find('.square-55d63').removeClass('highlight-white highlight-black');
+  }
+  function highlightMove(f, t, col) {
+    clearHighlights();
+    $board.find(`.square-${f}`).addClass(`highlight-${col}`);
+    $board.find(`.square-${t}`).addClass(`highlight-${col}`);
+  }
+
+  // Analysis
+  document.getElementById('analysisBtn').addEventListener('click', () => {
+    const fen = startFen;
+    const pathFen = fen.split(' ').join('_');
+    const moves = game.history({ verbose: true })
+      .map(m => m.from + m.to + (m.promotion || ''))
+      .join('_');
+    let url = `https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`;
+    if (moves) url += `?moves=${encodeURIComponent(moves)}`;
+    window.open(url, '_blank');
+  });
+
+  // Editor
+  document.getElementById('editorBtn').addEventListener('click', () => {
+    const fen = startFen;
+    const pathFen = fen.split(' ').join('_');
+    window.open(`https://lichess.org/editor/${encodeURIComponent(pathFen)}?color=white`, '_blank');
+  });
+
+  // Reset
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    game.load(startFen);
+    board.position(startFen, false);
+    clearHighlights();
+    setOrientation();
+    newgameSnd.play();
+    if (isHumanBlack) {
+      waitingForEngineFirst = true;
+      engineReplyFromCurrent();
+    } else {
+      waitingForEngineFirst = false;
+    }
+  });
+
+  // Copy PGN
+  document.getElementById('copyPgnBtn').addEventListener('click', () => {
+    const pgn = game.pgn() || '';
+    navigator.clipboard.writeText(pgn).then(() => {
+      copyMsg.style.display = 'block';
+      setTimeout(() => { copyMsg.style.display = 'none'; }, 1500);
+    });
+  });
+
+  // Undo
+  document.getElementById('undoBtn').addEventListener('click', () => {
+    const turn = game.turn();
+    const first = game.undo();
+    if (turn === (isHumanBlack ? 'b' : 'w')) game.undo();
+    if (first) {
+      board.position(game.fen(), false);
+      clearHighlights();
+      waitingForEngineFirst = false;
+    }
+  });
+
+  // Flip
+  document.getElementById('flipBtn').addEventListener('click', () => {
+    manualFlip = !manualFlip;
+    setOrientation();
+  });
+
+  $('#levelSelect').on('change', function() {
+    currentLevel = +this.value;
+  });
+
+  // chess.js + chessboard.js setup
+  const game = new Chess();
+  const board = Chessboard('board', {
+    draggable: true,
+    position: 'start',
+    pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+    onDragStart, onDrop, onSnapEnd
+  });
+  $(window).resize(board.resize);
+
+  function refreshLevelLabels() {
+    const sel = document.getElementById('levelSelect');
+    Array.from(sel.options).forEach(opt => {
+      const lvl = +opt.value;
+      const base = baseRatings[lvl];
+      opt.textContent = `Lv. ${lvl} (${isJChessMode ? base+200 : base})`;
+    });
+  }
+
+  function setOrientation() {
+    board.orientation(manualFlip
+      ? (isHumanBlack ? 'white' : 'black')
+      : (isHumanBlack ? 'black' : 'white'));
+  }
+
+  function onDragStart(src, piece) {
+    if (game.game_over()) return false;
+    const t = game.turn();
+    if (!isHumanBlack) return piece[0]==='w' && t==='w';
+    return !waitingForEngineFirst && piece[0]==='b' && t==='b';
+  }
+  function onSnapEnd() {
+    board.position(game.fen(), false);
+  }
+  function onDrop(src, tgt) {
+    const mv = game.move({ from: src, to: tgt, promotion: 'q' });
+    if (!mv) return 'snapback';
+    playForMove(mv);
+    handleEngineMove(src, tgt);
+  }
+
+  // Stockfish workers
+  const engine = new Worker('engine/stockfish-17-lite-single.js');
+  engine.postMessage('uci');
+  engine.addEventListener('message', function init({ data }) {
+    if (data.trim()==='uciok') {
+      engine.postMessage('setoption name MultiPV value 50');
+      engine.postMessage('ucinewgame');
+      engine.postMessage('isready');
+    }
+    if (data.trim()==='readyok') engine.removeEventListener('message', init);
+  });
+  const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
+  evalEngine.postMessage('uci');
+  evalEngine.addEventListener('message', function initE({ data }) {
+    if (data.trim()==='uciok') {
+      evalEngine.postMessage('ucinewgame');
+      evalEngine.postMessage('setoption name UCI_LimitStrength value false');
+      evalEngine.postMessage('isready');
+    }
+    if (data.trim()==='readyok') evalEngine.removeEventListener('message', initE);
+  });
+
+  function randomGaussian() {
+    let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random();
+    return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+  }
+
+  function thresholdSelect(cands, sigma) {
+    const best = cands[0].cp;
+    const x = Math.abs(randomGaussian()*sigma);
+    const allowed = cands.filter(c => (best - c.cp) <= x);
+    return allowed.length ? allowed[Math.floor(Math.random()*allowed.length)] : cands[0];
+  }
+
+  function adjustSigma(base) {
+    if (isJChessMode) return base;  // Full variance in J-Chess
+    const moves = Math.floor(game.history().length / 2) + 1;
+
+    if (currentLevel >= 3 && currentLevel <= 6) {
+      if      (moves <= 3) return base / 5;
+      else if (moves === 4) return base / 4;
+      else if (moves === 5) return base / 3;
+      else if (moves === 6) return base / 2;
+      else return base;
+    }
+    if (currentLevel >= 7 && currentLevel <= 14) {
+      if      (moves <= 6) return base / 8;
+      else if (moves === 7) return base / 6;
+      else if (moves === 8) return base / 4;
+      else if (moves === 9) return base / 2;
+      else return base;
+    }
+    return base;
+  }
+
+  function handleEngineMove(src, tgt) {
+    highlightMove(src, tgt, 'white');
+    const nodes = nodesByLevel[currentLevel];
+    const sigma = adjustSigma(sigmaByLevel[currentLevel]);
+    const cand = {}; let seen=false;
+
+    function onInfo({ data }) {
+      const line = data.trim();
+      if (line.startsWith('info') && line.includes('multipv')) {
+        const mpv = +line.match(/multipv\s+(\d+)/)[1];
+        const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
+        const cpm = line.match(/score cp\s+(-?\d+)/);
+        const mat = line.match(/score mate\s+(-?\d+)/);
+        if (mpv && pv && (cpm||mat)) {
+          const cp = cpm
+            ? +cpm[1]
+            : (mat[1]>0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
+          cand[mpv] = { move: pv, cp }; seen=true;
+        }
+      }
+      if (line.startsWith('bestmove')) {
+        engine.removeEventListener('message', onInfo);
+        if (!seen) return;
+        const pick = thresholdSelect(Object.values(cand), sigma);
+        const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+        highlightMove(f, t, 'black');
+        const emv = game.move({ from: f, to: t, promotion: 'q' });
+        board.position(game.fen(), false);
+        playForMove(emv);
+      }
+    }
+
+    engine.addEventListener('message', onInfo);
+    engine.postMessage('position fen '+game.fen());
+    engine.postMessage('go nodes '+nodes);
+  }
+
+  function engineReplyFromCurrent() {
+    hideOutputs();
+    const nodes = nodesByLevel[currentLevel];
+    const sigma = adjustSigma(sigmaByLevel[currentLevel]);
+    const cand = {}; let seenAny=false;
+
+    function listener({ data }) {
+      const line = data.trim();
+      if (line.startsWith('info') && line.includes('multipv')) {
+        const mpv = +line.match(/multipv\s+(\d+)/)[1];
+        const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
+        const cpm = line.match(/score cp\s+(-?\d+)/);
+        const mat = line.match(/score mate\s+(-?\d+)/);
+        if (mpv && pv && (cpm||mat)) {
+          const cp = cpm
+            ? +cpm[1]
+            : (mat[1]>0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
+          cand[mpv] = { move: pv, cp }; seenAny=true;
+        }
+      }
+      if (line.startsWith('bestmove')) {
+        engine.removeEventListener('message', listener);
+        if (!seenAny) return;
+        const pick = thresholdSelect(Object.values(cand), sigma);
+        const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+        const col = game.turn()==='w'? 'black':'white';
+        highlightMove(f, t, col);
+        const emv = game.move({ from: f, to: t, promotion: 'q' });
+        board.position(game.fen(), false);
+        waitingForEngineFirst = false;
+        playForMove(emv);
+      }
+    }
+
+    engine.addEventListener('message', listener);
+    engine.postMessage('position fen '+game.fen());
+    engine.postMessage('go nodes '+nodes);
+  }
+
+  // play controls
+  document.getElementById('playWhiteBtn').addEventListener('click', () => {
+    isHumanBlack=false; waitingForEngineFirst=false; manualFlip=false;
+    game.load(startFen); board.position(startFen,false);
+    setOrientation(); clearHighlights();
+  });
+  document.getElementById('playBlackBtn').addEventListener('click', () => {
+    isHumanBlack=true; waitingForEngineFirst=true; manualFlip=false;
+    game.load(startFen); board.position(startFen,false);
+    setOrientation(); clearHighlights();
+    engineReplyFromCurrent();
+  });
+
+  // Standard (no counting)
+  $('#standardBtn').click(() => {
+    isJChessMode=false; manualFlip=false; refreshLevelLabels();
+    game.reset(); startFen=game.fen();
+    board.position(startFen,false); clearHighlights();
+    setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
+    newgameSnd.play();
+  });
+
+  // J-Chess (counts)
+  $('#jchessBtn').click(() => {
+    isJChessMode = true;
+    manualFlip = false;
+    refreshLevelLabels();
+    const fen = generateJChessFEN();
+    game.load(fen);
+    startFen = fen;
+    board.position(fen, false);
+    clearHighlights();
+    setOrientation();
+    if (isHumanBlack) engineReplyFromCurrent();
+    newgameSnd.play();
+    recordPosition(fen);
+  });
+
+  // Symmetric J-Chess (counts)
+  $('#symJchessBtn').click(() => {
+    isJChessMode = true;
+    manualFlip = false;
+    refreshLevelLabels();
+    const fen = generateSymmetricJChessFEN();
+    game.load(fen);
+    startFen = fen;
+    board.position(fen, false);
+    clearHighlights();
+    setOrientation();
+    if (isHumanBlack) engineReplyFromCurrent();
+    newgameSnd.play();
+    recordPosition(fen);
+  });
+
+  // Fair J-Chess (counts when fair found)
+  $('#fairBtn').click(() => {
+    if (searchingFair) return;
+    isJChessMode=true; manualFlip=false; refreshLevelLabels();
+    searchingFair=true; $('#loadingSpinner').show();
+    tryNextFair();
+  });
+
+  function tryNextFair() {
+    const fen = generateJChessFEN();
+    statusDiv.textContent += fen + '\n';
+    let lastCp=null;
+    const ms = +$('#timeSelect').val();
+    evalEngine.postMessage('position fen '+fen);
+    evalEngine.postMessage('go movetime '+ms);
+
+    function onEval({ data }) {
+      const line = data.trim();
+      if (line.startsWith('info') && line.includes('score cp')) {
+        lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
+      }
+      if (line.startsWith('info') && line.includes('score mate')) {
+        const m = +line.match(/score mate\s+(-?\d+)/)[1];
+        lastCp = m>0 ? 5000 : -5000;
+      }
+      if (line.startsWith('bestmove')) {
+        evalEngine.removeEventListener('message', onEval);
+        const raw = lastCp===null ? 0 : lastCp;
+        const fair = Math.abs(raw) <= 40;
+        statusDiv.textContent += `${(raw/100).toFixed(2)} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
+        if (fair) {
+          game.load(fen);
+          board.position(fen, false);
+          clearHighlights();
+          startFen = fen;
+          searchingFair = false;
+          $('#loadingSpinner').hide();
+          setOrientation();
+          if (isHumanBlack) engineReplyFromCurrent();
+          newgameSnd.play();
+          recordPosition(fen);
+        } else {
+          setTimeout(tryNextFair, 30);
+        }
+      }
+    }
+    evalEngine.addEventListener('message', onEval);
+  }
+
+  // helpers
+  function shuffle(a) {
+    for (let i=a.length-1;i>0;i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+  function generateBackRank() {
+    const P=['r','n','b','q','k','b','n','r'];
+    let R, bs;
+    do {
+      R = shuffle(P.slice());
+      bs = [R.indexOf('b'), R.lastIndexOf('b')];
+    } while ((bs[0] % 2) === (bs[1] % 2));
+    return R.join('');
+  }
+  function generateJChessFEN() {
+    const W = generateBackRank().toUpperCase();
+    const B = generateBackRank().toLowerCase();
+    return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+  }
+  function generateSymmetricJChessFEN() {
+    const W = generateBackRank().toUpperCase();
+    const B = W.toLowerCase(); // same layout for black
+    return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+  }
+
+  // create
+  startFen = game.fen();
+  setOrientation();
+  refreshLevelLabels();
+});
+</script>
+
+<footer style="margin-top:3rem; text-align:center; padding:1rem 0; background:#0d3f66; color:#ffffff; font-size:0.95rem;">
+  Contact: <a href="mailto:stjukes@gmail.com" style="color:#ffffff; text-decoration:underline;">stjukes@gmail.com</a>
+</footer>
 </body>
 </html>
