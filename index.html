@@ -82,7 +82,7 @@
       padding: 1.2rem clamp(1rem,4vw,2.2rem) 2.5rem;
       text-align: center;
     }
-    #stats h2 {
+    #stats h2, #stats h1 {
       margin: 0.35rem 0;
       font-size: clamp(1rem,0.85rem+0.6vw,1.25rem);
       font-weight: 600;
@@ -127,6 +127,8 @@
       display:none; z-index:10;
     }
     @keyframes spin { to { transform:translate(-50%,-50%) rotate(360deg); } }
+
+    /* status (counter / messages) */
     #fairStatus {
       margin-top:1rem;
       margin-bottom:1rem;
@@ -139,8 +141,10 @@
       min-height:2rem;
       text-align:left;
     }
+
     .highlight-white { box-shadow: inset 0 0 3px 3px rgba(255,255,0,0.85)!important; }
     .highlight-black { box-shadow: inset 0 0 3px 3px rgba(0,0,255,0.85)!important; }
+
     #buttonBar { text-align:center; margin-top:1rem; }
     #buttonBar button { margin:0 0.3rem; }
     #copyMsg { display: none; margin-top: 0.5rem; color: #007700; font-weight: 600; }
@@ -217,8 +221,8 @@
     </div>
   </div>
 
+  <!-- One-line status between controls and board -->
   <div id="fairStatus"></div>
-
 
   <div id="board-container">
     <div id="board"></div>
@@ -290,24 +294,59 @@ document.addEventListener('DOMContentLoaded', () => {
   const $board = $('#board');
   const copyMsg = document.getElementById('copyMsg');
 
-  // Counter
-function recordPosition(fen) {
-  statusDiv.textContent = "Generating position..."; // show while loading
-  fetch(`https://round-frost-df74.stjukes.workers.dev/?fen=${encodeURIComponent(fen)}`)
-    .then(res => res.json())
-    .then(data => {
-      const count = data.count || 0;
-      const getOrdinal = (n) => {
-        const s = ["th", "st", "nd", "rd"];
-        const v = n % 100;
-        return n + (s[(v - 20) % 10] || s[v] || s[0]);
-      };
-      statusDiv.textContent = `You are the ${getOrdinal(count)} to reach this position.`;
-    })
-    .catch(() => {
-      statusDiv.textContent = '(Could not load position count)';
-    });
-}
+  // ---------- helpers ----------
+  function shuffle(a) {
+    for (let i=a.length-1;i>0;i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+  function generateBackRank() {
+    const P=['r','n','b','q','k','b','n','r'];
+    let R, bs;
+    do {
+      R = shuffle(P.slice());
+      bs = [R.indexOf('b'), R.lastIndexOf('b')];
+    } while ((bs[0] % 2) === (bs[1] % 2));
+    return R.join('');
+  }
+  function generateJChessFEN() {
+    const W = generateBackRank().toUpperCase();
+    const B = generateBackRank().toLowerCase();
+    return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+  }
+  function generateSymmetricJChessFEN() {
+    const W = generateBackRank().toUpperCase();
+    const B = W.toLowerCase(); // same layout for black
+    return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+  }
+  function clearStatus(){ statusDiv.textContent = ''; }
+
+  // ordinal with commas
+  function formatOrdinal(n) {
+    const formatted = n.toLocaleString('en-US');
+    const v = n % 100;
+    const suff = (v >= 11 && v <= 13) ? 'th'
+               : (n % 10 === 1) ? 'st'
+               : (n % 10 === 2) ? 'nd'
+               : (n % 10 === 3) ? 'rd'
+               : 'th';
+    return `${formatted}${suff}`;
+  }
+
+  // Counter (do NOT change message here; click handlers set “Generating…”)
+  function recordPosition(fen) {
+    fetch(`https://round-frost-df74.stjukes.workers.dev/?fen=${encodeURIComponent(fen)}`)
+      .then(res => res.json())
+      .then(data => {
+        const count = Number(data.count || 0);
+        statusDiv.textContent = `You are the ${formatOrdinal(count)} to reach this position.`;
+      })
+      .catch(() => {
+        statusDiv.textContent = '(Could not load position count)';
+      });
+  }
 
   function hideOutputs() {}
   function clearHighlights() {
@@ -388,7 +427,7 @@ function recordPosition(fen) {
   const game = new Chess();
   const board = Chessboard('board', {
     draggable: true,
-    position: 'start',
+    position: '8/8/8/8/8/8/8/8', // start EMPTY
     pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
     onDragStart, onDrop, onSnapEnd
   });
@@ -556,7 +595,7 @@ function recordPosition(fen) {
     engine.postMessage('go nodes '+nodes);
   }
 
-  // play controls
+  // --------- Play-side controls (white/black) ----------
   document.getElementById('playWhiteBtn').addEventListener('click', () => {
     isHumanBlack=false; waitingForEngineFirst=false; manualFlip=false;
     game.load(startFen); board.position(startFen,false);
@@ -569,216 +608,153 @@ function recordPosition(fen) {
     engineReplyFromCurrent();
   });
 
-  // Standard (no counting)
-$('#standardBtn').click(() => {
-  isJChessMode = false;
-  manualFlip = false;
-  refreshLevelLabels();
-  game.reset();
-  startFen = game.fen();
-  board.position(startFen, false);
-  clearHighlights();
-  setOrientation();
-  clearStatus();           // ← wipe the “You are the …” message
-  if (isHumanBlack) engineReplyFromCurrent();
-  newgameSnd.play();
-});
+  // ---------- Generators ----------
+
+  // Standard Chess (spinner + 1s + counting)
+  $('#standardBtn').click(() => {
+    if ($('#loadingSpinner').is(':visible')) return;
+    $('#loadingSpinner').show();
+    $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
+    statusDiv.textContent = "Generating position...";
+
+    isJChessMode = false;
+    manualFlip = false;
+    refreshLevelLabels();
+
+    setTimeout(() => {
+      const fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+      game.load(fen);
+      startFen = fen;
+      board.position(fen, false);
+      clearHighlights();
+      setOrientation();
+      if (isHumanBlack) engineReplyFromCurrent();
+      newgameSnd.play();
+      recordPosition(fen);
+
+      $('#loadingSpinner').hide();
+      $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
+    }, 1000);
+  });
 
   // J-Chess (counts)
-$('#jchessBtn').click(() => {
-  if ($('#loadingSpinner').is(':visible')) return;
-  $('#loadingSpinner').show();
-  $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
-  statusDiv.textContent = "Generating position...";
+  $('#jchessBtn').click(() => {
+    if ($('#loadingSpinner').is(':visible')) return;
+    $('#loadingSpinner').show();
+    $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
+    statusDiv.textContent = "Generating position...";
 
-  isJChessMode = true;
-  manualFlip = false;
-  refreshLevelLabels();
+    isJChessMode = true;
+    manualFlip = false;
+    refreshLevelLabels();
 
-  setTimeout(() => {
-    const fen = generateJChessFEN();
-    game.load(fen);
-    startFen = fen;
-    board.position(fen, false);
-    clearHighlights();
-    setOrientation();
-    if (isHumanBlack) engineReplyFromCurrent();
-    newgameSnd.play();
-    recordPosition(fen);
+    setTimeout(() => {
+      const fen = generateJChessFEN();
+      game.load(fen);
+      startFen = fen;
+      board.position(fen, false);
+      clearHighlights();
+      setOrientation();
+      if (isHumanBlack) engineReplyFromCurrent();
+      newgameSnd.play();
+      recordPosition(fen);
 
-    $('#loadingSpinner').hide();
-    $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
-  }, 1000);
-});
+      $('#loadingSpinner').hide();
+      $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
+    }, 1000);
+  });
 
-$('#symJchessBtn').click(() => {
-  if ($('#loadingSpinner').is(':visible')) return;
-  $('#loadingSpinner').show();
-  $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
-  statusDiv.textContent = "Generating position...";
+  // Symmetric J-Chess (counts)
+  $('#symJchessBtn').click(() => {
+    if ($('#loadingSpinner').is(':visible')) return;
+    $('#loadingSpinner').show();
+    $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
+    statusDiv.textContent = "Generating position...";
 
-  isJChessMode = true;
-  manualFlip = false;
-  refreshLevelLabels();
+    isJChessMode = true;
+    manualFlip = false;
+    refreshLevelLabels();
 
-  setTimeout(() => {
-    const fen = generateSymmetricJChessFEN();
-    game.load(fen);
-    startFen = fen;
-    board.position(fen, false);
-    clearHighlights();
-    setOrientation();
-    if (isHumanBlack) engineReplyFromCurrent();
-    newgameSnd.play();
-    recordPosition(fen);
+    setTimeout(() => {
+      const fen = generateSymmetricJChessFEN();
+      game.load(fen);
+      startFen = fen;
+      board.position(fen, false);
+      clearHighlights();
+      setOrientation();
+      if (isHumanBlack) engineReplyFromCurrent();
+      newgameSnd.play();
+      recordPosition(fen);
 
-    $('#loadingSpinner').hide();
-    $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
-  }, 1000);
-});
+      $('#loadingSpinner').hide();
+      $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
+    }, 1000);
+  });
 
   // Fair J-Chess (counts when fair found)
-// Fair J-Chess (counts when fair found)
-$('#fairBtn').click(() => {
-  if (searchingFair || $('#loadingSpinner').is(':visible')) return;
+  $('#fairBtn').click(() => {
+    if (searchingFair || $('#loadingSpinner').is(':visible')) return;
+    $('#loadingSpinner').show();
+    $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
+    statusDiv.textContent = "Generating position...";
 
-  // Show spinner and grey out all buttons (same behaviour as J-Chess and Symmetric)
-  $('#loadingSpinner').show();
-  $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
-  statusDiv.textContent = "Generating position...";
+    isJChessMode = true;
+    manualFlip = false;
+    refreshLevelLabels();
+    searchingFair = true;
 
-  isJChessMode = true;
-  manualFlip = false;
-  refreshLevelLabels();
-  searchingFair = true;
+    tryNextFair();
+  });
 
-  tryNextFair();
-});
+  function tryNextFair() {
+    const fen = generateJChessFEN();
+    let lastCp = null;
+    const ms = +$('#timeSelect').val();
+    evalEngine.postMessage('position fen ' + fen);
+    evalEngine.postMessage('go movetime ' + ms);
 
-function tryNextFair() {
-  const fen = generateJChessFEN();
-  let lastCp = null;
-  const ms = +$('#timeSelect').val();
-  evalEngine.postMessage('position fen ' + fen);
-  evalEngine.postMessage('go movetime ' + ms);
+    function onEval({ data }) {
+      const line = data.trim();
+      if (line.startsWith('info') && line.includes('score cp')) {
+        lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
+      }
+      if (line.startsWith('info') && line.includes('score mate')) {
+        const m = +line.match(/score mate\s+(-?\d+)/)[1];
+        lastCp = m > 0 ? 5000 : -5000;
+      }
+      if (line.startsWith('bestmove')) {
+        evalEngine.removeEventListener('message', onEval);
+        const raw = lastCp === null ? 0 : lastCp;
+        const fair = Math.abs(raw) <= 40;
 
-  function onEval({ data }) {
-    const line = data.trim();
-    if (line.startsWith('info') && line.includes('score cp')) {
-      lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
-    }
-    if (line.startsWith('info') && line.includes('score mate')) {
-      const m = +line.match(/score mate\s+(-?\d+)/)[1];
-      lastCp = m > 0 ? 5000 : -5000;
-    }
-    if (line.startsWith('bestmove')) {
-      evalEngine.removeEventListener('message', onEval);
-      const raw = (lastCp === null ? 0 : lastCp);
-      const fair = Math.abs(raw) <= 40;
-
-      if (fair) {
-        // Found fair position
-        game.load(fen);
-        startFen = fen;
-        board.position(fen, false);
-        clearHighlights();
-        searchingFair = false;
-        $('#loadingSpinner').hide();
-        setOrientation();
-        if (isHumanBlack) engineReplyFromCurrent();
-        newgameSnd.play();
-        recordPosition(fen);
-
-        // Re-enable all buttons after success
-        $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
-      } else {
-        // Keep searching
-        setTimeout(tryNextFair, 30);
+        if (fair) {
+          game.load(fen);
+          startFen = fen;
+          board.position(fen, false);
+          clearHighlights();
+          searchingFair = false;
+          $('#loadingSpinner').hide();
+          setOrientation();
+          if (isHumanBlack) engineReplyFromCurrent();
+          newgameSnd.play();
+          recordPosition(fen);
+          $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
+        } else {
+          setTimeout(tryNextFair, 30);
+        }
       }
     }
+
+    evalEngine.addEventListener('message', onEval);
   }
 
-  evalEngine.addEventListener('message', onEval);
-}
-
-function tryNextFair() {
-  const fen = generateJChessFEN();
-  let lastCp = null;
-  const ms = +$('#timeSelect').val();
-  evalEngine.postMessage('position fen ' + fen);
-  evalEngine.postMessage('go movetime ' + ms);
-
-  function onEval({ data }) {
-    const line = data.trim();
-    if (line.startsWith('info') && line.includes('score cp')) {
-      lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
-    }
-    if (line.startsWith('info') && line.includes('score mate')) {
-      const m = +line.match(/score mate\s+(-?\d+)/)[1];
-      lastCp = m > 0 ? 5000 : -5000;
-    }
-    if (line.startsWith('bestmove')) {
-      evalEngine.removeEventListener('message', onEval);
-      const raw = lastCp === null ? 0 : lastCp;
-      const fair = Math.abs(raw) <= 40;
-
-      if (fair) {
-        game.load(fen);
-        startFen = fen;
-        board.position(fen, false);
-        clearHighlights();
-        searchingFair = false;
-        $('#loadingSpinner').hide();
-        setOrientation();
-        if (isHumanBlack) engineReplyFromCurrent();
-        newgameSnd.play();
-        recordPosition(fen);
-        $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
-      } else {
-        setTimeout(tryNextFair, 30);
-      }
-    }
-  }
-
-  evalEngine.addEventListener('message', onEval);
-}
-
-  // helpers
-  function shuffle(a) {
-    for (let i=a.length-1;i>0;i--) {
-      const j = Math.floor(Math.random()*(i+1));
-      [a[i],a[j]]=[a[j],a[i]];
-    }
-    return a;
-  }
-  function clearStatus() {
-  statusDiv.textContent = '';
-}
-
-  function generateBackRank() {
-    const P=['r','n','b','q','k','b','n','r'];
-    let R, bs;
-    do {
-      R = shuffle(P.slice());
-      bs = [R.indexOf('b'), R.lastIndexOf('b')];
-    } while ((bs[0] % 2) === (bs[1] % 2));
-    return R.join('');
-  }
-  function generateJChessFEN() {
-    const W = generateBackRank().toUpperCase();
-    const B = generateBackRank().toLowerCase();
-    return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
-  }
-  function generateSymmetricJChessFEN() {
-    const W = generateBackRank().toUpperCase();
-    const B = W.toLowerCase(); // same layout for black
-    return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
-  }
-
-  // create
-  startFen = game.fen();
+  // create: start with EMPTY board and no message
+  startFen = '8/8/8/8/8/8/8/8 w - - 0 1';
+  game.load(startFen);
+  board.position(startFen, false);
   setOrientation();
   refreshLevelLabels();
+  clearStatus();
 });
 </script>
 
