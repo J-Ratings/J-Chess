@@ -638,8 +638,11 @@ $('#symJchessBtn').click(() => {
 });
 
   // Fair J-Chess (counts when fair found)
+// Fair J-Chess (counts when fair found)
 $('#fairBtn').click(() => {
   if (searchingFair || $('#loadingSpinner').is(':visible')) return;
+
+  // Show spinner and grey out all buttons (same behaviour as J-Chess and Symmetric)
   $('#loadingSpinner').show();
   $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
   statusDiv.textContent = "Generating position...";
@@ -651,6 +654,52 @@ $('#fairBtn').click(() => {
 
   tryNextFair();
 });
+
+function tryNextFair() {
+  const fen = generateJChessFEN();
+  let lastCp = null;
+  const ms = +$('#timeSelect').val();
+  evalEngine.postMessage('position fen ' + fen);
+  evalEngine.postMessage('go movetime ' + ms);
+
+  function onEval({ data }) {
+    const line = data.trim();
+    if (line.startsWith('info') && line.includes('score cp')) {
+      lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
+    }
+    if (line.startsWith('info') && line.includes('score mate')) {
+      const m = +line.match(/score mate\s+(-?\d+)/)[1];
+      lastCp = m > 0 ? 5000 : -5000;
+    }
+    if (line.startsWith('bestmove')) {
+      evalEngine.removeEventListener('message', onEval);
+      const raw = (lastCp === null ? 0 : lastCp);
+      const fair = Math.abs(raw) <= 40;
+
+      if (fair) {
+        // Found fair position
+        game.load(fen);
+        startFen = fen;
+        board.position(fen, false);
+        clearHighlights();
+        searchingFair = false;
+        $('#loadingSpinner').hide();
+        setOrientation();
+        if (isHumanBlack) engineReplyFromCurrent();
+        newgameSnd.play();
+        recordPosition(fen);
+
+        // Re-enable all buttons after success
+        $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
+      } else {
+        // Keep searching
+        setTimeout(tryNextFair, 30);
+      }
+    }
+  }
+
+  evalEngine.addEventListener('message', onEval);
+}
 
 function tryNextFair() {
   const fen = generateJChessFEN();
@@ -693,47 +742,6 @@ function tryNextFair() {
 
   evalEngine.addEventListener('message', onEval);
 }
-
-  function tryNextFair() {
-    const fen = generateJChessFEN();
-    statusDiv.textContent += fen + '\n';
-    let lastCp=null;
-    const ms = +$('#timeSelect').val();
-    evalEngine.postMessage('position fen '+fen);
-    evalEngine.postMessage('go movetime '+ms);
-
-    function onEval({ data }) {
-      const line = data.trim();
-      if (line.startsWith('info') && line.includes('score cp')) {
-        lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
-      }
-      if (line.startsWith('info') && line.includes('score mate')) {
-        const m = +line.match(/score mate\s+(-?\d+)/)[1];
-        lastCp = m>0 ? 5000 : -5000;
-      }
-      if (line.startsWith('bestmove')) {
-        evalEngine.removeEventListener('message', onEval);
-        const raw = lastCp===null ? 0 : lastCp;
-        const fair = Math.abs(raw) <= 40;
-        statusDiv.textContent += `${(raw/100).toFixed(2)} => ${fair ? 'Fair' : 'Unfair'}\n\n`;
-        if (fair) {
-          game.load(fen);
-          board.position(fen, false);
-          clearHighlights();
-          startFen = fen;
-          searchingFair = false;
-          $('#loadingSpinner').hide();
-          setOrientation();
-          if (isHumanBlack) engineReplyFromCurrent();
-          newgameSnd.play();
-          recordPosition(fen);
-        } else {
-          setTimeout(tryNextFair, 30);
-        }
-      }
-    }
-    evalEngine.addEventListener('message', onEval);
-  }
 
   // helpers
   function shuffle(a) {
