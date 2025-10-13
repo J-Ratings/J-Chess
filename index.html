@@ -583,11 +583,15 @@ $('#standardBtn').click(() => {
 
   // J-Chess (counts)
 $('#jchessBtn').click(() => {
+  if ($('#loadingSpinner').is(':visible')) return;  // ignore if already loading
+  $('#loadingSpinner').show();
+  $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true); // disable all mode buttons
+
   isJChessMode = true;
   manualFlip = false;
   refreshLevelLabels();
-  $('#loadingSpinner').show();                    // show spinner
-  setTimeout(() => {                              // delay block
+
+  setTimeout(() => {
     const fen = generateJChessFEN();
     game.load(fen);
     startFen = fen;
@@ -596,16 +600,22 @@ $('#jchessBtn').click(() => {
     setOrientation();
     if (isHumanBlack) engineReplyFromCurrent();
     newgameSnd.play();
-    recordPosition(fen);                          // record position count
-    $('#loadingSpinner').hide();                  // hide spinner after done
-  }, 1000); // artificial 1-second delay
+    recordPosition(fen);
+
+    $('#loadingSpinner').hide();
+    $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false); // re-enable buttons
+  }, 1000);
 });
 
 $('#symJchessBtn').click(() => {
+  if ($('#loadingSpinner').is(':visible')) return;
+  $('#loadingSpinner').show();
+  $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
+
   isJChessMode = true;
   manualFlip = false;
   refreshLevelLabels();
-  $('#loadingSpinner').show();                    // show spinner
+
   setTimeout(() => {
     const fen = generateSymmetricJChessFEN();
     game.load(fen);
@@ -615,9 +625,11 @@ $('#symJchessBtn').click(() => {
     setOrientation();
     if (isHumanBlack) engineReplyFromCurrent();
     newgameSnd.play();
-    recordPosition(fen);                          // record position count
-    $('#loadingSpinner').hide();                  // hide spinner
-  }, 1000); // 1 second
+    recordPosition(fen);
+
+    $('#loadingSpinner').hide();
+    $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
+  }, 1000);
 });
 
   // Fair J-Chess (counts when fair found)
