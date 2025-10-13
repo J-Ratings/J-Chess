@@ -191,7 +191,7 @@
     <div class="row">
       <button id="playWhiteBtn">Play White</button>
       <button id="playBlackBtn">Play Black</button>
-      <label for="levelSelect">Level:</label>
+      <label for="levelSelect">Difficulty:</label>
       <select id="levelSelect">
         <option value="1">Lv. 1</option>
         <option value="2">Lv. 2</option>
@@ -567,13 +567,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Standard (no counting)
-  $('#standardBtn').click(() => {
-    isJChessMode=false; manualFlip=false; refreshLevelLabels();
-    game.reset(); startFen=game.fen();
-    board.position(startFen,false); clearHighlights();
-    setOrientation(); if(isHumanBlack) engineReplyFromCurrent();
-    newgameSnd.play();
-  });
+$('#standardBtn').click(() => {
+  isJChessMode = false;
+  manualFlip = false;
+  refreshLevelLabels();
+  game.reset();
+  startFen = game.fen();
+  board.position(startFen, false);
+  clearHighlights();
+  setOrientation();
+  clearStatus();           // ← wipe the “You are the …” message
+  if (isHumanBlack) engineReplyFromCurrent();
+  newgameSnd.play();
+});
 
   // J-Chess (counts)
   $('#jchessBtn').click(() => {
@@ -664,6 +670,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     return a;
   }
+  function clearStatus() {
+  statusDiv.textContent = '';
+}
+
   function generateBackRank() {
     const P=['r','n','b','q','k','b','n','r'];
     let R, bs;
