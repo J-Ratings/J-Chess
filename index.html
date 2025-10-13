@@ -161,8 +161,7 @@
 
 <div class="container">
   <div id="stats">
-    <h2>~8.3 million starting positions</h2>
-    <h2>~1.8 million fair starting positions</h2>
+    <h2>8.3 million starting positions</h2>
   </div>
 
   <!-- Controls -->
@@ -217,6 +216,9 @@
     </div>
   </div>
 
+  <div id="fairStatus"></div>
+
+
   <div id="board-container">
     <div id="board"></div>
     <div id="loadingSpinner"></div>
@@ -232,7 +234,6 @@
     <div id="copyMsg">Copied!</div>
   </div>
 
-  <div id="fairStatus"></div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -289,22 +290,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const copyMsg = document.getElementById('copyMsg');
 
   // Counter
-  function recordPosition(fen) {
-    fetch(`https://round-frost-df74.stjukes.workers.dev/?fen=${encodeURIComponent(fen)}`)
-      .then(res => res.json())
-      .then(data => {
-        const count = data.count || 0;
-        const getOrdinal = (n) => {
-          const s = ["th", "st", "nd", "rd"];
-          const v = n % 100;
-          return n + (s[(v - 20) % 10] || s[v] || s[0]);
-        };
-        statusDiv.textContent = `You are the ${getOrdinal(count)} to reach this position.`;
-      })
-      .catch(() => {
-        statusDiv.textContent = '(Could not load position count)';
-      });
-  }
+function recordPosition(fen) {
+  statusDiv.textContent = "Generating position..."; // show while loading
+  fetch(`https://round-frost-df74.stjukes.workers.dev/?fen=${encodeURIComponent(fen)}`)
+    .then(res => res.json())
+    .then(data => {
+      const count = data.count || 0;
+      const getOrdinal = (n) => {
+        const s = ["th", "st", "nd", "rd"];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+      };
+      statusDiv.textContent = `You are the ${getOrdinal(count)} to reach this position.`;
+    })
+    .catch(() => {
+      statusDiv.textContent = '(Could not load position count)';
+    });
+}
 
   function hideOutputs() {}
   function clearHighlights() {
@@ -583,9 +585,10 @@ $('#standardBtn').click(() => {
 
   // J-Chess (counts)
 $('#jchessBtn').click(() => {
-  if ($('#loadingSpinner').is(':visible')) return;  // ignore if already loading
+  if ($('#loadingSpinner').is(':visible')) return;
   $('#loadingSpinner').show();
-  $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true); // disable all mode buttons
+  $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
+  statusDiv.textContent = "Generating position...";
 
   isJChessMode = true;
   manualFlip = false;
@@ -603,7 +606,7 @@ $('#jchessBtn').click(() => {
     recordPosition(fen);
 
     $('#loadingSpinner').hide();
-    $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false); // re-enable buttons
+    $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
   }, 1000);
 });
 
@@ -611,6 +614,7 @@ $('#symJchessBtn').click(() => {
   if ($('#loadingSpinner').is(':visible')) return;
   $('#loadingSpinner').show();
   $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
+  statusDiv.textContent = "Generating position...";
 
   isJChessMode = true;
   manualFlip = false;
@@ -633,12 +637,61 @@ $('#symJchessBtn').click(() => {
 });
 
   // Fair J-Chess (counts when fair found)
-  $('#fairBtn').click(() => {
-    if (searchingFair) return;
-    isJChessMode=true; manualFlip=false; refreshLevelLabels();
-    searchingFair=true; $('#loadingSpinner').show();
-    tryNextFair();
-  });
+$('#fairBtn').click(() => {
+  if (searchingFair || $('#loadingSpinner').is(':visible')) return;
+  $('#loadingSpinner').show();
+  $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', true);
+  statusDiv.textContent = "Generating position...";
+
+  isJChessMode = true;
+  manualFlip = false;
+  refreshLevelLabels();
+  searchingFair = true;
+
+  tryNextFair();
+});
+
+function tryNextFair() {
+  const fen = generateJChessFEN();
+  let lastCp = null;
+  const ms = +$('#timeSelect').val();
+  evalEngine.postMessage('position fen ' + fen);
+  evalEngine.postMessage('go movetime ' + ms);
+
+  function onEval({ data }) {
+    const line = data.trim();
+    if (line.startsWith('info') && line.includes('score cp')) {
+      lastCp = +line.match(/score cp\s+(-?\d+)/)[1];
+    }
+    if (line.startsWith('info') && line.includes('score mate')) {
+      const m = +line.match(/score mate\s+(-?\d+)/)[1];
+      lastCp = m > 0 ? 5000 : -5000;
+    }
+    if (line.startsWith('bestmove')) {
+      evalEngine.removeEventListener('message', onEval);
+      const raw = lastCp === null ? 0 : lastCp;
+      const fair = Math.abs(raw) <= 40;
+
+      if (fair) {
+        game.load(fen);
+        startFen = fen;
+        board.position(fen, false);
+        clearHighlights();
+        searchingFair = false;
+        $('#loadingSpinner').hide();
+        setOrientation();
+        if (isHumanBlack) engineReplyFromCurrent();
+        newgameSnd.play();
+        recordPosition(fen);
+        $('#jchessBtn, #symJchessBtn, #fairBtn, #standardBtn').prop('disabled', false);
+      } else {
+        setTimeout(tryNextFair, 30);
+      }
+    }
+  }
+
+  evalEngine.addEventListener('message', onEval);
+}
 
   function tryNextFair() {
     const fen = generateJChessFEN();
