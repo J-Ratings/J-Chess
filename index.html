@@ -580,7 +580,7 @@ function handleEngineMove(src, tgt) {
       engine.removeEventListener('message', onInfo);
       if (!seen) return;
       const elapsed = performance.now() - startTime;
-      const delay = Math.max(0, 500 - elapsed); // 0.5s minimum
+      const delay = Math.max(0, 750 - elapsed); // 0.5s minimum
 
       setTimeout(() => {
         const pick = thresholdSelect(Object.values(cand), sigma);
