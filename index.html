@@ -554,47 +554,49 @@ document.addEventListener('DOMContentLoaded', () => {
     return base;
   }
 
-  function handleEngineMove(src, tgt) {
-    highlightMove(src, tgt, 'white');
-    const nodes = nodesByLevel[currentLevel];
-    const sigma = adjustSigma(sigmaByLevel[currentLevel]);
-    const cand = {}; let seen=false;
+function handleEngineMove(src, tgt) {
+  highlightMove(src, tgt, 'white');
+  const nodes = nodesByLevel[currentLevel];
+  const sigma = adjustSigma(sigmaByLevel[currentLevel]);
+  const cand = {}; let seen=false;
+  const startTime = performance.now(); // ← add this line
 
-    function onInfo({ data }) {
-      const line = data.trim();
-      if (line.startsWith('info') && line.includes('multipv')) {
-        const mpv = +line.match(/multipv\s+(\d+)/)[1];
-        const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
-        const cpm = line.match(/score cp\s+(-?\d+)/);
-        const mat = line.match(/score mate\s+(-?\d+)/);
-        if (mpv && pv && (cpm||mat)) {
-          const cp = cpm
-            ? +cpm[1]
-            : (mat[1]>0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
-          cand[mpv] = { move: pv, cp }; seen=true;
-        }
+  function onInfo({ data }) {
+    const line = data.trim();
+    if (line.startsWith('info') && line.includes('multipv')) {
+      const mpv = +line.match(/multipv\s+(\d+)/)[1];
+      const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
+      const cpm = line.match(/score cp\s+(-?\d+)/);
+      const mat = line.match(/score mate\s+(-?\d+)/);
+      if (mpv && pv && (cpm||mat)) {
+        const cp = cpm
+          ? +cpm[1]
+          : (mat[1]>0 ? 100000 - +mat[1]*100 : -100000 - +mat[1]*100);
+        cand[mpv] = { move: pv, cp }; seen=true;
       }
-if (line.startsWith('bestmove')) {
-  engine.removeEventListener('message', onInfo);
-  if (!seen) return;
-  const elapsed = performance.now() - startTime;
-  const delay = Math.max(0, 500 - elapsed); // enforce 0.5s minimum
-
-  setTimeout(() => {
-    const pick = thresholdSelect(Object.values(cand), sigma);
-    const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
-    highlightMove(f, t, 'black');
-    const emv = game.move({ from: f, to: t, promotion: 'q' });
-    board.position(game.fen(), false);
-    playForMove(emv);
-  }, delay);
-}
     }
 
-    engine.addEventListener('message', onInfo);
-    engine.postMessage('position fen '+game.fen());
-    engine.postMessage('go nodes '+nodes);
+    if (line.startsWith('bestmove')) {
+      engine.removeEventListener('message', onInfo);
+      if (!seen) return;
+      const elapsed = performance.now() - startTime;
+      const delay = Math.max(0, 500 - elapsed); // enforce 0.5s minimum
+
+      setTimeout(() => {
+        const pick = thresholdSelect(Object.values(cand), sigma);
+        const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+        highlightMove(f, t, 'black');
+        const emv = game.move({ from: f, to: t, promotion: 'q' });
+        board.position(game.fen(), false);
+        playForMove(emv);
+      }, delay);
+    }
   }
+
+  engine.addEventListener('message', onInfo);
+  engine.postMessage('position fen ' + game.fen());
+  engine.postMessage('go nodes ' + nodes);
+}
 
   function engineReplyFromCurrent() {
     hideOutputs();
