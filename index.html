@@ -559,7 +559,7 @@ function handleEngineMove(src, tgt) {
   const nodes = nodesByLevel[currentLevel];
   const sigma = adjustSigma(sigmaByLevel[currentLevel]);
   const cand = {}; let seen=false;
-  const startTime = performance.now(); // ← add this line
+  const startTime = performance.now(); // enforce minimum delay window
 
   function onInfo({ data }) {
     const line = data.trim();
@@ -580,7 +580,7 @@ function handleEngineMove(src, tgt) {
       engine.removeEventListener('message', onInfo);
       if (!seen) return;
       const elapsed = performance.now() - startTime;
-      const delay = Math.max(0, 500 - elapsed); // enforce 0.5s minimum
+      const delay = Math.max(0, 500 - elapsed); // 0.5s minimum
 
       setTimeout(() => {
         const pick = thresholdSelect(Object.values(cand), sigma);
@@ -603,6 +603,7 @@ function handleEngineMove(src, tgt) {
     const nodes = nodesByLevel[currentLevel];
     const sigma = adjustSigma(sigmaByLevel[currentLevel]);
     const cand = {}; let seenAny=false;
+    const startTime = performance.now(); // start timing for first reply
 
     function listener({ data }) {
       const line = data.trim();
@@ -621,14 +622,20 @@ function handleEngineMove(src, tgt) {
       if (line.startsWith('bestmove')) {
         engine.removeEventListener('message', listener);
         if (!seenAny) return;
-        const pick = thresholdSelect(Object.values(cand), sigma);
-        const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
-        const col = game.turn()==='w'? 'black':'white';
-        highlightMove(f, t, col);
-        const emv = game.move({ from: f, to: t, promotion: 'q' });
-        board.position(game.fen(), false);
-        waitingForEngineFirst = false;
-        playForMove(emv);
+
+        const elapsed = performance.now() - startTime;
+        const delay = Math.max(0, 500 - elapsed); // 0.5s minimum
+
+        setTimeout(() => {
+          const pick = thresholdSelect(Object.values(cand), sigma);
+          const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+          const col = game.turn()==='w'? 'black':'white';
+          highlightMove(f, t, col);
+          const emv = game.move({ from: f, to: t, promotion: 'q' });
+          board.position(game.fen(), false);
+          waitingForEngineFirst = false;
+          playForMove(emv);
+        }, delay);
       }
     }
 
@@ -751,7 +758,7 @@ function handleEngineMove(src, tgt) {
   function tryNextFair() {
     const fen = generateJChessFEN();
     let lastCp = null;
-    const ms = +$('#timeSelect').val();
+    const ms = 1000; // fixed evaluation time now that the dropdown is removed
     evalEngine.postMessage('position fen ' + fen);
     evalEngine.postMessage('go movetime ' + ms);
 
