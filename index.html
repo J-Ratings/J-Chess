@@ -377,11 +377,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Editor
-  document.getElementById('editorBtn').addEventListener('click', () => {
-    const fen = startFen;
-    const pathFen = fen.split(' ').join('_');
-    window.open(`https://lichess.org/editor/${encodeURIComponent(pathFen)}?color=white`, '_blank');
-  });
+// Challenge Friend
+document.getElementById('editorBtn').textContent = 'Challenge Friend';
+document.getElementById('editorBtn').addEventListener('click', () => {
+  // Get the current position (not just start)
+  const fen = game.fen();
+  const encodedFen = encodeURIComponent(fen);
+  const url = `https://lichess.org/?fen=${encodedFen}#friend`;
+  window.open(url, '_blank');
+});
 
   // Reset
   document.getElementById('resetBtn').addEventListener('click', () => {
