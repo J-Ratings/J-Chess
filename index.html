@@ -286,8 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
     15:1.5e6, 16:2e6, 17:2e6, 18:2e6, 19:2e6, 20:3e6
   };
   const sigmaByLevel = {
-    1:10000, 2:5000, 3:2000, 4:1000, 5:500, 6:250, 7:225, 8:200, 9:150,
-    10:110, 11:80, 12:65, 13:46, 14:38, 15:31, 16:24, 17:16, 18:10, 19:4, 20:0
+    1:10000, 2:5000, 3:2000, 4:1000, 5:500, 6:325, 7:250, 8:225, 9:200,
+    10:125, 11:90, 12:75, 13:55, 14:45, 15:35, 16:25, 17:17, 18:12, 19:5, 20:0
   };
   const baseRatings = {
     1:0, 2:200, 3:400, 4:600, 5:800, 6:1000, 7:1200, 8:1400, 9:1600,
@@ -403,16 +403,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.open(url, '_blank');
   });
 
-  // Editor
-// Challenge Friend
-document.getElementById('editorBtn').textContent = 'Challenge Friend';
-document.getElementById('editorBtn').addEventListener('click', () => {
-  // Get the current position (not just start)
-  const fen = game.fen();
-  const encodedFen = encodeURIComponent(fen);
-  const url = `https://lichess.org/?fen=${encodedFen}#friend`;
-  window.open(url, '_blank');
-});
+  // Challenge Friend
+  document.getElementById('editorBtn').textContent = 'Challenge Friend';
+  document.getElementById('editorBtn').addEventListener('click', () => {
+    const fen = game.fen();                    // current position
+    const encodedFen = encodeURIComponent(fen);
+    const url = `https://lichess.org/?fen=${encodedFen}#friend`;
+    window.open(url, '_blank');
+  });
 
   // Reset
   document.getElementById('resetBtn').addEventListener('click', () => {
@@ -576,16 +574,21 @@ document.getElementById('editorBtn').addEventListener('click', () => {
           cand[mpv] = { move: pv, cp }; seen=true;
         }
       }
-      if (line.startsWith('bestmove')) {
-        engine.removeEventListener('message', onInfo);
-        if (!seen) return;
-        const pick = thresholdSelect(Object.values(cand), sigma);
-        const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
-        highlightMove(f, t, 'black');
-        const emv = game.move({ from: f, to: t, promotion: 'q' });
-        board.position(game.fen(), false);
-        playForMove(emv);
-      }
+if (line.startsWith('bestmove')) {
+  engine.removeEventListener('message', onInfo);
+  if (!seen) return;
+  const elapsed = performance.now() - startTime;
+  const delay = Math.max(0, 500 - elapsed); // enforce 0.5s minimum
+
+  setTimeout(() => {
+    const pick = thresholdSelect(Object.values(cand), sigma);
+    const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+    highlightMove(f, t, 'black');
+    const emv = game.move({ from: f, to: t, promotion: 'q' });
+    board.position(game.fen(), false);
+    playForMove(emv);
+  }, delay);
+}
     }
 
     engine.addEventListener('message', onInfo);
