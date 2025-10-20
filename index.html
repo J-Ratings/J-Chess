@@ -103,24 +103,23 @@ html, body {
     }
 
     /* --- Preview overlay --- */
-#previewMask {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none; /* so clicks pass through */
-  background: rgba(0, 0, 0, 0.08); /* faint cloudy layer */
-  border-radius: 4px;
+#previewMask{
+  position:absolute; inset:0;
+  display:grid; place-items:center;
+  pointer-events:none;
+  background:rgba(0,0,0,.04);   /* lighter, “cloudy” */
+  border-radius:4px;
 }
-#previewMask span {
-  background: rgba(13, 63, 102, 0.85); /* dark-blue pill */
-  color: #fff;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
-  font-size: 1rem;
+#previewMask span{
+  background:transparent;       /* no pill fill */
+  color:#333;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  padding:.25rem .6rem;
+  border:2px solid rgba(0,0,0,.35);  /* subtle outline instead of blue */
+  border-radius:999px;
+  font-size:2rem;
 }
 
     @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
@@ -433,16 +432,23 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $(window).resize(()=>{ resizeBoard(); });
-  function resizeBoard(){
-    const scene=document.querySelector('.centre'); const wrap=document.getElementById('boardWrap');
-    if(!scene||!wrap) return;
-    const styles=getComputedStyle(scene);
-    const h=scene.clientHeight - parseFloat(styles.paddingTop) - parseFloat(styles.paddingBottom);
-    const w=scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
-    const size=Math.floor(Math.min(w,h));
-    wrap.style.width=size+'px'; wrap.style.height=size+'px';
-    board.resize();
-  }
+function resizeBoard(){
+  const scene = document.querySelector('.centre');
+  const wrap  = document.getElementById('boardWrap');
+  if (!scene || !wrap) return;
+
+  const styles = getComputedStyle(scene);
+  const w = scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+  const h = scene.clientHeight - parseFloat(styles.paddingTop)  - parseFloat(styles.paddingBottom);
+
+  // On phones/tablets, make the board as wide as possible, ignore height.
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  const size = Math.floor(isMobile ? w : Math.min(w, h));
+
+  wrap.style.width  = size + 'px';
+  wrap.style.height = size + 'px';
+  board.resize();
+}
 
   function setOrientation(){
     board.orientation(manualFlip ? (isHumanBlack ? 'white' : 'black') : (isHumanBlack ? 'black' : 'white'));
