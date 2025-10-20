@@ -107,20 +107,20 @@ html, body {
   position:absolute; inset:0;
   display:grid; place-items:center;
   pointer-events:none;
-  background:rgba(0,0,0,.04);   /* lighter, “cloudy” */
+  background:rgba(0,0,0,.04);
   border-radius:4px;
 }
 #previewMask span{
-  background:transparent;       /* no pill fill */
+  background:transparent;
   color:#333;
   font-weight:800;
   letter-spacing:.08em;
   text-transform:uppercase;
   padding:.25rem .6rem;
-  border:2px solid rgba(0,0,0,.35);  /* subtle outline instead of blue */
-  border-radius:999px;
-  font-size:2rem;
+  font-size:1rem;
+  /* border removed */
 }
+
 
     @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 
@@ -299,7 +299,6 @@ html, body {
       <button id="copyPgnBtn" class="muted btn-small">Copy PGN</button>
       <button id="resignBtn" class="btn-small" style="grid-column:1/-1">Resign</button>
     </div>
-    <div class="card" style="min-height:40px"></div>
   </aside>
 </section>
 
@@ -374,7 +373,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showMenu(){ menuView.classList.remove('hidden'); playView.classList.add('hidden'); }
-  function showPlay(){ menuView.classList.add('hidden'); playView.classList.remove('hidden'); resizeBoard(); }
+function showPlay() {
+  menuView.classList.add('hidden');
+  playView.classList.remove('hidden');
+  resizeBoard();
+  window.scrollTo({ top: 0, behavior: 'instant' }); // new line
+}
   function clearStatus(){ statusDiv.textContent=''; }
 
   // Place cards: AI top by default; Flip swaps
