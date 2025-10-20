@@ -30,116 +30,146 @@
 
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
 
-<style>
-  :root {
-    --brand-bg:#0d3f66; --brand-fg:#fff;
-    --scene-pad:14px; --side-width:300px;
-    --menu-max:1080px;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-    background:#f5f5f5; color:#222; -webkit-font-smoothing:antialiased;
-    font-size:17px; line-height:1.55;
-  }
+  <style>
+    :root{
+      --brand-bg:#0d3f66; --brand-fg:#fff;
+      --scene-pad:14px; --side-width:300px;
+      --menu-max:1080px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      background:#f5f5f5;color:#222;-webkit-font-smoothing:antialiased;
+      font-size:17px;line-height:1.55;
+    }
 
-  /* Header */
-  .site-bar{display:flex;align-items:center;justify-content:space-between;background:var(--brand-bg);color:var(--brand-fg);padding:.7rem clamp(1rem,4vw,2.2rem);box-shadow:0 2px 4px rgba(0,0,0,.15)}
-  .site-bar h1{margin:0;font-weight:700;font-size:1.6rem}
-  .site-bar a{color:var(--brand-fg);text-decoration:none}
-  .site-bar nav a{padding:.45rem .75rem;border-radius:4px;font-weight:600}
-  .site-bar nav a:hover{background:rgba(255,255,255,.18)}
+    /* Header (unchanged) */
+    .site-bar{display:flex;align-items:center;justify-content:space-between;background:var(--brand-bg);color:var(--brand-fg);padding:.7rem clamp(1rem,4vw,2.2rem);box-shadow:0 2px 4px rgba(0,0,0,.15)}
+    .site-bar h1{margin:0;font-weight:700;font-size:1.6rem}
+    .site-bar a{color:var(--brand-fg);text-decoration:none}
+    .site-bar nav a{padding:.45rem .75rem;border-radius:4px;font-weight:600}
+    .site-bar nav a:hover{background:rgba(255,255,255,.18)}
 
-  button,select{font:inherit;padding:.45rem .85rem;border-radius:4px;border:1px solid #bbb;background:#fff;cursor:pointer;transition:background .15s,border-color .15s}
-  button:hover,select:hover{background:#f0f6fa;border-color:#999}
-  .btn-strong{font-weight:700}
-  .btn-small{padding:.4rem .7rem;font-size:.95em}
-  .hidden{display:none !important}
-  .muted{opacity:.9;filter:grayscale(12%)}
+    button,select{font:inherit;padding:.45rem .85rem;border-radius:4px;border:1px solid #bbb;background:#fff;cursor:pointer;transition:background .15s,border-color .15s}
+    button:hover,select:hover{background:#f0f6fa;border-color:#999}
+    .btn-strong{font-weight:700}
+    .btn-small{padding:.4rem .7rem;font-size:.95em}
+    .hidden{display:none !important}
+    .muted{opacity:.9;filter:grayscale(12%)}
 
-  /* MENU (scaled down from 2×) */
-  .menu{
-    max-width:var(--menu-max);
-    margin:0 auto;
-    padding:1.2rem clamp(1rem,4vw,2.2rem) 2rem;
-    text-align:center;
-    font-size: 1.4rem;
-  }
-.menu h2 { margin: 0.4rem 0 0.4rem; font-size: 2.2rem; }
-.menu h3 { margin: 0.2rem 0 0.8rem; font-size: 1.6rem; }
+    /* MENU */
+    .menu{
+      max-width:var(--menu-max);
+      margin:0 auto;
+      padding:1.2rem clamp(1rem,4vw,2.2rem) 2rem;
+      text-align:center;
+      font-size:1.4rem;
+    }
+    .menu h2{margin:.4rem 0 .4rem;font-size:2.2rem}
+    .menu h3{margin:.2rem 0 .8rem;font-size:1.6rem}
 
-  .menu .cluster{display:flex;flex-wrap:wrap;gap:.9rem;justify-content:center;margin:.8rem 0}
-  .menu .block{max-width:820px;margin:1.1rem auto 0}
+    .menu .cluster{display:flex;flex-wrap:wrap;gap:.9rem;justify-content:center;margin:.8rem 0}
+    .menu .block{max-width:820px;margin:1.1rem auto 0}
 
-  .mode-btn{
-    font-weight:700; position:relative; outline:0; font-size:1em;
-    padding:.6rem 1rem;
-  }
-  .mode-btn[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(13,63,102,.25) inset}
-  .mode-btn:focus-visible{outline:3px solid rgba(13,63,102,.4)}
+    .mode-btn{font-weight:700;position:relative;outline:0;font-size:1em;padding:.6rem 1rem}
+    .mode-btn[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(13,63,102,.25) inset}
+    .mode-btn:focus-visible{outline:3px solid rgba(13,63,102,.4)}
 
-  #standardBtn{background:#a8d5a2;border-color:#96c591}
-  #standardBtn:hover{background:#9bcb96}
-  #jchessBtn{background:#9ecae1;border-color:#8ab8d4}
-  #jchessBtn:hover{background:#8fbfe0}
-  #symJchessBtn{background:#bba4d8;border-color:#aa94c9}
-  #symJchessBtn:hover{background:#ad98d1}
-  #fairBtn{background:#f3cc88;border-color:#e2b964}
-  #fairBtn:hover{background:#e7c373}
+    #standardBtn{background:#a8d5a2;border-color:#96c591}
+    #standardBtn:hover{background:#9bcb96}
+    #jchessBtn{background:#9ecae1;border-color:#8ab8d4}
+    #jchessBtn:hover{background:#8fbfe0}
+    #symJchessBtn{background:#bba4d8;border-color:#aa94c9}
+    #symJchessBtn:hover{background:#ad98d1}
+    #fairBtn{background:#f3cc88;border-color:#e2b964}
+    #fairBtn:hover{background:#e7c373}
 
-  .menu-label{font-weight:700;margin-top:.5rem}
-  .menu-form{display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center;align-items:center}
-  .menu-form select{font-size:1rem; padding:.5rem .9rem}
+    .menu-label{font-weight:700;margin-top:.5rem}
+    .menu-form{display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center;align-items:center}
+    .menu-form select{font-size:1rem;padding:.5rem .9rem}
 
-.menu-preview {
-  margin-top: 1.1rem;
-  display: grid;
-  place-items: center;
-  min-height: 340px;
-}
+    .menu-preview{margin-top:1.1rem;display:grid;place-items:center;min-height:340px}
+    #previewWrap{position:relative;width:340px;height:340px}
+    #previewBoard{width:100%;height:100%}
+    #previewSpinner{
+      position:absolute;top:50%;left:50%;width:60px;height:60px;border:7px solid #eee;border-top:7px solid #0077cc;border-radius:50%;
+      animation:spin .8s linear infinite;transform:translate(-50%,-50%);display:none;z-index:2
+    }
+    @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 
-#previewWrap {
-  position: relative;
-  width: 340px;
-  height: 340px;
-}
-  #previewBoard{width:100%;height:100%}
-  #previewSpinner{
-    position:absolute;top:50%;left:50%;width:60px;height:60px;border:7px solid #eee;border-top:7px solid #0077cc;border-radius:50%;
-    animation:spin .8s linear infinite;transform:translate(-50%,-50%);display:none;z-index:2
-  }
-  @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
-  #previewCaption{margin-top:.6rem;color:#555;font-size:1.1rem}
-  .menu-actions{display:flex;gap:.9rem;justify-content:center;margin-top:1.1rem}
-  .menu-actions button{min-width:150px;font-size:1.1rem;padding:.65rem 1rem}
+    .menu-actions{display:flex;gap:.9rem;justify-content:center;margin-top:1.1rem}
+    .menu-actions button{min-width:150px;font-size:1.1rem;padding:.65rem 1rem}
 
-  /* PLAY SCENE and below unchanged from before */
-  .play-scene{height:calc(100vh - 64px);display:grid;grid-template-columns:var(--side-width) 1fr var(--side-width);gap:14px;padding:var(--scene-pad);align-items:center}
-  @media (max-width: 960px){
-    .play-scene{grid-template-columns:1fr;grid-auto-rows:max-content;align-content:start;height:auto;min-height:calc(100vh - 64px)}
-    .side{order:-1}
-  }
-  .centre{height:100%;display:grid;place-items:center;overflow:hidden}
-  #boardWrap{position:relative;width:100px;height:100px;max-width:100%;max-height:100%}
-  #board{width:100%;height:100%;touch-action:none}
-  .board-overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.05);pointer-events:none;opacity:0;transition:opacity .2s}
-  .board-overlay.show{opacity:1}
-  .board-overlay .banner{background:rgba(13,63,102,.9);color:#fff;padding:.8rem 1.2rem;border-radius:6px;font-size:1.4rem;font-weight:800;letter-spacing:.2px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
-  #fairStatus{margin-top:.6rem;background:#fff;border:1px solid #ddd;border-radius:4px;padding:.5rem .7rem;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:1.02em;white-space:pre-wrap;min-height:2rem}
-  #loadingSpinner{position:absolute;top:50%;left:50%;width:62px;height:62px;border:7px solid #eee;border-top:7px solid #0077cc;border-radius:50%;animation:spin .8s linear infinite;transform:translate(-50%,-50%);display:none;z-index:10}
-  .player-pane{height:100%;display:grid;grid-template-rows:1fr 1fr;gap:14px}
-  .player-card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:16px;display:grid;grid-template-columns:112px 1fr;align-items:center;gap:14px}
-  .player-avatar{width:112px;height:112px;border-radius:10px;background:#eef3f7;display:grid;place-items:center;font-size:2.4rem}
-  .player-name{font-weight:800;font-size:1.3rem}
-  .player-sub{color:#666;font-size:1.1rem}
-  .control-pane{height:100%;display:grid;grid-template-rows:auto auto 1fr;gap:10px}
-  .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:10px}
-  .stack{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .stack-single{display:flex;gap:8px;flex-wrap:wrap}
-  footer{margin-top:0;text-align:center;padding:1rem 0;background:#0d3f66;color:#fff;font-size:.98rem}
-  footer a{color:#fff;text-decoration:underline}
-</style>
+    /* ===== PLAY GRID =====
+       Desktop: two rows, 3 columns:
+         row1: top (left)   centre   right
+         row2: bottom(left) centre   right
+       Mobile: stacked:
+         top / centre / bottom / right
+    */
+    .play-grid{
+      height:calc(100vh - 64px);
+      display:grid;
+      grid-template-columns:var(--side-width) 1fr var(--side-width);
+      grid-template-rows:1fr 1fr;
+      grid-template-areas:
+        "top centre right"
+        "bottom centre right";
+      gap:14px;
+      padding:var(--scene-pad);
+      align-items:center;
+    }
+
+    .player-slot{grid-area:top}
+    .player-slot.bottom{grid-area:bottom}
+    .controls{grid-area:right}
+    .centre{grid-area:centre;display:grid;place-items:center;overflow:hidden;height:100%}
+
+    #boardWrap{position:relative;width:100px;height:100px;max-width:100%;max-height:100%}
+    #board{width:100%;height:100%;touch-action:none}
+
+    .board-overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.05);pointer-events:none;opacity:0;transition:opacity .2s}
+    .board-overlay.show{opacity:1}
+    .board-overlay .banner{background:rgba(13,63,102,.9);color:#fff;padding:.8rem 1.2rem;border-radius:6px;font-size:1.4rem;font-weight:800;letter-spacing:.2px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+
+    #fairStatus{margin-top:.6rem;background:#fff;border:1px solid #ddd;border-radius:4px;padding:.5rem .7rem;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:1.02em;white-space:pre-wrap;min-height:2rem}
+    #loadingSpinner{position:absolute;top:50%;left:50%;width:62px;height:62px;border:7px solid #eee;border-top:7px solid #0077cc;border-radius:50%;animation:spin .8s linear infinite;transform:translate(-50%,-50%);display:none;z-index:10}
+
+    /* Player cards (2× visual weight) */
+    .player-card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:16px;display:grid;grid-template-columns:112px 1fr;align-items:center;gap:14px}
+    .player-avatar{width:112px;height:112px;border-radius:10px;background:#eef3f7;display:grid;place-items:center;font-size:2.4rem}
+    .player-name{font-weight:800;font-size:1.3rem}
+    .player-sub{color:#666;font-size:1.1rem}
+
+    /* Controls column */
+    .controls{display:grid;grid-template-rows:auto auto 1fr;gap:10px}
+    .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:10px}
+    .stack{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .stack-single{display:flex;gap:8px;flex-wrap:wrap}
+
+    /* Mobile layout */
+    @media (max-width: 900px){
+      .play-grid{
+        grid-template-columns:1fr;
+        grid-template-rows:auto auto auto auto;
+        grid-template-areas:
+          "top"
+          "centre"
+          "bottom"
+          "right";
+        height:auto;
+        min-height:calc(100vh - 64px);
+        align-content:start;
+      }
+      .player-slot, .player-slot.bottom{width:95vw;margin:0 auto}
+      .controls{width:95vw;margin:0 auto}
+      #boardWrap{width:95vw;height:95vw}
+    }
+
+    footer{margin-top:0;text-align:center;padding:1rem 0;background:#0d3f66;color:#fff;font-size:.98rem}
+    footer a{color:#fff;text-decoration:underline}
+  </style>
 </head>
 <body>
 <header class="site-bar">
@@ -153,7 +183,7 @@
 <!-- ===== MENU VIEW ===== -->
 <section id="menuView" class="menu">
   <h2>Over 8 million starting positions!</h2>
-  <h3>Select game type:</h3>
+  <h3>Select game type</h3>
 
   <div class="cluster" role="group" aria-label="Game type">
     <button id="standardBtn" class="mode-btn" aria-pressed="false">Chess</button>
@@ -191,23 +221,10 @@
 </section>
 
 <!-- ===== PLAY VIEW ===== -->
-<section id="playView" class="play-scene hidden">
-  <!-- Left players (order swaps on Flip) -->
-  <aside id="playerPane" class="side player-pane">
-    <div id="aiCard" class="player-card">
-      <div class="player-avatar">🤖</div>
-      <div>
-        <div class="player-name">AI</div>
-        <div id="oppSub" class="player-sub">Lv. 8 (1400)</div>
-      </div>
-    </div>
-
-    <div id="youCard" class="player-card">
-      <div class="player-avatar">🧑</div>
-      <div>
-        <div class="player-name">You</div>
-      </div>
-    </div>
+<section id="playView" class="play-grid hidden">
+  <!-- Player top -->
+  <aside id="playerTop" class="player-slot">
+    <!-- Populated by JS with aiCard/youCard -->
   </aside>
 
   <!-- Centre board -->
@@ -220,12 +237,16 @@
     <div id="fairStatus"></div>
   </main>
 
-  <!-- Right controls -->
-  <aside class="side control-pane">
+  <!-- Player bottom -->
+  <aside id="playerBottom" class="player-slot bottom">
+    <!-- Populated by JS with aiCard/youCard -->
+  </aside>
+
+  <!-- Controls -->
+  <aside class="controls">
     <div class="card stack-single">
       <button id="backBtn" class="muted btn-small">Back to menu</button>
     </div>
-
     <div class="card stack">
       <button id="undoBtn" class="muted btn-small">Undo</button>
       <button id="flipBtn" class="muted btn-small">Flip</button>
@@ -233,12 +254,10 @@
       <button id="copyPgnBtn" class="muted btn-small">Copy PGN</button>
       <button id="resignBtn" class="btn-small" style="grid-column:1/-1">Resign</button>
     </div>
-
     <div class="card" style="min-height:40px"></div>
   </aside>
 </section>
 
-<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="chessboardjs-1.0.0/js/chessboard-1.0.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
@@ -250,85 +269,86 @@ document.addEventListener('DOMContentLoaded', () => {
   const sigmaByLevel = {1:10000,2:3000,3:1600,4:800,5:400,6:300,7:230,8:190,9:150,10:125,11:90,12:75,13:55,14:45,15:35,16:25,17:17,18:12,19:5,20:0};
   const baseRatings = {1:0,2:200,3:400,4:600,5:800,6:1000,7:1200,8:1400,9:1600,10:1800,11:2000,12:2200,13:2400,14:2600,15:2800,16:3000,17:3200,18:3400,19:3600,20:3800};
 
-  /* Populate level dropdown with ratings (no +200 anywhere) */
+  // Level dropdown with ratings
   const levelSelect = document.getElementById('levelSelect');
-  for (let i=1; i<=20; i++){
-    const opt = document.createElement('option');
-    opt.value = String(i);
-    opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
-    if (i===8) opt.selected = true;
+  for (let i=1;i<=20;i++){
+    const opt=document.createElement('option');
+    opt.value=String(i);
+    opt.textContent=`Lv. ${i} (${baseRatings[i]})`;
+    if(i===8) opt.selected=true;
     levelSelect.appendChild(opt);
   }
 
   /* ===================== State ===================== */
-  let mode = null;                // 'standard' | 'jchess' | 'sym' | 'fair'
-  let currentLevel = 8;
-  let chosenColour = 'random';
-  let isHumanBlack = false;
-  let searchingFair = false;
-  let startFen = '8/8/8/8/8/8/8/8 w - - 0 1';
-  let waitingForEngineFirst = false;
-  let manualFlip = false;
-  let resigned = false;
-
-  // preview FEN we show then use on Start
-  let previewFen = null;
+  let mode=null;                  // 'standard' | 'jchess' | 'sym' | 'fair'
+  let currentLevel=8;
+  let chosenColour='random';
+  let isHumanBlack=false;
+  let searchingFair=false;
+  let startFen='8/8/8/8/8/8/8/8 w - - 0 1';
+  let waitingForEngineFirst=false;
+  let manualFlip=false;
+  let resigned=false;
+  let previewFen=null;
 
   /* ===================== Audio ===================== */
-  const moveSnd = new Audio('Move.mp3');
-  const capSnd = new Audio('Capture.mp3');
-  const newgameSnd = new Audio('newgame.mp3');
-  [moveSnd, capSnd, newgameSnd].forEach(a => { a.preload = 'auto'; a.volume = 0.7; });
-  window.addEventListener('pointerdown', function unlockOnce(){
-    [moveSnd, capSnd, newgameSnd].forEach(a => { a.play().then(()=>{a.pause();a.currentTime=0;}).catch(()=>{}); });
-    window.removeEventListener('pointerdown', unlockOnce, {once:true});
-  }, {once:true});
+  const moveSnd=new Audio('Move.mp3');
+  const capSnd=new Audio('Capture.mp3');
+  const newgameSnd=new Audio('newgame.mp3');
+  [moveSnd,capSnd,newgameSnd].forEach(a=>{a.preload='auto';a.volume=0.7;});
+  window.addEventListener('pointerdown',function unlockOnce(){
+    [moveSnd,capSnd,newgameSnd].forEach(a=>{a.play().then(()=>{a.pause();a.currentTime=0;}).catch(()=>{});});
+    window.removeEventListener('pointerdown',unlockOnce,{once:true});
+  },{once:true});
   function playForMove(mv){ if(!mv) return; if(mv.flags.includes('c')||mv.flags.includes('e')) capSnd.play(); else moveSnd.play(); }
 
-  /* ===================== Elements ===================== */
-  const menuView = document.getElementById('menuView');
-  const playView = document.getElementById('playView');
-  const statusDiv = document.getElementById('fairStatus');
-  const spinner = document.getElementById('loadingSpinner');
-  const overlay = document.getElementById('boardOverlay');
-  const overlayText = document.getElementById('overlayText');
-  const oppSub = document.getElementById('oppSub');
+  /* ===================== Els ===================== */
+  const menuView=document.getElementById('menuView');
+  const playView=document.getElementById('playView');
+  const statusDiv=document.getElementById('fairStatus');
+  const spinner=document.getElementById('loadingSpinner');
+  const overlay=document.getElementById('boardOverlay');
+  const overlayText=document.getElementById('overlayText');
+  const oppSub=document.getElementById('oppSub');
 
-  const playerPane = document.getElementById('playerPane');
-  const aiCard = document.getElementById('aiCard');
-  const youCard = document.getElementById('youCard');
+  const previewSpinner=document.getElementById('previewSpinner');
 
-  const previewSpinner = document.getElementById('previewSpinner');
+  // Player card templates
+  const aiCard=document.createElement('div');
+  aiCard.className='player-card';
+  aiCard.innerHTML=`<div class="player-avatar">🤖</div><div><div class="player-name">AI</div><div id="oppSub" class="player-sub">Lv. 8 (1400)</div></div>`;
 
-  /* ===================== Helpers ===================== */
+  const youCard=document.createElement('div');
+  youCard.className='player-card';
+  youCard.innerHTML=`<div class="player-avatar">🧑</div><div><div class="player-name">You</div></div>`;
+
+  function setOpponentMeta(){
+    const base=baseRatings[currentLevel];
+    const sub=aiCard.querySelector('#oppSub');
+    if(sub) sub.textContent=`Lv. ${currentLevel} (${base})`;
+  }
+
   function showMenu(){ menuView.classList.remove('hidden'); playView.classList.add('hidden'); }
   function showPlay(){ menuView.classList.add('hidden'); playView.classList.remove('hidden'); resizeBoard(); }
   function clearStatus(){ statusDiv.textContent=''; }
-  function setOpponentMeta(){
-    const base = baseRatings[currentLevel];
-    oppSub.textContent = `Lv. ${currentLevel} (${base})`;
-  }
 
-  /* Swap AI/You card order: AI top by default; if flipped, swap */
-  function setPlayerCardsOrder(){
-    playerPane.innerHTML = '';
-    if (manualFlip){
-      playerPane.appendChild(youCard);
-      playerPane.appendChild(aiCard);
-    } else {
-      playerPane.appendChild(aiCard);
-      playerPane.appendChild(youCard);
-    }
+  // Place cards: AI top by default; Flip swaps
+  function renderCards(){
+    const top=document.getElementById('playerTop');
+    const bottom=document.getElementById('playerBottom');
+    top.innerHTML=''; bottom.innerHTML='';
+    if (manualFlip){ top.appendChild(youCard); bottom.appendChild(aiCard); }
+    else { top.appendChild(aiCard); bottom.appendChild(youCard); }
   }
 
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
   function generateBackRank(){
     const P=['r','n','b','q','k','b','n','r']; let R, bs;
-    do { R = shuffle(P.slice()); bs=[R.indexOf('b'), R.lastIndexOf('b')]; } while((bs[0]%2)===(bs[1]%2));
+    do { R=shuffle(P.slice()); bs=[R.indexOf('b'), R.lastIndexOf('b')]; } while((bs[0]%2)===(bs[1]%2));
     return R.join('');
   }
   function generateJChessFEN(){
-    const W = generateBackRank().toUpperCase(); const B = generateBackRank().toLowerCase();
+    const W=generateBackRank().toUpperCase(); const B=generateBackRank().toLowerCase();
     return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
   }
   function generateSymmetricJChessFEN(){
@@ -344,33 +364,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function showCountOverlay(fen){
     fetch(`https://round-frost-df74.stjukes.workers.dev/?fen=${encodeURIComponent(fen)}`)
-      .then(r=>r.json())
-      .then(d=>{
-        const c = Number(d.count||0);
-        overlayText.textContent = `You are the ${formatOrdinal(c)} to play this position`;
-        overlay.classList.add('show');
-        setTimeout(()=>overlay.classList.remove('show'), 1500);
-      })
-      .catch(()=>{ /* silently ignore */ });
+      .then(r=>r.json()).then(d=>{
+        const c=Number(d.count||0);
+        overlayText.textContent=`You are the ${formatOrdinal(c)} to play this position`;
+        overlay.classList.add('show'); setTimeout(()=>overlay.classList.remove('show'),2000);
+      }).catch(()=>{});
   }
 
   /* ===================== Boards ===================== */
-  const game = new Chess();
-  const board = Chessboard('board', {
+  const game=new Chess();
+  const board=Chessboard('board',{
     draggable:true, position:startFen,
     pieceTheme:'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-    onDragStart, onDrop, onSnapEnd
+    onDragStart,onDrop,onSnapEnd
   });
 
-  const previewBoard = Chessboard('previewBoard', {
+  const previewBoard=Chessboard('previewBoard',{
     draggable:false,
-    position:'8/8/8/8/8/8/8/8 w - - 0 1', // blank from start
+    position:'8/8/8/8/8/8/8/8 w - - 0 1',
     showNotation:false,
     pieceTheme:'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
   });
 
   $(window).resize(()=>{ resizeBoard(); });
-
   function resizeBoard(){
     const scene=document.querySelector('.centre'); const wrap=document.getElementById('boardWrap');
     if(!scene||!wrap) return;
@@ -387,43 +403,43 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // highlights
-  const $board = $('#board');
+  const $board=$('#board');
   function clearHighlights(){ $board.find('.square-55d63').removeClass('highlight-white highlight-black'); }
   function highlightMove(f,t,col){ clearHighlights(); $board.find(`.square-${f}`).addClass(`highlight-${col}`); $board.find(`.square-${t}`).addClass(`highlight-${col}`); }
 
   /* ===================== Engines ===================== */
-  const engine = new Worker('engine/stockfish-17-lite-single.js');
+  const engine=new Worker('engine/stockfish-17-lite-single.js');
   engine.postMessage('uci');
-  engine.addEventListener('message', function init({data}){
-    if (data.trim()==='uciok'){ engine.postMessage('setoption name MultiPV value 50'); engine.postMessage('ucinewgame'); engine.postMessage('isready'); }
-    if (data.trim()==='readyok') engine.removeEventListener('message', init);
+  engine.addEventListener('message',function init({data}){
+    if(data.trim()==='uciok'){ engine.postMessage('setoption name MultiPV value 50'); engine.postMessage('ucinewgame'); engine.postMessage('isready'); }
+    if(data.trim()==='readyok') engine.removeEventListener('message',init);
   });
 
-  const evalEngine = new Worker('engine/stockfish-17-lite-single.js');
+  const evalEngine=new Worker('engine/stockfish-17-lite-single.js');
   evalEngine.postMessage('uci');
-  evalEngine.addEventListener('message', function initE({data}){
-    if (data.trim()==='uciok'){ evalEngine.postMessage('ucinewgame'); evalEngine.postMessage('setoption name UCI_LimitStrength value false'); evalEngine.postMessage('isready'); }
-    if (data.trim()==='readyok') evalEngine.removeEventListener('message', initE);
+  evalEngine.addEventListener('message',function initE({data}){
+    if(data.trim()==='uciok'){ evalEngine.postMessage('ucinewgame'); evalEngine.postMessage('setoption name UCI_LimitStrength value false'); evalEngine.postMessage('isready'); }
+    if(data.trim()==='readyok') evalEngine.removeEventListener('message',initE);
   });
 
   function randomGaussian(){ let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
-  function thresholdSelect(cands,sigma){ const best=cands[0].cp; const x=Math.abs(randomGaussian()*sigma); const allowed=cands.filter(c => (best-c.cp)<=x); return allowed.length?allowed[Math.floor(Math.random()*allowed.length)]:cands[0]; }
+  function thresholdSelect(cands,sigma){ const best=cands[0].cp; const x=Math.abs(randomGaussian()*sigma); const allowed=cands.filter(c=>(best-c.cp)<=x); return allowed.length?allowed[Math.floor(Math.random()*allowed.length)]:cands[0]; }
   function adjustSigma(base){
     const moves=Math.floor(game.history().length/2)+1;
-    if (currentLevel>=3 && currentLevel<=6){ if(moves<=3)return base/5; if(moves===4)return base/4; if(moves===5)return base/3; if(moves===6)return base/2; return base; }
-    if (currentLevel>=7 && currentLevel<=14){ if(moves<=6)return base/8; if(moves===7)return base/6; if(moves===8)return base/4; if(moves===9)return base/2; return base; }
+    if(currentLevel>=3 && currentLevel<=6){ if(moves<=3)return base/5; if(moves===4)return base/4; if(moves===5)return base/3; if(moves===6)return base/2; return base; }
+    if(currentLevel>=7 && currentLevel<=14){ if(moves<=6)return base/8; if(moves===7)return base/6; if(moves===8)return base/4; if(moves===9)return base/2; return base; }
     return base;
   }
 
   /* ===================== Gameplay ===================== */
   function onDragStart(src,piece){
-    if (resigned) return false;
-    if (game.game_over()) return false;
+    if(resigned) return false;
+    if(game.game_over()) return false;
     const t=game.turn();
-    if (!isHumanBlack) return piece[0]==='w' && t==='w';
+    if(!isHumanBlack) return piece[0]==='w' && t==='w';
     return !waitingForEngineFirst && piece[0]==='b' && t==='b';
   }
-  function onSnapEnd(){ board.position(game.fen(), false); }
+  function onSnapEnd(){ board.position(game.fen(),false); }
   function onDrop(src,tgt){
     const mv=game.move({from:src,to:tgt,promotion:'q'});
     if(!mv) return 'snapback';
@@ -433,73 +449,70 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handleEngineMove(src,tgt){
-    if (resigned) return;
+    if(resigned) return;
     highlightMove(src,tgt,'white');
     const nodes=nodesByLevel[currentLevel];
     const sigma=adjustSigma(sigmaByLevel[currentLevel]);
     const cand={}; let seen=false;
     const startTime=performance.now();
-
     function onInfo({data}){
       const line=data.trim();
-      if (line.startsWith('info') && line.includes('multipv')){
+      if(line.startsWith('info') && line.includes('multipv')){
         const mpv=+line.match(/multipv\s+(\d+)/)[1];
         const pv=line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
         const cpm=line.match(/score cp\s+(-?\d+)/);
         const mat=line.match(/score mate\s+(-?\d+)/);
-        if (mpv && pv && (cpm||mat)){
-          const cp = cpm ? +cpm[1] : (mat[1]>0 ? 100000-+mat[1]*100 : -100000-+mat[1]*100);
+        if(mpv && pv && (cpm||mat)){
+          const cp=cpm ? +cpm[1] : (mat[1]>0 ? 100000-+mat[1]*100 : -100000-+mat[1]*100);
           cand[mpv]={move:pv,cp}; seen=true;
         }
       }
-      if (line.startsWith('bestmove')){
-        engine.removeEventListener('message', onInfo);
+      if(line.startsWith('bestmove')){
+        engine.removeEventListener('message',onInfo);
         if(!seen) return;
         const elapsed=performance.now()-startTime;
         const delay=Math.max(0,750-elapsed);
         setTimeout(()=>{
-          if (resigned) return;
+          if(resigned) return;
           const pick=thresholdSelect(Object.values(cand),sigma);
           const f=pick.move.slice(0,2), t=pick.move.slice(2,4);
           highlightMove(f,t,'black');
           const emv=game.move({from:f,to:t,promotion:'q'});
-          board.position(game.fen(), false);
+          board.position(game.fen(),false);
           playForMove(emv);
           checkGameEnd();
-        }, delay);
+        },delay);
       }
     }
-
-    engine.addEventListener('message', onInfo);
+    engine.addEventListener('message',onInfo);
     engine.postMessage('position fen '+game.fen());
     engine.postMessage('go nodes '+nodes);
   }
 
-  // End-of-game detection + overlay
   function checkGameEnd(){
-    if (!game.game_over()) return;
+    if(!game.game_over()) return;
     let text='';
-    if (game.in_checkmate()){
-      text = (game.turn()==='w') ? 'Checkmate: Black wins' : 'Checkmate: White wins';
-    } else if (game.in_stalemate()){
-      text = 'Stalemate: Draw';
-    } else if (game.insufficient_material()){
-      text = 'Insufficient Material: Draw';
-    } else if (game.in_threefold_repetition()){
-      text = 'Threefold Repetition: Draw';
-    } else if (game.in_draw()){
-      text = '50-move Rule / Draw';
-    } else {
-      text = 'Game over';
+    if(game.in_checkmate()){
+      text=(game.turn()==='w')?'Checkmate: Black wins':'Checkmate: White wins';
+    }else if(game.in_stalemate()){
+      text='Stalemate: Draw';
+    }else if(game.insufficient_material()){
+      text='Insufficient Material: Draw';
+    }else if(game.in_threefold_repetition()){
+      text='Threefold Repetition: Draw';
+    }else if(game.in_draw()){
+      text='50-move Rule / Draw';
+    }else{
+      text='Game over';
     }
-    overlayText.textContent = text;
+    overlayText.textContent=text;
     overlay.classList.add('show');
-    setTimeout(()=>overlay.classList.remove('show'), 2000);
+    setTimeout(()=>overlay.classList.remove('show'),2000);
   }
 
-  /* ===================== Mode Generators ===================== */
+  /* ===================== Generators ===================== */
   function startStandard(){ spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>afterStartWithFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),750); }
-  function startJChess(makeSym){ spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>{ const fen= makeSym?generateSymmetricJChessFEN():generateJChessFEN(); afterStartWithFEN(fen); },1000); }
+  function startJChess(makeSym){ spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>{ const fen=makeSym?generateSymmetricJChessFEN():generateJChessFEN(); afterStartWithFEN(fen); },1000); }
   function startFairJChess(){
     spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; searchingFair=true; const ms=1000;
     function tryNext(){
@@ -507,28 +520,27 @@ document.addEventListener('DOMContentLoaded', () => {
       evalEngine.postMessage('position fen '+fen); evalEngine.postMessage('go movetime '+ms);
       function onEval({data}){
         const line=data.trim();
-        if (line.startsWith('info') && line.includes('score cp')) lastCp=+line.match(/score cp\s+(-?\d+)/)[1];
-        if (line.startsWith('info') && line.includes('score mate')){ const m=+line.match(/score mate\s+(-?\d+)/)[1]; lastCp=m>0?5000:-5000; }
-        if (line.startsWith('bestmove')){
-          evalEngine.removeEventListener('message', onEval);
-          const fair = Math.abs(lastCp||0) <= 40;
-          if (fair){ searchingFair=false; afterStartWithFEN(fen); } else setTimeout(tryNext,30);
+        if(line.startsWith('info') && line.includes('score cp')) lastCp=+line.match(/score cp\s+(-?\d+)/)[1];
+        if(line.startsWith('info') && line.includes('score mate')){ const m=+line.match(/score mate\s+(-?\d+)/)[1]; lastCp=m>0?5000:-5000; }
+        if(line.startsWith('bestmove')){
+          evalEngine.removeEventListener('message',onEval);
+          const fair=Math.abs(lastCp||0)<=40;
+          if(fair){ searchingFair=false; afterStartWithFEN(fen); } else setTimeout(tryNext,30);
         }
       }
-      evalEngine.addEventListener('message', onEval);
+      evalEngine.addEventListener('message',onEval);
     }
     tryNext();
   }
 
   function afterStartWithFEN(fen){
-    startFen = fen; resigned=false;
+    startFen=fen; resigned=false;
     game.load(fen); board.position(fen,false);
     clearHighlights(); setOrientation(); newgameSnd.play();
     setOpponentMeta();
     spinner.style.display='none'; overlay.classList.remove('show');
-    // show the position counter as overlay for 2s (only on real game start)
     showCountOverlay(fen);
-    if (isHumanBlack){ waitingForEngineFirst=true; engineReplyFromCurrent(); } else { waitingForEngineFirst=false; }
+    if(isHumanBlack){ waitingForEngineFirst=true; engineReplyFromCurrent(); } else { waitingForEngineFirst=false; }
   }
 
   function engineReplyFromCurrent(){
@@ -538,118 +550,111 @@ document.addEventListener('DOMContentLoaded', () => {
     const startTime=performance.now();
     function listener({data}){
       const line=data.trim();
-      if (line.startsWith('info') && line.includes('multipv')){
+      if(line.startsWith('info') && line.includes('multipv')){
         const mpv=+line.match(/multipv\s+(\d+)/)[1];
         const pv=line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
         const cpm=line.match(/score cp\s+(-?\d+)/);
         const mat=line.match(/score mate\s+(-?\d+)/);
-        if (mpv && pv && (cpm||mat)){
+        if(mpv && pv && (cpm||mat)){
           const cp=cpm?+cpm[1]:(mat[1]>0?100000-+mat[1]*100:-100000-+mat[1]*100);
           cand[mpv]={move:pv,cp}; seen=true;
         }
       }
-      if (line.startsWith('bestmove')){
-        engine.removeEventListener('message', listener);
+      if(line.startsWith('bestmove')){
+        engine.removeEventListener('message',listener);
         if(!seen) return;
         const elapsed=performance.now()-startTime;
         const delay=Math.max(0,500-elapsed);
         setTimeout(()=>{
-          if (resigned) return;
+          if(resigned) return;
           const pick=thresholdSelect(Object.values(cand),sigma);
           const f=pick.move.slice(0,2), t=pick.move.slice(2,4);
           const col=game.turn()==='w'?'black':'white';
           highlightMove(f,t,col);
           const emv=game.move({from:f,to:t,promotion:'q'});
-          board.position(game.fen(), false);
+          board.position(game.fen(),false);
           waitingForEngineFirst=false;
           playForMove(emv);
           checkGameEnd();
-        }, delay);
+        },delay);
       }
     }
-    engine.addEventListener('message', listener);
+    engine.addEventListener('message',listener);
     engine.postMessage('position fen '+game.fen());
     engine.postMessage('go nodes '+nodes);
   }
 
-  /* ===================== MENU INTERACTIONS ===================== */
-
-  // Game type selection UI (only these trigger preview)
-  const startBtn = document.getElementById('startBtn');
-  const typeButtons = [
+  /* ===================== MENU ===================== */
+  const startBtn=document.getElementById('startBtn');
+  const typeButtons=[
     ['standard','#standardBtn'],
     ['jchess'  ,'#jchessBtn'],
     ['sym'     ,'#symJchessBtn'],
     ['fair'    ,'#fairBtn']
   ];
   typeButtons.forEach(([m,sel])=>{
-    document.querySelector(sel).addEventListener('click', ()=>{
-      mode = m;
+    document.querySelector(sel).addEventListener('click',()=>{
+      mode=m;
       typeButtons.forEach(([,s])=>document.querySelector(s).setAttribute('aria-pressed','false'));
       document.querySelector(sel).setAttribute('aria-pressed','true');
-      startBtn.disabled = false;
+      startBtn.disabled=false;
 
-      // reset preview to blank + spinner, then prepare new preview (≥0.75s)
-      previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1', false);
+      // Reset preview to blank + spinner, then prepare new preview
+      previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1',false);
       previewSpinner.style.display='block';
-      previewFen = null;
-      queuePreview(); // only game-type changes call this
+      previewFen=null;
+      queuePreview();                 // only game-type changes trigger preview
     });
   });
 
-  // Colour / Difficulty just set state; they DO NOT trigger preview
-  levelSelect.addEventListener('change', function(){ currentLevel = +this.value; });
-  document.getElementById('colourSelect').addEventListener('change', function(){ chosenColour = this.value; });
+  levelSelect.addEventListener('change',function(){ currentLevel=+this.value; });
+  document.getElementById('colourSelect').addEventListener('change',function(){ chosenColour=this.value; });
 
-  // Preview pipeline (≥0.75s, then exact FEN)
   let previewTimer=null;
   function queuePreview(){
-    if (!mode) return;
-    if (previewTimer) clearTimeout(previewTimer);
-    const startT = performance.now();
+    if(!mode) return;
+    if(previewTimer) clearTimeout(previewTimer);
+    const startT=performance.now();
 
     function finishPreview(fen){
-      const elapsed = performance.now() - startT;
-      const waitMore = Math.max(0, 750 - elapsed);
+      const elapsed=performance.now()-startT;
+      const waitMore=Math.max(0,750-elapsed);
       setTimeout(()=>{
-        previewBoard.position(fen, false);
+        previewBoard.position(fen,false);
         previewSpinner.style.display='none';
-        const base = baseRatings[currentLevel];
-        const names = {standard:'Chess', jchess:'J-Chess', sym:'Symmetric J-Chess', fair:'Fair J-Chess'};
-        previewFen = fen;
-      }, waitMore);
+        previewFen=fen;
+      },waitMore);
     }
 
-    // Build FEN for preview
-    if (mode==='standard'){
+    if(mode==='standard'){
       finishPreview('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-    } else if (mode==='jchess' || mode==='sym'){
-      const fen = (mode==='sym') ? generateSymmetricJChessFEN() : generateJChessFEN();
+    }else if(mode==='jchess' || mode==='sym'){
+      const fen=(mode==='sym')?generateSymmetricJChessFEN():generateJChessFEN();
       finishPreview(fen);
-    } else {
-      // fair: try until fair found
-      const ms=800; let lastCp=null; const fen = generateJChessFEN();
+    }else{
+      // fair preview: search once until fair found
+      const ms=800; let lastCp=null; const fen=generateJChessFEN();
       evalEngine.postMessage('position fen '+fen);
       evalEngine.postMessage('go movetime '+ms);
       function onEval({data}){
         const line=data.trim();
-        if (line.startsWith('info') && line.includes('score cp')) lastCp=+line.match(/score cp\s+(-?\d+)/)[1];
-        if (line.startsWith('info') && line.includes('score mate')){ const m=+line.match(/score mate\s+(-?\d+)/)[1]; lastCp=m>0?5000:-5000; }
-        if (line.startsWith('bestmove')){
-          evalEngine.removeEventListener('message', onEval);
-          if (Math.abs(lastCp||0) <= 40) finishPreview(fen); else queuePreview();
+        if(line.startsWith('info') && line.includes('score cp')) lastCp=+line.match(/score cp\s+(-?\d+)/)[1];
+        if(line.startsWith('info') && line.includes('score mate')){ const m=+line.match(/score mate\s+(-?\d+)/)[1]; lastCp=m>0?5000:-5000; }
+        if(line.startsWith('bestmove')){
+          evalEngine.removeEventListener('message',onEval);
+          if(Math.abs(lastCp||0)<=40) finishPreview(fen); else queuePreview();
         }
       }
-      evalEngine.addEventListener('message', onEval);
+      evalEngine.addEventListener('message',onEval);
     }
   }
 
   // Start
-  startBtn.addEventListener('click', ()=>{
-    if (!mode) return;
+  startBtn.addEventListener('click',()=>{
+    if(!mode) return;
     isHumanBlack = (chosenColour==='black') ? true : (chosenColour==='white' ? false : Math.random()<0.5);
     manualFlip=false;
-    setPlayerCardsOrder(); // AI top to start
+    renderCards();
     showPlay();
 
     const fenToUse = previewFen || (mode==='standard'
@@ -657,75 +662,66 @@ document.addEventListener('DOMContentLoaded', () => {
       : (mode==='sym' ? generateSymmetricJChessFEN() : generateJChessFEN())
     );
 
-    clearStatus();
-    overlay.classList.remove('show');
+    clearStatus(); overlay.classList.remove('show');
 
-if (mode === 'standard') {
-  afterStartWithFEN(fenToUse);
-} else if (mode === 'jchess') {
-  afterStartWithFEN(fenToUse);
-} else if (mode === 'sym') {
-  afterStartWithFEN(fenToUse);
-} else if (mode === 'fair') {
-  // If the preview already found a fair position, use it directly.
-  if (previewFen) {
-    afterStartWithFEN(previewFen);
-  } else {
-    startFairJChess(); // fallback only if preview isn't ready yet
-  }
-}
+    if (mode==='fair' && previewFen){
+      afterStartWithFEN(previewFen);   // reuse preview (no extra loading)
+    } else if (mode==='standard' || mode==='jchess' || mode==='sym'){
+      afterStartWithFEN(fenToUse);
+    } else {
+      startFairJChess();               // only if preview not ready
+    }
   });
 
   // Back to menu
-  document.getElementById('backBtn').addEventListener('click', ()=>{ showMenu(); });
+  document.getElementById('backBtn').addEventListener('click',()=>{ showMenu(); });
 
-  /* ===================== Right controls ===================== */
-  // Analysis & Challenge still on menu (use preview FEN or start FEN)
-  document.getElementById('analysisBtn').addEventListener('click', ()=>{
+  /* ===== Menu extras ===== */
+  document.getElementById('analysisBtn').addEventListener('click',()=>{
     const fen=previewFen || startFen; const pathFen=(fen||'').split(' ').join('_');
     window.open(`https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`,'_blank');
   });
-  document.getElementById('editorBtn').addEventListener('click', ()=>{
+  document.getElementById('editorBtn').addEventListener('click',()=>{
     const fen=previewFen || startFen; const encodedFen=encodeURIComponent(fen||'');
     window.open(`https://lichess.org/?fen=${encodedFen}#friend`,'_blank');
   });
 
-  document.getElementById('resetBtn').addEventListener('click', ()=>{
+  // Right controls
+  document.getElementById('resetBtn').addEventListener('click',()=>{
     resigned=false;
     game.load(startFen); board.position(startFen,false);
     clearHighlights(); setOrientation(); newgameSnd.play();
-    setPlayerCardsOrder();
+    renderCards();
     if(isHumanBlack){ waitingForEngineFirst=true; engineReplyFromCurrent(); } else { waitingForEngineFirst=false; }
     overlay.classList.remove('show');
   });
-  document.getElementById('copyPgnBtn').addEventListener('click', ()=>{
+  document.getElementById('copyPgnBtn').addEventListener('click',()=>{
     const pgn=game.pgn()||''; navigator.clipboard.writeText(pgn).then(()=>{
       overlayText.textContent='PGN copied';
-      overlay.classList.add('show'); setTimeout(()=>overlay.classList.remove('show'), 900);
+      overlay.classList.add('show'); setTimeout(()=>overlay.classList.remove('show'),900);
     });
   });
-  document.getElementById('undoBtn').addEventListener('click', ()=>{
-    if (resigned) return;
+  document.getElementById('undoBtn').addEventListener('click',()=>{
+    if(resigned) return;
     const turn=game.turn(); const first=game.undo();
-    if (turn === (isHumanBlack ? 'b' : 'w')) game.undo();
-    if(first){ board.position(game.fen(), false); clearHighlights(); waitingForEngineFirst=false; }
+    if(turn === (isHumanBlack ? 'b' : 'w')) game.undo();
+    if(first){ board.position(game.fen(),false); clearHighlights(); waitingForEngineFirst=false; }
     overlay.classList.remove('show');
   });
-  document.getElementById('flipBtn').addEventListener('click', ()=>{
-    manualFlip=!manualFlip; setOrientation(); setPlayerCardsOrder();
+  document.getElementById('flipBtn').addEventListener('click',()=>{
+    manualFlip=!manualFlip; setOrientation(); renderCards();
   });
-  document.getElementById('resignBtn').addEventListener('click', ()=>{
-    resigned = true;
-    overlayText.textContent = 'You resigned';
+  document.getElementById('resignBtn').addEventListener('click',()=>{
+    resigned=true;
+    overlayText.textContent='You resigned';
     overlay.classList.add('show');
-    setTimeout(()=>overlay.classList.remove('show'), 2000);
+    setTimeout(()=>overlay.classList.remove('show'),2000);
   });
 
   /* ===================== Init ===================== */
   game.load(startFen); board.position(startFen,false); setOrientation(); clearStatus();
-  setPlayerCardsOrder();
-  // blank preview shown from the start
-  previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1', false);
+  renderCards();                                  // AI top, You bottom by default
+  previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1',false);
   previewSpinner.style.display='none';
 });
 </script>
