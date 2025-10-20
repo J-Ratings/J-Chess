@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const c = Number(d.count||0);
         overlayText.textContent = `You are the ${formatOrdinal(c)} to play this position`;
         overlay.classList.add('show');
-        setTimeout(()=>overlay.classList.remove('show'), 2000);
+        setTimeout(()=>overlay.classList.remove('show'), 1500);
       })
       .catch(()=>{ /* silently ignore */ });
   }
