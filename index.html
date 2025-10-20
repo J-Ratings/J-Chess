@@ -178,7 +178,6 @@
         <div id="previewBoard"></div>
         <div id="previewSpinner"></div>
       </div>
-      <div id="previewCaption">Preparing preview...</div>
     </div>
 
     <div class="menu-actions">
@@ -298,7 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const youCard = document.getElementById('youCard');
 
   const previewSpinner = document.getElementById('previewSpinner');
-  const previewCaption = document.getElementById('previewCaption');
 
   /* ===================== Helpers ===================== */
   function showMenu(){ menuView.classList.remove('hidden'); playView.classList.add('hidden'); }
@@ -592,7 +590,6 @@ document.addEventListener('DOMContentLoaded', () => {
       // reset preview to blank + spinner, then prepare new preview (≥0.75s)
       previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1', false);
       previewSpinner.style.display='block';
-      previewCaption.textContent='Preparing preview...';
       previewFen = null;
       queuePreview(); // only game-type changes call this
     });
@@ -617,7 +614,6 @@ document.addEventListener('DOMContentLoaded', () => {
         previewSpinner.style.display='none';
         const base = baseRatings[currentLevel];
         const names = {standard:'Chess', jchess:'J-Chess', sym:'Symmetric J-Chess', fair:'Fair J-Chess'};
-        previewCaption.textContent = `Preview • ${names[mode]} • Lv. ${currentLevel} (${base})`;
         previewFen = fen;
       }, waitMore);
     }
