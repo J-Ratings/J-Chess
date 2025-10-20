@@ -660,10 +660,20 @@ document.addEventListener('DOMContentLoaded', () => {
     clearStatus();
     overlay.classList.remove('show');
 
-    if (mode==='standard') afterStartWithFEN(fenToUse);
-    else if (mode==='jchess') afterStartWithFEN(fenToUse);
-    else if (mode==='sym') afterStartWithFEN(fenToUse);
-    else startFairJChess();
+if (mode === 'standard') {
+  afterStartWithFEN(fenToUse);
+} else if (mode === 'jchess') {
+  afterStartWithFEN(fenToUse);
+} else if (mode === 'sym') {
+  afterStartWithFEN(fenToUse);
+} else if (mode === 'fair') {
+  // If the preview already found a fair position, use it directly.
+  if (previewFen) {
+    afterStartWithFEN(previewFen);
+  } else {
+    startFairJChess(); // fallback only if preview isn't ready yet
+  }
+}
   });
 
   // Back to menu
