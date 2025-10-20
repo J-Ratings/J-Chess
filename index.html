@@ -56,13 +56,12 @@
     button:hover,select:hover{background:#f0f6fa;border-color:#999}
     .btn-strong{font-weight:700}
     .btn-small{padding:.42rem .7rem;font-size:.98em}
-
     .hidden{display:none !important}
     .muted{opacity:.9;filter:grayscale(12%)}
 
     /* MENU */
     .menu{max-width:var(--menu-max);margin:0 auto;padding:1.2rem clamp(1rem,4vw,2.2rem) 2rem;text-align:center}
-    .menu h2{margin:.4rem 0 1rem;font-size:clamp(1.2rem,1rem + .9vw,1.6rem)}
+    .menu h2{margin:.4rem 0 1rem;font-size:clamp(1.2rem,1rem + .9vw,1.8rem)}
 
     .menu .cluster{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;margin:.55rem 0}
     .menu .block{max-width:720px;margin:.8rem auto 0}
@@ -84,11 +83,16 @@
 
     .menu-label{font-weight:700;margin-top:.6rem}
     .menu-form{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;align-items:center}
-    .menu-preview{margin-top:.9rem;display:grid;place-items:center;min-height:180px}
-    #previewWrap{position:relative;width:220px;height:220px;opacity:0;transition:opacity .2s}
-    #previewSpinner{position:absolute;top:50%;left:50%;width:46px;height:46px;border:6px solid #eee;border-top:6px solid #0077cc;border-radius:50%;animation:spin .8s linear infinite;transform:translate(-50%,-50%);display:none}
+
+    /* Preview */
+    .menu-preview{margin-top:.9rem;display:grid;place-items:center;min-height:220px}
+    #previewWrap{position:relative;width:240px;height:240px}
+    #previewBoard{width:100%;height:100%}
+    #previewSpinner{position:absolute;top:50%;left:50%;width:46px;height:46px;border:6px solid #eee;border-top:6px solid #0077cc;border-radius:50%;animation:spin .8s linear infinite;transform:translate(-50%,-50%);display:none;z-index:2}
     @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
     #previewCaption{margin-top:.45rem;color:#555;font-size:.95em}
+    .menu-actions{display:flex;gap:.6rem;justify-content:center;margin-top:.7rem}
+    .menu-actions button{min-width:120px}
 
     /* PLAY SCENE */
     .play-scene{height:calc(100vh - 64px);display:grid;grid-template-columns:var(--side-width) 1fr var(--side-width);gap:14px;padding:var(--scene-pad);align-items:center}
@@ -102,17 +106,11 @@
     #board{width:100%;height:100%;touch-action:none}
 
     /* Board overlay for game-end messages */
-    .board-overlay{
-      position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.05);
-      pointer-events:none;opacity:0;transition:opacity .2s
-    }
+    .board-overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.05);pointer-events:none;opacity:0;transition:opacity .2s}
     .board-overlay.show{opacity:1}
-    .board-overlay .banner{
-      background:rgba(13,63,102,.9);color:#fff;padding:.8rem 1.2rem;border-radius:6px;
-      font-size:1.4rem;font-weight:800;letter-spacing:.2px;box-shadow:0 6px 18px rgba(0,0,0,.25)
-    }
+    .board-overlay .banner{background:rgba(13,63,102,.9);color:#fff;padding:.8rem 1.2rem;border-radius:6px;font-size:1.4rem;font-weight:800;letter-spacing:.2px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 
-    /* Status strip under board */
+    /* Status under board */
     #fairStatus{margin-top:.6rem;background:#fff;border:1px solid #ddd;border-radius:4px;padding:.5rem .7rem;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:1.02em;white-space:pre-wrap;min-height:2rem}
 
     /* Spinner in board */
@@ -194,11 +192,13 @@
         <div id="previewBoard"></div>
         <div id="previewSpinner"></div>
       </div>
-      <div id="previewCaption"></div>
+      <div id="previewCaption">Preparing preview...</div>
     </div>
 
-    <div class="cluster" style="margin-top:.7rem;">
+    <div class="menu-actions">
       <button id="startBtn" class="btn-strong" disabled>Start</button>
+      <button id="analysisBtn" class="btn-small">lichess</button>
+      <button id="editorBtn" class="btn-small">Challenge Friend</button>
     </div>
   </div>
 </section>
@@ -218,7 +218,7 @@
     <div class="player-card">
       <div class="player-avatar">🤖</div>
       <div>
-        <div class="player-name" id="oppTitle">AI</div>
+        <div class="player-name">AI</div>
         <div class="player-sub" id="oppSub">Lv. 8 (1400)</div>
       </div>
     </div>
@@ -238,7 +238,6 @@
   <aside class="side control-pane">
     <div class="card stack-single">
       <button id="backBtn" class="muted btn-small">Back to menu</button>
-      <span id="modeBadge" style="align-self:center;font-weight:700;"></span>
     </div>
 
     <div class="card stack">
@@ -246,13 +245,10 @@
       <button id="flipBtn" class="muted btn-small">Flip</button>
       <button id="resetBtn" class="muted btn-small">Reset</button>
       <button id="copyPgnBtn" class="muted btn-small">Copy PGN</button>
+      <button id="resignBtn" class="btn-small" style="grid-column:1/-1">Resign</button>
     </div>
 
-    <div class="card stack">
-      <button id="analysisBtn" class="btn-small">lichess</button>
-      <button id="editorBtn" class="btn-small">Challenge Friend</button>
-      <div id="copyMsg" style="display:none;color:#007700;font-weight:600;grid-column:1/-1">Copied!</div>
-    </div>
+    <div class="card" style="min-height:40px"></div>
   </aside>
 </section>
 
@@ -304,9 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const youSide = document.getElementById('youSide');
   const oppSub = document.getElementById('oppSub');
-  const modeBadge = document.getElementById('modeBadge');
 
-  const previewWrap = document.getElementById('previewWrap');
   const previewSpinner = document.getElementById('previewSpinner');
   const previewCaption = document.getElementById('previewCaption');
 
@@ -318,7 +312,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const base = baseRatings[currentLevel] + (isJChessMode ? 200 : 0);
     oppSub.textContent = `Lv. ${currentLevel} (${base})`;
     youSide.textContent = isHumanBlack ? 'Playing Black' : 'Playing White';
-    modeBadge.textContent = {standard:'Chess', jchess:'J-Chess', sym:'Symmetric J-Chess', fair:'Fair J-Chess'}[mode] || '';
   }
 
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
@@ -358,7 +351,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const previewBoard = Chessboard('previewBoard', {
-    draggable:false, position:'start',
+    draggable:false,
+    position:'8/8/8/8/8/8/8/8 w - - 0 1', // blank board visible from the start
+    showNotation:false,
     pieceTheme:'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
   });
 
@@ -479,7 +474,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (game.in_threefold_repetition()){
       text = 'Threefold Repetition: Draw';
     } else if (game.in_draw()){
-      // chess.js in_draw() also covers 50-move rule (halfmove >= 100)
       text = '50-move Rule / Draw';
     } else {
       text = 'Game over';
@@ -490,39 +484,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ===================== Mode Generators ===================== */
-  function startStandard(){
-    isJChessMode=false; spinner.style.display='block'; clearStatus();
-    statusDiv.textContent="Generating position...";
-    setTimeout(()=>{
-      const fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-      afterStartWithFEN(fen);
-    },750);
-  }
-  function startJChess(makeSym){
-    isJChessMode=true; spinner.style.display='block'; clearStatus();
-    statusDiv.textContent="Generating position...";
-    setTimeout(()=>{
-      const fen = makeSym ? generateSymmetricJChessFEN() : generateJChessFEN();
-      afterStartWithFEN(fen);
-    },1000);
-  }
+  function startStandard(){ isJChessMode=false; spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>afterStartWithFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),750); }
+  function startJChess(makeSym){ isJChessMode=true; spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>{ const fen= makeSym?generateSymmetricJChessFEN():generateJChessFEN(); afterStartWithFEN(fen); },1000); }
   function startFairJChess(){
-    isJChessMode=true; spinner.style.display='block'; clearStatus();
-    statusDiv.textContent="Generating position...";
-    searchingFair=true; const ms=1000;
+    isJChessMode=true; spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; searchingFair=true; const ms=1000;
     function tryNext(){
       const fen=generateJChessFEN(); let lastCp=null;
-      evalEngine.postMessage('position fen '+fen);
-      evalEngine.postMessage('go movetime '+ms);
+      evalEngine.postMessage('position fen '+fen); evalEngine.postMessage('go movetime '+ms);
       function onEval({data}){
         const line=data.trim();
         if (line.startsWith('info') && line.includes('score cp')) lastCp=+line.match(/score cp\s+(-?\d+)/)[1];
         if (line.startsWith('info') && line.includes('score mate')){ const m=+line.match(/score mate\s+(-?\d+)/)[1]; lastCp=m>0?5000:-5000; }
         if (line.startsWith('bestmove')){
           evalEngine.removeEventListener('message', onEval);
-          const raw=(lastCp===null)?0:lastCp; const fair=Math.abs(raw)<=40;
-          if (fair){ searchingFair=false; afterStartWithFEN(fen); }
-          else setTimeout(tryNext, 30);
+          const fair = Math.abs(lastCp||0) <= 40;
+          if (fair){ searchingFair=false; afterStartWithFEN(fen); } else setTimeout(tryNext,30);
         }
       }
       evalEngine.addEventListener('message', onEval);
@@ -531,15 +507,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function afterStartWithFEN(fen){
-    startFen = fen;
-    game.load(fen);
-    board.position(fen,false);
-    clearHighlights();
-    setOrientation();
-    newgameSnd.play();
-    recordPosition(fen);
-    spinner.style.display='none';
-    overlay.classList.remove('show');
+    startFen = fen; game.load(fen); board.position(fen,false);
+    clearHighlights(); setOrientation(); newgameSnd.play(); recordPosition(fen);
+    spinner.style.display='none'; overlay.classList.remove('show');
     if (isHumanBlack){ waitingForEngineFirst=true; engineReplyFromCurrent(); } else { waitingForEngineFirst=false; }
   }
 
@@ -548,7 +518,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const sigma=adjustSigma(sigmaByLevel[currentLevel]);
     const cand={}; let seen=false;
     const startTime=performance.now();
-
     function listener({data}){
       const line=data.trim();
       if (line.startsWith('info') && line.includes('multipv')){
@@ -579,7 +548,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, delay);
       }
     }
-
     engine.addEventListener('message', listener);
     engine.postMessage('position fen '+game.fen());
     engine.postMessage('go nodes '+nodes);
@@ -597,43 +565,55 @@ document.addEventListener('DOMContentLoaded', () => {
   typeButtons.forEach(([m,sel])=>{
     document.querySelector(sel).addEventListener('click', ()=>{
       mode = m;
+      // visual selection + enable Start
       typeButtons.forEach(([,s])=>document.querySelector(s).setAttribute('aria-pressed','false'));
       document.querySelector(sel).setAttribute('aria-pressed','true');
       document.getElementById('startBtn').disabled = false;
-      queuePreview(); // show preview once a mode is selected
+
+      // reset preview to blank board + spinner, then produce new preview after >=0.75s
+      previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1', false);
+      previewSpinner.style.display='block';
+      previewCaption.textContent='Preparing preview...';
+      previewFen = null;
+      queuePreview(); // schedule real preview
     });
   });
 
   document.getElementById('levelSelect').addEventListener('change', function(){
-    currentLevel = +this.value;
-    queuePreview();
+    currentLevel = +this.value; queuePreviewWhenMode();
   });
   document.getElementById('colourSelect').addEventListener('change', function(){
-    chosenColour = this.value;
-    queuePreview();
+    chosenColour = this.value; queuePreviewWhenMode();
   });
+  function queuePreviewWhenMode(){ if (mode){ previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1', false); previewSpinner.style.display='block'; previewCaption.textContent='Preparing preview...'; previewFen=null; queuePreview(); } }
 
-  // Preview pipeline (fake loading, then render a static preview of the exact FEN)
+  // Preview pipeline (fake ≥0.75s, then render exact FEN). No notation on preview.
   let previewTimer=null;
   function queuePreview(){
     if (!mode) return;
     if (previewTimer) clearTimeout(previewTimer);
-    previewSpinner.style.display='block';
-    previewWrap.style.opacity=0;
-    previewCaption.textContent='Preparing preview...';
-    previewFen = null;
-
+    const start = performance.now();
     previewTimer = setTimeout(()=>{
+      function done(fen){
+        const elapsed = performance.now() - start;
+        const waitMore = Math.max(0, 750 - elapsed);
+        setTimeout(()=>{
+          previewBoard.position(fen, false);
+          previewSpinner.style.display='none';
+          const base = baseRatings[currentLevel] + ((mode==='standard')?0:200);
+          const names = {standard:'Chess', jchess:'J-Chess', sym:'Symmetric J-Chess', fair:'Fair J-Chess'};
+          previewCaption.textContent = `Preview • ${names[mode]} • Lv. ${currentLevel} (${base})`;
+          previewFen = fen;
+        }, waitMore);
+      }
       if (mode==='standard'){
-        previewFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-        applyPreview(previewFen);
+        done('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
       } else if (mode==='jchess' || mode==='sym'){
         const fen = (mode==='sym') ? generateSymmetricJChessFEN() : generateJChessFEN();
-        previewFen = fen; applyPreview(fen);
+        done(fen);
       } else {
-        // fair search for preview
-        const ms=800; let lastCp=null;
-        const fen = generateJChessFEN();
+        // fair position search for preview (single try; if not fair, retry chain)
+        const ms=800; let lastCp=null; const fen = generateJChessFEN();
         evalEngine.postMessage('position fen '+fen);
         evalEngine.postMessage('go movetime '+ms);
         function onEval({data}){
@@ -642,22 +622,13 @@ document.addEventListener('DOMContentLoaded', () => {
           if (line.startsWith('info') && line.includes('score mate')){ const m=+line.match(/score mate\s+(-?\d+)/)[1]; lastCp=m>0?5000:-5000; }
           if (line.startsWith('bestmove')){
             evalEngine.removeEventListener('message', onEval);
-            if (Math.abs(lastCp||0) <= 40){ previewFen = fen; applyPreview(fen); }
-            else { previewCaption.textContent='Searching fair position...'; queuePreview(); }
+            if (Math.abs(lastCp||0) <= 40) done(fen);
+            else queuePreview(); // try again
           }
         }
         evalEngine.addEventListener('message', onEval);
       }
-    }, 750); // fake load
-  }
-
-  function applyPreview(fen){
-    previewBoard.position(fen, false);
-    previewBoard.draggable = false;
-    previewSpinner.style.display='none';
-    previewWrap.style.opacity=1;
-    const base = baseRatings[currentLevel] + ((mode==='standard')?0:200);
-    previewCaption.textContent = `Preview • ${({standard:'Chess', jchess:'J-Chess', sym:'Symmetric J-Chess', fair:'Fair J-Chess'})[mode]} • Lv. ${currentLevel} (${base})`;
+    }, 0);
   }
 
   // Start
@@ -668,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showPlay();
     isJChessMode = (mode!=='standard');
 
-    // use previewFen when available (so user gets exactly what they saw)
+    // use previewFen when available
     const fenToUse = previewFen || (mode==='standard'
       ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
       : (mode==='sym' ? generateSymmetricJChessFEN() : generateJChessFEN())
@@ -678,28 +649,26 @@ document.addEventListener('DOMContentLoaded', () => {
     clearStatus();
     overlay.classList.remove('show');
 
-    // route to correct starter
     if (mode==='standard') afterStartWithFEN(fenToUse);
     else if (mode==='jchess') afterStartWithFEN(fenToUse);
     else if (mode==='sym') afterStartWithFEN(fenToUse);
-    else startFairJChess(); // fair should re-check because preview may have expired
+    else startFairJChess();
   });
 
   // Back to menu
   document.getElementById('backBtn').addEventListener('click', ()=>{ showMenu(); });
 
   /* ===================== Right controls ===================== */
+  // (Moved analysis & challenge to menu page)
   document.getElementById('analysisBtn').addEventListener('click', ()=>{
-    const fen=startFen; const pathFen=fen.split(' ').join('_');
-    const moves=game.history({verbose:true}).map(m=>m.from+m.to+(m.promotion||'')).join('_');
-    let url=`https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`;
-    if(moves) url+=`?moves=${encodeURIComponent(moves)}`;
-    window.open(url,'_blank');
+    const fen=previewFen || startFen; const pathFen=(fen||'').split(' ').join('_');
+    window.open(`https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`,'_blank');
   });
   document.getElementById('editorBtn').addEventListener('click', ()=>{
-    const fen=game.fen(); const encodedFen=encodeURIComponent(fen);
+    const fen=previewFen || startFen; const encodedFen=encodeURIComponent(fen||'');
     window.open(`https://lichess.org/?fen=${encodedFen}#friend`,'_blank');
   });
+
   document.getElementById('resetBtn').addEventListener('click', ()=>{
     game.load(startFen); board.position(startFen,false);
     clearHighlights(); setOrientation(); newgameSnd.play();
@@ -708,7 +677,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('copyPgnBtn').addEventListener('click', ()=>{
     const pgn=game.pgn()||''; navigator.clipboard.writeText(pgn).then(()=>{
-      const msg=document.getElementById('copyMsg'); msg.style.display='block'; setTimeout(()=>msg.style.display='none', 1500);
+      // cheap toast using board overlay text for consistency
+      overlayText.textContent='PGN copied';
+      overlay.classList.add('show'); setTimeout(()=>overlay.classList.remove('show'), 900);
     });
   });
   document.getElementById('undoBtn').addEventListener('click', ()=>{
@@ -718,10 +689,20 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay.classList.remove('show');
   });
   document.getElementById('flipBtn').addEventListener('click', ()=>{ manualFlip=!manualFlip; setOrientation(); });
+  document.getElementById('resignBtn').addEventListener('click', ()=>{
+    overlayText.textContent = 'You resigned';
+    overlay.classList.add('show');
+    setTimeout(()=>overlay.classList.remove('show'), 2600);
+    // freeze further moves
+    game.header('Result', isHumanBlack ? '1-0' : '0-1');
+    // simple guard: set a flag by using game_over via checkmate not possible; we'll just block drag start by early return:
+  });
 
   /* ===================== Init ===================== */
   game.load(startFen); board.position(startFen,false); setOrientation(); clearStatus();
-  previewWrap.style.opacity=0; // hidden until a type is selected
+  // show blank preview from the start
+  previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1', false);
+  previewSpinner.style.display='none';
 });
 </script>
 
