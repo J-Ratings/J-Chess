@@ -210,6 +210,51 @@ html, body {
     max-height:100%;
   }
 }
+/* --- Mobile layout (updated) --- */
+@media (max-width: 900px){
+  .play-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto auto auto;
+    grid-template-areas:
+      "top"
+      "centre"
+      "bottom"
+      "right";
+    height:auto;
+    min-height:calc(100vh - 64px);
+    align-content:start;
+    padding:8px; /* reduced padding so the board can expand */
+  }
+
+  /* Make player cards and buttons full width */
+  .player-slot, .player-slot.bottom{
+    width:100%;
+    max-width:100%;
+    margin:0 auto;
+  }
+  .controls{
+    width:100%;
+    max-width:100%;
+    margin:0 auto;
+  }
+
+  /* Board nearly fills phone width while staying square */
+  #boardWrap{
+    width:calc(100vw - 16px);
+    height:calc(100vw - 16px);
+    max-width:100%;
+    max-height:100%;
+  }
+}
+
+/* === HIGHLIGHT COLOURS === */
+.highlight-white {
+  background-color: rgba(255, 255, 0, 0.5) !important;
+}
+
+.highlight-black {
+  background-color: rgba(255, 255, 0, 0.5) !important;
+}
 
     footer{margin-top:0;text-align:center;padding:1rem 0;background:#0d3f66;color:#fff;font-size:.98rem}
     footer a{color:#fff;text-decoration:underline}
@@ -482,8 +527,8 @@ function resizeBoard(){
   function thresholdSelect(cands,sigma){ const best=cands[0].cp; const x=Math.abs(randomGaussian()*sigma); const allowed=cands.filter(c=>(best-c.cp)<=x); return allowed.length?allowed[Math.floor(Math.random()*allowed.length)]:cands[0]; }
   function adjustSigma(base){
     const moves=Math.floor(game.history().length/2)+1;
-    if(currentLevel>=3 && currentLevel<=6){ if(moves<=3)return base/4; if(moves===4)return base/3; if(moves===5)return base/2; if(moves===6)return base/1; return base; }
-    if(currentLevel>=7 && currentLevel<=14){ if(moves<=6)return base/5; if(moves===7)return base/5; if(moves===8)return base/3; if(moves===9)return base/2; return base; }
+    if(currentLevel>=3 && currentLevel<=6){ if(moves<=3)return base/3; if(moves===4)return base/2; if(moves===5)return base/2; if(moves===6)return base/1; return base; }
+    if(currentLevel>=7 && currentLevel<=14){ if(moves<=6)return base/4; if(moves===7)return base/3; if(moves===8)return base/2; if(moves===9)return base/1; return base; }
     return base;
   }
 
