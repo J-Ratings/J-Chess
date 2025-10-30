@@ -405,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const candidates = Object.values(candidatesObj)
       .filter(c => c && c.move)
       .sort((a,b) => (b.cp ?? -1e9) - (a.cp ?? -1e9))
-      .slice(0, 10);
+      .slice(0, 30);
 
     let html = `<div><b>Sigma (base):</b> ${Number(baseSigma).toFixed(1)}<br><b>Sigma (used):</b> ${Number(actualSigma).toFixed(1)}</div><hr>`;
     html += '<ol style="margin:0;padding-left:1.2em;">';
