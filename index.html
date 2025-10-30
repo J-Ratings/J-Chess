@@ -554,15 +554,13 @@ function adjustSigma(base){
       if (moves <= 3) return base / 3;
       if (moves === 4) return base / 2;
       if (moves === 5) return base / 2;
-      if (moves === 6) return base / 1;
       return base;
     }
 
-    if (currentLevel >= 7 && currentLevel <= 14) {
+    if (currentLevel >= 7 && currentLevel <= 19) {
       if (moves <= 6) return base / 4;
       if (moves === 7) return base / 3;
       if (moves === 8) return base / 2;
-      if (moves === 9) return base / 1;
       return base;
     }
   }
