@@ -44,12 +44,8 @@
       font-size:17px;line-height:1.55;
     }
 
-html, body {
-  overflow-x: hidden; /* stops sideways scroll when board is wide */
-}
+html, body { overflow-x: hidden; }
 
-
-    /* Header (unchanged) */
     .site-bar{display:flex;align-items:center;justify-content:space-between;background:var(--brand-bg);color:var(--brand-fg);padding:.7rem clamp(1rem,4vw,2.2rem);box-shadow:0 2px 4px rgba(0,0,0,.15)}
     .site-bar h1{margin:0;font-weight:700;font-size:1.6rem}
     .site-bar a{color:var(--brand-fg);text-decoration:none}
@@ -63,7 +59,6 @@ html, body {
     .hidden{display:none !important}
     .muted{opacity:.9;filter:grayscale(12%)}
 
-    /* MENU */
     .menu{
       max-width:var(--menu-max);
       margin:0 auto;
@@ -102,38 +97,14 @@ html, body {
       animation:spin .8s linear infinite;transform:translate(-50%,-50%);display:none;z-index:2
     }
 
-    /* --- Preview overlay --- */
-#previewMask{
-  position:absolute; inset:0;
-  display:grid; place-items:center;
-  pointer-events:none;
-  background:rgba(0,0,0,.04);
-  border-radius:4px;
-}
-#previewMask span{
-  background:transparent;
-  color:#333;
-  font-weight:800;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  padding:.25rem .6rem;
-  font-size:2rem;
-  /* border removed */
-}
-
+    #previewMask{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; background:rgba(0,0,0,.04); border-radius:4px;}
+    #previewMask span{background:transparent;color:#333;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .6rem;font-size:2rem;}
 
     @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 
     .menu-actions{display:flex;gap:.9rem;justify-content:center;margin-top:1.1rem}
     .menu-actions button{min-width:150px;font-size:1.1rem;padding:.65rem 1rem}
 
-    /* ===== PLAY GRID =====
-       Desktop: two rows, 3 columns:
-         row1: top (left)   centre   right
-         row2: bottom(left) centre   right
-       Mobile: stacked:
-         top / centre / bottom / right
-    */
     .play-grid{
       height:calc(100vh - 64px);
       display:grid;
@@ -162,95 +133,28 @@ html, body {
     #fairStatus{margin-top:.6rem;background:#fff;border:1px solid #ddd;border-radius:4px;padding:.5rem .7rem;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:1.02em;white-space:pre-wrap;min-height:2rem}
     #loadingSpinner{position:absolute;top:50%;left:50%;width:62px;height:62px;border:7px solid #eee;border-top:7px solid #0077cc;border-radius:50%;animation:spin .8s linear infinite;transform:translate(-50%,-50%);display:none;z-index:10}
 
-    /* Player cards (2× visual weight) */
     .player-card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:16px;display:grid;grid-template-columns:112px 1fr;align-items:center;gap:14px}
     .player-avatar{width:112px;height:112px;border-radius:10px;background:#eef3f7;display:grid;place-items:center;font-size:2.4rem}
     .player-name{font-weight:800;font-size:1.3rem}
     .player-sub{color:#666;font-size:1.1rem}
 
-    /* Controls column */
     .controls{display:grid;grid-template-rows:auto auto 1fr;gap:10px}
     .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:10px}
     .stack{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .stack-single{display:flex;gap:8px;flex-wrap:wrap}
 
-/* --- Mobile layout (updated) --- */
 @media (max-width: 900px){
   .play-grid{
     grid-template-columns:1fr;
     grid-template-rows:auto auto auto auto;
-    grid-template-areas:
-      "top"
-      "centre"
-      "bottom"
-      "right";
-    height:auto;
-    min-height:calc(100vh - 64px);
-    align-content:start;
-    padding:8px; /* reduced padding so the board can expand */
+    grid-template-areas:"top" "centre" "bottom" "right";
+    height:auto; min-height:calc(100vh - 64px); align-content:start; padding:8px;
   }
-
-  /* Make player cards and buttons full width */
-  .player-slot, .player-slot.bottom{
-    width:100%;
-    max-width:100%;
-    margin:0 auto;
-  }
-  .controls{
-    width:100%;
-    max-width:100%;
-    margin:0 auto;
-  }
-
-  /* Board nearly fills phone width while staying square */
-  #boardWrap{
-    width:calc(100vw - 16px);
-    height:calc(100vw - 16px);
-    max-width:100%;
-    max-height:100%;
-  }
-}
-/* --- Mobile layout (updated) --- */
-@media (max-width: 900px){
-  .play-grid{
-    grid-template-columns:1fr;
-    grid-template-rows:auto auto auto auto;
-    grid-template-areas:
-      "top"
-      "centre"
-      "bottom"
-      "right";
-    height:auto;
-    min-height:calc(100vh - 64px);
-    align-content:start;
-    padding:8px; /* reduced padding so the board can expand */
-  }
-
-  /* Make player cards and buttons full width */
-  .player-slot, .player-slot.bottom{
-    width:100%;
-    max-width:100%;
-    margin:0 auto;
-  }
-  .controls{
-    width:100%;
-    max-width:100%;
-    margin:0 auto;
-  }
-
-  /* Board nearly fills phone width while staying square */
-  #boardWrap{
-    width:calc(100vw - 16px);
-    height:calc(100vw - 16px);
-    max-width:100%;
-    max-height:100%;
-  }
+  .player-slot,.player-slot.bottom,.controls{width:100%;max-width:100%;margin:0 auto;}
+  #boardWrap{width:calc(100vw - 16px);height:calc(100vw - 16px);max-width:100%;max-height:100%;}
 }
 
-/* === HIGHLIGHT COLOURS (border only) === */
-.highlight-white, .highlight-black {
-  box-shadow: inset 0 0 0 4px #ffff00;
-}
+.highlight-white,.highlight-black{ box-shadow: inset 0 0 0 4px #ffff00; }
 
     footer{margin-top:0;text-align:center;padding:1rem 0;background:#0d3f66;color:#fff;font-size:.98rem}
     footer a{color:#fff;text-decoration:underline}
@@ -265,7 +169,6 @@ html, body {
   </nav>
 </header>
 
-<!-- ===== MENU VIEW ===== -->
 <section id="menuView" class="menu">
   <h2>Over 8 million starting positions!</h2>
   <h3>Select game type</h3>
@@ -290,13 +193,13 @@ html, body {
       <select id="levelSelect" aria-label="Difficulty"></select>
     </div>
 
-<div class="menu-preview">
-  <div id="previewWrap">
-    <div id="previewBoard"></div>
-    <div id="previewSpinner"></div>
-    <div id="previewMask"><span>Preview</span></div>
-  </div>
-</div>
+    <div class="menu-preview">
+      <div id="previewWrap">
+        <div id="previewBoard"></div>
+        <div id="previewSpinner"></div>
+        <div id="previewMask"><span>Preview</span></div>
+      </div>
+    </div>
 
     <div class="menu-actions">
       <button id="startBtn" class="btn-strong" disabled>Start</button>
@@ -306,14 +209,9 @@ html, body {
   </div>
 </section>
 
-<!-- ===== PLAY VIEW ===== -->
 <section id="playView" class="play-grid hidden">
-  <!-- Player top -->
-  <aside id="playerTop" class="player-slot">
-    <!-- Populated by JS with aiCard/youCard -->
-  </aside>
+  <aside id="playerTop" class="player-slot"></aside>
 
-  <!-- Centre board -->
   <main class="centre">
     <div id="boardWrap">
       <div id="board"></div>
@@ -323,12 +221,8 @@ html, body {
     <div id="fairStatus"></div>
   </main>
 
-  <!-- Player bottom -->
-  <aside id="playerBottom" class="player-slot bottom">
-    <!-- Populated by JS with aiCard/youCard -->
-  </aside>
+  <aside id="playerBottom" class="player-slot bottom"></aside>
 
-  <!-- Controls -->
   <aside class="controls">
     <div class="card stack-single">
       <button id="backBtn" class="muted btn-small">Back to menu</button>
@@ -341,12 +235,11 @@ html, body {
       <button id="resignBtn" class="btn-small" style="grid-column:1/-1">Resign</button>
     </div>
 
-    <!-- =================== DEBUG PANEL (ADDED) =================== -->
+    <!-- DEBUG PANEL -->
     <div class="card" id="debugPanel" style="font-family:ui-monospace,Consolas,monospace;font-size:0.9em;max-height:220px;overflow-y:auto;display:none;">
       <strong>Engine Debug</strong><br>
       <div id="debugContent"></div>
     </div>
-    <!-- ================= END DEBUG PANEL (ADDED) ================= -->
   </aside>
 </section>
 
@@ -361,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const sigmaByLevel = {1:10000,2:2000,3:1000,4:500,5:250,6:200,7:175,8:150,9:125,10:105,11:85,12:65,13:50,14:40,15:30,16:20,17:15,18:10,19:5,20:0};
   const baseRatings = {1:0,2:200,3:400,4:600,5:800,6:1000,7:1200,8:1400,9:1600,10:1800,11:2000,12:2200,13:2400,14:2600,15:2800,16:3000,17:3200,18:3400,19:3600,20:3800};
 
-  // Level dropdown with ratings
+  // Level dropdown
   const levelSelect = document.getElementById('levelSelect');
   for (let i=1;i<=20;i++){
     const opt=document.createElement('option');
@@ -372,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ===================== State ===================== */
-  let mode=null;                  // 'standard' | 'jchess' | 'sym' | 'fair'
+  let mode=null;
   let currentLevel=8;
   let chosenColour='random';
   let isHumanBlack=false;
@@ -401,11 +294,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const spinner=document.getElementById('loadingSpinner');
   const overlay=document.getElementById('boardOverlay');
   const overlayText=document.getElementById('overlayText');
-  const oppSub=document.getElementById('oppSub');
 
   const previewSpinner=document.getElementById('previewSpinner');
 
-  // Player card templates
+  // Player cards
   const aiCard=document.createElement('div');
   aiCard.className='player-card';
   aiCard.innerHTML=`<div class="player-avatar">🤖</div><div><div class="player-name">AI</div><div id="oppSub" class="player-sub">Lv. 8 (1400)</div></div>`;
@@ -421,15 +313,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showMenu(){ menuView.classList.remove('hidden'); playView.classList.add('hidden'); }
-function showPlay() {
-  menuView.classList.add('hidden');
-  playView.classList.remove('hidden');
-  resizeBoard();
-  window.scrollTo({ top: 0, behavior: 'instant' }); // new line
-}
+  function showPlay(){
+    menuView.classList.add('hidden'); playView.classList.remove('hidden');
+    resizeBoard();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
   function clearStatus(){ statusDiv.textContent=''; }
 
-  // Place cards: AI top by default; Flip swaps
   function renderCards(){
     const top=document.getElementById('playerTop');
     const bottom=document.getElementById('playerBottom');
@@ -484,46 +374,40 @@ function showPlay() {
   });
 
   $(window).resize(()=>{ resizeBoard(); });
-function resizeBoard(){
-  const scene = document.querySelector('.centre');
-  const wrap  = document.getElementById('boardWrap');
-  if (!scene || !wrap) return;
-
-  const styles = getComputedStyle(scene);
-  const w = scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
-  const h = scene.clientHeight - parseFloat(styles.paddingTop)  - parseFloat(styles.paddingBottom);
-
-  // On phones/tablets, make the board as wide as possible, ignore height.
-  const isMobile = window.matchMedia('(max-width: 900px)').matches;
-  const size = Math.floor(isMobile ? w : Math.min(w, h));
-
-  wrap.style.width  = size + 'px';
-  wrap.style.height = size + 'px';
-  board.resize();
-}
+  function resizeBoard(){
+    const scene = document.querySelector('.centre');
+    const wrap  = document.getElementById('boardWrap');
+    if (!scene || !wrap) return;
+    const styles = getComputedStyle(scene);
+    const w = scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+    const h = scene.clientHeight - parseFloat(styles.paddingTop)  - parseFloat(styles.paddingBottom);
+    const isMobile = window.matchMedia('(max-width: 900px)').matches;
+    const size = Math.floor(isMobile ? w : Math.min(w, h));
+    wrap.style.width  = size + 'px';
+    wrap.style.height = size + 'px';
+    board.resize();
+  }
 
   function setOrientation(){
     board.orientation(manualFlip ? (isHumanBlack ? 'white' : 'black') : (isHumanBlack ? 'black' : 'white'));
   }
 
-  // highlights
   const $board=$('#board');
   function clearHighlights(){ $board.find('.square-55d63').removeClass('highlight-white highlight-black'); }
   function highlightMove(f,t,col){ clearHighlights(); $board.find(`.square-${f}`).addClass(`highlight-${col}`); $board.find(`.square-${t}`).addClass(`highlight-${col}`); }
 
-  /* ===================== DEBUG PANEL HELPER (ADDED) ===================== */
-  function showDebugInfo(sigma, candidatesObj, chosenMove) {
+  /* ========== DEBUG PANEL HELPER (shows base & used sigma) ========== */
+  function showDebugInfo(baseSigma, actualSigma, candidatesObj, chosenMove) {
     const panel = document.getElementById('debugPanel');
     const div = document.getElementById('debugContent');
     if (!panel || !div) return;
 
-    // Convert to array and sort by centipawns desc (best first)
     const candidates = Object.values(candidatesObj)
       .filter(c => c && c.move)
       .sort((a,b) => (b.cp ?? -1e9) - (a.cp ?? -1e9))
       .slice(0, 10);
 
-    let html = `<div><b>Sigma:</b> ${Number(sigma).toFixed(1)}</div><hr>`;
+    let html = `<div><b>Sigma (base):</b> ${Number(baseSigma).toFixed(1)}<br><b>Sigma (used):</b> ${Number(actualSigma).toFixed(1)}</div><hr>`;
     html += '<ol style="margin:0;padding-left:1.2em;">';
     for (const c of candidates) {
       const star = (c.move === chosenMove) ? ' <b>*</b>' : '';
@@ -534,7 +418,7 @@ function resizeBoard(){
     div.innerHTML = html;
     panel.style.display = 'block';
   }
-  /* ================== END DEBUG PANEL HELPER (ADDED) ==================== */
+  /* ================== END DEBUG PANEL HELPER ================== */
 
   /* ===================== Engines ===================== */
   const engine=new Worker('engine/stockfish-17-lite-single.js');
@@ -552,7 +436,16 @@ function resizeBoard(){
   });
 
   function randomGaussian(){ let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
-  function thresholdSelect(cands,sigma){ const best=cands[0].cp; const x=Math.abs(randomGaussian()*sigma); const allowed=cands.filter(c=>(best-c.cp)<=x); return allowed.length?allowed[Math.floor(Math.random()*allowed.length)]:cands[0]; }
+
+  // Returns both the picked candidate and the realised sigma draw used that move
+  function thresholdSelect(cands, sigma) {
+    const best = cands[0].cp;
+    const actualSigma = Math.abs(randomGaussian() * sigma);
+    const allowed = cands.filter(c => (best - c.cp) <= actualSigma);
+    const pick = allowed.length ? allowed[Math.floor(Math.random() * allowed.length)] : cands[0];
+    return { pick, actualSigma };
+  }
+
   function adjustSigma(base){
     const moves=Math.floor(game.history().length/2)+1;
     if(currentLevel>=3 && currentLevel<=6){ if(moves<=3)return base/3; if(moves===4)return base/2; if(moves===5)return base/2; if(moves===6)return base/1; return base; }
@@ -603,11 +496,10 @@ function resizeBoard(){
         const delay=Math.max(0,750-elapsed);
         setTimeout(()=>{
           if(resigned) return;
-          const pick=thresholdSelect(Object.values(cand),sigma);
+          const { pick, actualSigma } = thresholdSelect(Object.values(cand), sigma);
 
-          /* ====== CALL DEBUG PANEL (ADDED) ====== */
-          showDebugInfo(sigma, cand, pick.move);
-          /* ==== END CALL DEBUG PANEL (ADDED) ==== */
+          // Show debug with base and realised sigma
+          showDebugInfo(sigma, actualSigma, cand, pick.move);
 
           const f=pick.move.slice(0,2), t=pick.move.slice(2,4);
           highlightMove(f,t,'black');
@@ -644,7 +536,6 @@ function resizeBoard(){
     setTimeout(()=>overlay.classList.remove('show'),2000);
   }
 
-  /* ===================== Generators ===================== */
   function startStandard(){ spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>afterStartWithFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),750); }
   function startJChess(makeSym){ spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>{ const fen=makeSym?generateSymmetricJChessFEN():generateJChessFEN(); afterStartWithFEN(fen); },1000); }
   function startFairJChess(){
@@ -701,11 +592,9 @@ function resizeBoard(){
         const delay=Math.max(0,500-elapsed);
         setTimeout(()=>{
           if(resigned) return;
-          const pick=thresholdSelect(Object.values(cand),sigma);
+          const { pick, actualSigma } = thresholdSelect(Object.values(cand), sigma);
 
-          /* ====== CALL DEBUG PANEL (ADDED) ====== */
-          showDebugInfo(sigma, cand, pick.move);
-          /* ==== END CALL DEBUG PANEL (ADDED) ==== */
+          showDebugInfo(sigma, actualSigma, cand, pick.move);
 
           const f=pick.move.slice(0,2), t=pick.move.slice(2,4);
           const col=game.turn()==='w'?'black':'white';
@@ -738,11 +627,10 @@ function resizeBoard(){
       document.querySelector(sel).setAttribute('aria-pressed','true');
       startBtn.disabled=false;
 
-      // Reset preview to blank + spinner, then prepare new preview
       previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1',false);
       previewSpinner.style.display='block';
       previewFen=null;
-      queuePreview();                 // only game-type changes trigger preview
+      queuePreview();
     });
   });
 
@@ -771,7 +659,6 @@ function resizeBoard(){
       const fen=(mode==='sym')?generateSymmetricJChessFEN():generateJChessFEN();
       finishPreview(fen);
     }else{
-      // fair preview: search once until fair found
       const ms=800; let lastCp=null; const fen=generateJChessFEN();
       evalEngine.postMessage('position fen '+fen);
       evalEngine.postMessage('go movetime '+ms);
@@ -804,18 +691,16 @@ function resizeBoard(){
     clearStatus(); overlay.classList.remove('show');
 
     if (mode==='fair' && previewFen){
-      afterStartWithFEN(previewFen);   // reuse preview (no extra loading)
+      afterStartWithFEN(previewFen);
     } else if (mode==='standard' || mode==='jchess' || mode==='sym'){
       afterStartWithFEN(fenToUse);
     } else {
-      startFairJChess();               // only if preview not ready
+      startFairJChess();
     }
   });
 
-  // Back to menu
   document.getElementById('backBtn').addEventListener('click',()=>{ showMenu(); });
 
-  /* ===== Menu extras ===== */
   document.getElementById('analysisBtn').addEventListener('click',()=>{
     const fen=previewFen || startFen; const pathFen=(fen||'').split(' ').join('_');
     window.open(`https://lichess.org/analysis/standard/${encodeURIComponent(pathFen)}`,'_blank');
@@ -825,7 +710,6 @@ function resizeBoard(){
     window.open(`https://lichess.org/?fen=${encodedFen}#friend`,'_blank');
   });
 
-  // Right controls
   document.getElementById('resetBtn').addEventListener('click',()=>{
     resigned=false;
     game.load(startFen); board.position(startFen,false);
@@ -859,7 +743,7 @@ function resizeBoard(){
 
   /* ===================== Init ===================== */
   game.load(startFen); board.position(startFen,false); setOrientation(); clearStatus();
-  renderCards();                                  // AI top, You bottom by default
+  renderCards();
   previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1',false);
   previewSpinner.style.display='none';
 });
