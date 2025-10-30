@@ -440,7 +440,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Returns both the picked candidate and the realised sigma draw used that move
   function thresholdSelect(cands, sigma) {
     const best = cands[0].cp;
-    const actualSigma = Math.abs(randomGaussian() * sigma);
+const g = Math.abs(randomGaussian());
+const shrinkFactor = Math.pow(g / (1 + g), 1.5); // smooth tail compression
+const actualSigma = sigma * shrinkFactor;
     const allowed = cands.filter(c => (best - c.cp) <= actualSigma);
     const pick = allowed.length ? allowed[Math.floor(Math.random() * allowed.length)] : cands[0];
     return { pick, actualSigma };
