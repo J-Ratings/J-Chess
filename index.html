@@ -279,12 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ---------------- Difficulty dropdown: build + colour ---------------- */
 const levelSelect = document.getElementById('levelSelect');
 
-const baseRatings = {
-  1:0,2:200,3:400,4:600,5:800,6:1000,7:1200,8:1400,9:1600,10:1800,
-  11:2000,12:2200,13:2400,14:2600,15:2800,16:3000,17:3200,18:3400,19:3600,20:3800
-};
-
-// fixed 20-colour palette (green → red)
 function computeLevelColour(level){
   const palette = [
     '#12ff23', '#60f400', '#8be600', '#a2d900', '#b0ce00',
