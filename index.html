@@ -235,11 +235,7 @@ html, body { overflow-x: hidden; }
       <button id="resignBtn" class="btn-small" style="grid-column:1/-1">Resign</button>
     </div>
 
-    <!-- DEBUG PANEL -->
-    <div class="card" id="debugPanel" style="font-family:ui-monospace,Consolas,monospace;font-size:0.9em;max-height:600px;overflow-y:auto;display:none;">
-      <strong>Engine Debug</strong><br>
-      <div id="debugContent"></div>
-    </div>
+
   </aside>
 </section>
 
@@ -267,20 +263,24 @@ for (let i = 1; i <= 20; i++) {
   levelSelect.appendChild(opt);
 }
 
-// === Apply gradient colouring (green → yellow → red) ===
-const minHue = 120;  // green
-const maxHue = 0;    // red
+// === Apply gradient colouring (green → yellow → red → purple, slightly muted) ===
 const totalLevels = 20;
+const hues = [120, 50, 0, 280]; // green → yellow → red → purple
+const numSegments = hues.length - 1;
 
 for (let i = 0; i < levelSelect.options.length; i++) {
   const level = i + 1;
-  const hue = minHue - (minHue - maxHue) * (level / totalLevels);
-  const colour = `hsl(${hue}, 85%, 60%)`;
+  const t = (level - 1) / (totalLevels - 1);
+  const seg = Math.floor(t * numSegments);
+  const localT = (t * numSegments) - seg;
+  const hue = hues[seg] + (hues[seg + 1] - hues[seg]) * localT;
+
+  const colour = `hsl(${hue}, 65%, 65%)`; // 65% saturation & lightness = softer tone
   const opt = levelSelect.options[i];
   opt.style.backgroundColor = colour;
   opt.style.color = 'black';
   opt.style.fontWeight = '700';
-  opt.style.textAlign = 'center';
+  opt.style.textAlign = 'left';
 }
 
 // === Make the closed dropdown reflect the selected level’s colour ===
@@ -289,7 +289,7 @@ function updateSelectBackground() {
   levelSelect.style.backgroundColor = selectedOption.style.backgroundColor;
   levelSelect.style.color = 'black';
   levelSelect.style.fontWeight = '700';
-  levelSelect.style.textAlign = 'center';
+  levelSelect.style.textAlign = 'left';
 }
 
 // Apply on load and whenever the selection changes
@@ -429,29 +429,6 @@ levelSelect.addEventListener('change', updateSelectBackground);
   function clearHighlights(){ $board.find('.square-55d63').removeClass('highlight-white highlight-black'); }
   function highlightMove(f,t,col){ clearHighlights(); $board.find(`.square-${f}`).addClass(`highlight-${col}`); $board.find(`.square-${t}`).addClass(`highlight-${col}`); }
 
-  /* ========== DEBUG PANEL HELPER (shows base & used sigma) ========== */
-  function showDebugInfo(baseSigma, actualSigma, candidatesObj, chosenMove) {
-    const panel = document.getElementById('debugPanel');
-    const div = document.getElementById('debugContent');
-    if (!panel || !div) return;
-
-    const candidates = Object.values(candidatesObj)
-      .filter(c => c && c.move)
-      .sort((a,b) => (b.cp ?? -1e9) - (a.cp ?? -1e9))
-      .slice(0, 30);
-
-    let html = `<div><b>Sigma (base):</b> ${Number(baseSigma).toFixed(1)}<br><b>Sigma (used):</b> ${Number(actualSigma).toFixed(1)}</div><hr>`;
-    html += '<ol style="margin:0;padding-left:1.2em;">';
-    for (const c of candidates) {
-      const star = (c.move === chosenMove) ? ' <b>*</b>' : '';
-      html += `<li>${c.move} (${c.cp})${star}</li>`;
-    }
-    html += '</ol>';
-
-    div.innerHTML = html;
-    panel.style.display = 'block';
-  }
-  /* ================== END DEBUG PANEL HELPER ================== */
 
   /* ===================== Engines ===================== */
   const engine=new Worker('engine/stockfish-17-lite-single.js');
@@ -536,9 +513,6 @@ function thresholdSelect(cands, sigma) {
         setTimeout(()=>{
           if(resigned) return;
           const { pick, actualSigma } = thresholdSelect(Object.values(cand), sigma);
-
-          // Show debug with base and realised sigma
-          showDebugInfo(sigma, actualSigma, cand, pick.move);
 
           const f=pick.move.slice(0,2), t=pick.move.slice(2,4);
           highlightMove(f,t,'black');
@@ -633,7 +607,6 @@ function thresholdSelect(cands, sigma) {
           if(resigned) return;
           const { pick, actualSigma } = thresholdSelect(Object.values(cand), sigma);
 
-          showDebugInfo(sigma, actualSigma, cand, pick.move);
 
           const f=pick.move.slice(0,2), t=pick.move.slice(2,4);
           const col=game.turn()==='w'?'black':'white';
