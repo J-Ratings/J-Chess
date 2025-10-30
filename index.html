@@ -282,13 +282,16 @@ document.addEventListener('DOMContentLoaded', () => {
 function computeLevelColour(level){
   if (level <= 15){
     const t = (level - 1) / 14;
-    const hue = 120 - 120 * t;
+    const hue = 120 - 120 * t; // green → red
     return `hsl(${hue}, 65%, 65%)`;
   }
-  // deeper and richer shades for 16–20
-  const swatch = ['#8B0000', '#6A0DAD', '#5B008F', '#480078', '#360062']; // deep red → deep purple
-  const idx = Math.min(level - 16, swatch.length - 1);
-  return swatch[idx];
+
+  // Levels 16–20: smooth transition from deep red → purple
+  const t = (level - 16) / 4; // 0 → 1 across 16–20
+  const hue = 0 - (t * 60);   // red (0°) to purple (-60°)
+  const sat = 65;             // consistent saturation
+  const light = 45 - (t * 8); // slightly darker as it goes purple
+  return `hsl(${hue}, ${sat}%, ${light}%)`;
 }
 
   /* ---------- Difficulty dropdown build + paint ---------- */
