@@ -255,11 +255,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const baseRatings = {1:0,2:200,3:400,4:600,5:800,6:1000,7:1200,8:1400,9:1600,10:1800,11:2000,12:2200,13:2400,14:2600,15:2800,16:3000,17:3200,18:3400,19:3600,20:3800};
 
   // Level dropdown
-  const levelSelect = document.getElementById('levelSelect');
-  for (let i=1;i<=20;i++){
-    // Colour gradient for difficulty levels
-// Colour gradient for difficulty levels (green → yellow → red)
-// Colour gradient for difficulty levels (green → yellow → red)
+// Level dropdown
+const levelSelect = document.getElementById('levelSelect');
+
+// Create the options first
+for (let i = 1; i <= 20; i++) {
+  const opt = document.createElement('option');
+  opt.value = String(i);
+  opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
+  if (i === 8) opt.selected = true;
+  levelSelect.appendChild(opt);
+}
+
+// === Apply gradient colouring (green → yellow → red) ===
 const minHue = 120;  // green
 const maxHue = 0;    // red
 const totalLevels = 20;
@@ -275,28 +283,19 @@ for (let i = 0; i < levelSelect.options.length; i++) {
   opt.style.textAlign = 'center';
 }
 
-// Set initial background and update on change
+// === Make the closed dropdown reflect the selected level’s colour ===
 function updateSelectBackground() {
-  const selectedIndex = levelSelect.selectedIndex;
-  const selectedOption = levelSelect.options[selectedIndex];
+  const selectedOption = levelSelect.options[levelSelect.selectedIndex];
   levelSelect.style.backgroundColor = selectedOption.style.backgroundColor;
-  levelSelect.style.color = selectedOption.style.color;
+  levelSelect.style.color = 'black';
   levelSelect.style.fontWeight = '700';
   levelSelect.style.textAlign = 'center';
 }
 
-// Apply once on load
+// Apply on load and whenever the selection changes
 updateSelectBackground();
-
-// Update whenever user changes level
 levelSelect.addEventListener('change', updateSelectBackground);
 
-    const opt=document.createElement('option');
-    opt.value=String(i);
-    opt.textContent=`Lv. ${i} (${baseRatings[i]})`;
-    if(i===8) opt.selected=true;
-    levelSelect.appendChild(opt);
-  }
 
   /* ===================== State ===================== */
   let mode=null;
