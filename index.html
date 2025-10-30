@@ -31,6 +31,18 @@
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
 
   <style>
+/* --- Level badge behind the AI level text --- */
+.level-badge{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:12px;
+  font-weight:700;
+  color:#000;           /* keep text black */
+  background:#ddd;      /* will be overridden in JS */
+  transition:background-color .25s ease;
+}
+
+
     :root{
       --brand-bg:#0d3f66; --brand-fg:#fff;
       --scene-pad:14px; --side-width:300px;
@@ -162,7 +174,11 @@ html, body { overflow-x: hidden; }
 </head>
 <body>
 <header class="site-bar">
-  <h1><a href="/">J-Chess</a></h1>
+  <h1 style="display:flex;align-items:center;gap:8px;">
+  <img src="/Logo.png" alt="J-Chess logo" style="width:34px;height:34px;vertical-align:middle;">
+  <a href="/" style="font-size:1.8rem;">J-Chess</a>
+</h1>
+
   <nav>
     <a href="/" class="active">Play</a>
     <a href="/info/">Info</a>
@@ -250,11 +266,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const sigmaByLevel = {1:10000,2:2000,3:1000,4:500,5:300,6:250,7:200,8:165,9:145,10:120,11:95,12:70,13:55,14:45,15:35,16:25,17:15,18:10,19:5,20:0};
   const baseRatings = {1:0,2:200,3:400,4:600,5:800,6:1000,7:1200,8:1400,9:1600,10:1800,11:2000,12:2200,13:2400,14:2600,15:2800,16:3000,17:3200,18:3400,19:3600,20:3800};
 
-// Level dropdown
+/* ---------- Helper: compute colour for a given level (1..20) ---------- */
+/* Lv 1–15: HSL sweep 120°(green) → 0°(red) muted. 
+   Lv 16–20: start from deep reds/purples, then lighten/mute to match tone. */
+function computeLevelColour(level){
+  if (level <= 15){
+    const t = (level - 1) / 14;                  // 0 → 1 across 1..15
+    const hue = 120 - 120 * t;                   // 120 → 0
+    return `hsl(${hue}, 65%, 65%)`;              // slightly muted
+  }
+  // Deep red → purple swatch (your scheme), then lighten/mute with color-mix.
+  const swatch = ['#AC131C','#950706','#750227','#570044','#3B005C','#250740'];
+  const idx = Math.min(level - 15, swatch.length - 1);
+  // Lighten/mute to keep black text readable and match earlier tones.
+  // color-mix has good support in modern browsers; it gracefully does nothing if not.
+  return `color-mix(in srgb, ${swatch[idx]} 65%, white)`;
+}
+
+/* ---------------- Difficulty dropdown: build + colour ---------------- */
 const levelSelect = document.getElementById('levelSelect');
 
-// Create the options first
-for (let i = 1; i <= 20; i++) {
+// Rebuild options (1..20)
+levelSelect.innerHTML = '';
+for (let i = 1; i <= 20; i++){
   const opt = document.createElement('option');
   opt.value = String(i);
   opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
@@ -262,77 +296,79 @@ for (let i = 1; i <= 20; i++) {
   levelSelect.appendChild(opt);
 }
 
-// === Apply gradient colouring (green → yellow → red → purple) ===
-const totalLevels = 20;
+// Colour each option and the closed select
+function paintLevelOptions(){
+  for (let i = 0; i < levelSelect.options.length; i++){
+    const lvl = i + 1;
+    const opt = levelSelect.options[i];
+    const colour = computeLevelColour(lvl);
 
-for (let i = 0; i < levelSelect.options.length; i++) {
-  const level = i + 1;
-  const opt = levelSelect.options[i];
-  let colour;
-
-  if (level <= 15) {
-    // Levels 1–15: Green (120°) → Red (0°)
-    const t = (level - 1) / 14;
-    const hue = 120 - 120 * t;
-    colour = `hsl(${hue}, 65%, 65%)`;
-  } else {
-    // Levels 16–20: Lighter, muted red→purple tones
-    const redToPurpleMuted = ['#d05a5a', '#b44b72', '#914288', '#6f3c8e', '#593685'];
-    const idx = Math.min(level - 16, redToPurpleMuted.length - 1);
-    colour = redToPurpleMuted[idx];
+    opt.style.backgroundColor = colour;
+    opt.style.fontWeight = '700';
+    opt.style.textAlign = 'left';
+    // make text white for darker purple/red levels
+    opt.style.color = (lvl >= 16) ? 'white' : 'black';
   }
-
-  opt.style.backgroundColor = colour;
-  opt.style.color = 'black';
-  opt.style.fontWeight = '700';
-  opt.style.textAlign = 'left';
 }
 
-// === Make the closed dropdown reflect the selected level’s colour ===
-function updateSelectBackground() {
-  const selectedOption = levelSelect.options[levelSelect.selectedIndex];
-  levelSelect.style.backgroundColor = selectedOption.style.backgroundColor;
-  levelSelect.style.color = 'black';
+function updateLevelSelectBackground(){
+  const sel = levelSelect.options[levelSelect.selectedIndex];
+  const lvl = +sel.value;
+  const bg = sel.style.backgroundColor || computeLevelColour(lvl);
+  levelSelect.style.backgroundColor = bg;
   levelSelect.style.fontWeight = '700';
   levelSelect.style.textAlign = 'left';
+  levelSelect.style.color = (lvl >= 16) ? 'white' : 'black';
 }
 
-// Apply on load and whenever the selection changes
-updateSelectBackground();
-levelSelect.addEventListener('change', updateSelectBackground);
+paintLevelOptions();
+updateLevelSelectBackground();
 
-
-// === Colour dropdown styling (Random = grey, White = white, Black = muted black) ===
+/* ---------------- Player colour dropdown styling ---------------- */
 const colourSelect = document.getElementById('colourSelect');
 
-for (let i = 0; i < colourSelect.options.length; i++) {
-  const opt = colourSelect.options[i];
-  const val = opt.value.toLowerCase();
-
-  if (val === 'random') {
-    opt.style.backgroundColor = '#cccccc'; // grey
-    opt.style.color = 'black';
-  } else if (val === 'white') {
-    opt.style.backgroundColor = '#ffffff';
-    opt.style.color = 'black';
-  } else if (val === 'black') {
-    opt.style.backgroundColor = '#333333'; // muted dark grey
-    opt.style.color = 'white';
+(function paintColourOptions(){
+  for (let i = 0; i < colourSelect.options.length; i++){
+    const opt = colourSelect.options[i];
+    const v = opt.value.toLowerCase();
+    if (v === 'random'){ opt.style.backgroundColor = '#cfcfcf'; opt.style.color = 'black'; }
+    else if (v === 'white'){ opt.style.backgroundColor = '#ffffff'; opt.style.color = 'black'; }
+    else if (v === 'black'){ opt.style.backgroundColor = '#3a3a3a'; opt.style.color = 'white'; } // muted dark
+    opt.style.fontWeight = '700';
+    opt.style.textAlign = 'left';
   }
-
-  opt.style.fontWeight = '700';
-}
-
-// Make closed colour dropdown reflect selected option’s colour
-function updateColourSelectBackground() {
-  const selected = colourSelect.options[colourSelect.selectedIndex];
-  colourSelect.style.backgroundColor = selected.style.backgroundColor;
-  colourSelect.style.color = selected.style.color;
+})();
+function updateColourSelectBackground(){
+  const sel = colourSelect.options[colourSelect.selectedIndex];
+  colourSelect.style.backgroundColor = sel.style.backgroundColor;
+  colourSelect.style.color = sel.style.color;
   colourSelect.style.fontWeight = '700';
+  colourSelect.style.textAlign = 'left';
+}
+updateColourSelectBackground();
+
+/* ---------------- Badge: keep AI badge in sync with level ---------------- */
+function setOpponentMeta(){
+  const base = baseRatings[currentLevel];
+  const badge = document.getElementById('oppBadge');
+  if (badge){
+    badge.textContent = `Lv. ${currentLevel} (${base})`;
+    badge.style.backgroundColor = computeLevelColour(currentLevel);
+    badge.style.color = 'black';
+  }
 }
 
-updateColourSelectBackground();
+/* --- Hook up change handlers so both the select and badge stay in sync --- */
+levelSelect.addEventListener('change', function(){
+  currentLevel = +this.value;
+  updateLevelSelectBackground();
+  setOpponentMeta();
+});
 colourSelect.addEventListener('change', updateColourSelectBackground);
+
+/* Paint once at load */
+setOpponentMeta();
+
   /* ===================== State ===================== */
   let mode=null;
   let currentLevel=8;
@@ -369,17 +405,19 @@ colourSelect.addEventListener('change', updateColourSelectBackground);
   // Player cards
   const aiCard=document.createElement('div');
   aiCard.className='player-card';
-  aiCard.innerHTML=`<div class="player-avatar">🤖</div><div><div class="player-name">AI</div><div id="oppSub" class="player-sub">Lv. 8 (1400)</div></div>`;
+aiCard.innerHTML = `
+  <div class="player-avatar">🤖</div>
+  <div>
+    <div class="player-name">AI</div>
+    <div class="player-sub">
+      <span id="oppBadge" class="level-badge">Lv. 8 (1400)</span>
+    </div>
+  </div>
+`;
 
   const youCard=document.createElement('div');
   youCard.className='player-card';
   youCard.innerHTML=`<div class="player-avatar">👤</div><div><div class="player-name">You</div></div>`;
-
-  function setOpponentMeta(){
-    const base=baseRatings[currentLevel];
-    const sub=aiCard.querySelector('#oppSub');
-    if(sub) sub.textContent=`Lv. ${currentLevel} (${base})`;
-  }
 
   function showMenu(){ menuView.classList.remove('hidden'); playView.classList.add('hidden'); }
   function showPlay(){
