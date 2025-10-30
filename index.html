@@ -276,59 +276,68 @@ document.addEventListener('DOMContentLoaded', () => {
   let resigned = false;
   let previewFen = null;
 
-  /* ---------- Level colour helper ---------- */
-  // Lv 1–15: HSL sweep 120° (green) → 0° (red), slightly muted
-  // Lv 16–20: muted red → purple swatch, then lightened to match tone
-function computeLevelColour(level){
-  if (level <= 15){
-    const t = (level - 1) / 14;
-    const hue = 120 - 120 * t; // green → red
-    return `hsl(${hue}, 65%, 65%)`;
-  }
+/* ---------------- Difficulty dropdown: build + colour ---------------- */
+const levelSelect = document.getElementById('levelSelect');
 
-  // Levels 16–20: smooth transition from deep red → purple
-  const t = (level - 16) / 4; // 0 → 1 across 16–20
-  const hue = 0 - (t * 60);   // red (0°) to purple (-60°)
-  const sat = 65;             // consistent saturation
-  const light = 45 - (t * 8); // slightly darker as it goes purple
-  return `hsl(${hue}, ${sat}%, ${light}%)`;
+const baseRatings = {
+  1:0,2:200,3:400,4:600,5:800,6:1000,7:1200,8:1400,9:1600,10:1800,
+  11:2000,12:2200,13:2400,14:2600,15:2800,16:3000,17:3200,18:3400,19:3600,20:3800
+};
+
+// fixed 20-colour palette (green → red)
+function computeLevelColour(level){
+  const palette = [
+    '#12ff23', '#60f400', '#8be600', '#a2d900', '#b0ce00',
+    '#bac300', '#c1b800', '#c6ae00', '#e9a400', '#cb9a00',
+    '#cc9000', '#cd8700', '#ce7d00', '#ce7200', '#cf6700',
+    '#d05b00', '#d14c00', '#d43800', '#d51b00', '#ce0909'
+  ];
+  return palette[level - 1] || '#ffffff';
 }
 
-  /* ---------- Difficulty dropdown build + paint ---------- */
-  const levelSelect = document.getElementById('levelSelect');
-  levelSelect.innerHTML = '';
-  for (let i = 1; i <= 20; i++){
-    const opt = document.createElement('option');
-    opt.value = String(i);
-    opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
-    if (i === 8) opt.selected = true;
-    levelSelect.appendChild(opt);
-  }
+// build dropdown options
+levelSelect.innerHTML = '';
+for (let i = 1; i <= 20; i++){
+  const opt = document.createElement('option');
+  opt.value = String(i);
+  opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
+  if (i === 8) opt.selected = true;
+  levelSelect.appendChild(opt);
+}
 
-  function paintLevelOptions(){
-    for (let i = 0; i < levelSelect.options.length; i++){
-      const lvl = i + 1;
-      const opt = levelSelect.options[i];
-      const colour = computeLevelColour(lvl);
-      opt.style.backgroundColor = colour;
-      opt.style.fontWeight = '700';
-      opt.style.textAlign = 'left';
-      opt.style.color = (lvl >= 16) ? 'white' : 'black';
-    }
+// colour each option
+function paintLevelOptions(){
+  for (let i = 0; i < levelSelect.options.length; i++){
+    const lvl = i + 1;
+    const opt = levelSelect.options[i];
+    const colour = computeLevelColour(lvl);
+    opt.style.backgroundColor = colour;
+    opt.style.fontWeight = '700';
+    opt.style.textAlign = 'left';
+    opt.style.color = 'black';
   }
+}
 
-  function updateLevelSelectBackground(){
-    const sel = levelSelect.options[levelSelect.selectedIndex];
-    const lvl = +sel.value;
-    const bg = sel.style.backgroundColor || computeLevelColour(lvl);
-    levelSelect.style.backgroundColor = bg;
-    levelSelect.style.fontWeight = '700';
-    levelSelect.style.textAlign = 'left';
-    levelSelect.style.color = (lvl >= 16) ? 'white' : 'black';
-  }
+// colour the closed dropdown background
+function updateLevelSelectBackground(){
+  const sel = levelSelect.options[levelSelect.selectedIndex];
+  const lvl = +sel.value;
+  const bg = computeLevelColour(lvl);
+  levelSelect.style.backgroundColor = bg;
+  levelSelect.style.fontWeight = '700';
+  levelSelect.style.textAlign = 'left';
+  levelSelect.style.color = 'black';
+}
 
-  paintLevelOptions();
+paintLevelOptions();
+updateLevelSelectBackground();
+
+// handle change
+levelSelect.addEventListener('change', function(){
+  currentLevel = +this.value;
   updateLevelSelectBackground();
+  setOpponentMeta();
+});
 
   /* ---------- Player colour dropdown paint ---------- */
   const colourSelect = document.getElementById('colourSelect');
