@@ -262,24 +262,26 @@ for (let i = 1; i <= 20; i++) {
   levelSelect.appendChild(opt);
 }
 
-// === Apply gradient colouring (green → yellow → red → purple, muted) ===
+// === Apply gradient colouring (green → yellow → red → purple) ===
 const totalLevels = 20;
 
 for (let i = 0; i < levelSelect.options.length; i++) {
   const level = i + 1;
-  const t = (level - 1) / (totalLevels - 1);
-  let hue;
+  const opt = levelSelect.options[i];
+  let colour;
 
-  if (t < 0.5) {
-    // Green (120°) → Red (0°)
-    hue = 120 - 120 * (t / 0.5);
+  if (level <= 15) {
+    // Levels 1–15: Green (120°) → Red (0°)
+    const t = (level - 1) / 14;
+    const hue = 120 - 120 * t;
+    colour = `hsl(${hue}, 65%, 65%)`;
   } else {
-    // Red (0°) → Purple (280°)
-    hue = 0 + 280 * ((t - 0.5) / 0.5);
+    // Levels 16–20: fixed red→purple hex gradient
+    const redToPurple = ['#AC131C', '#950706', '#750227', '#570044', '#3B005C', '#250740'];
+    const idx = Math.min(level - 15, redToPurple.length - 1);
+    colour = redToPurple[idx];
   }
 
-  const colour = `hsl(${hue}, 65%, 65%)`; // muted tones
-  const opt = levelSelect.options[i];
   opt.style.backgroundColor = colour;
   opt.style.color = 'black';
   opt.style.fontWeight = '700';
