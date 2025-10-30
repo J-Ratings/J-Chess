@@ -438,15 +438,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function randomGaussian(){ let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
 
   // Returns both the picked candidate and the realised sigma draw used that move
-  function thresholdSelect(cands, sigma) {
-    const best = cands[0].cp;
-const g = Math.abs(randomGaussian());
-const shrinkFactor = Math.pow(g / (1 + g), 1.5); // smooth tail compression
-const actualSigma = sigma * shrinkFactor;
-    const allowed = cands.filter(c => (best - c.cp) <= actualSigma);
-    const pick = allowed.length ? allowed[Math.floor(Math.random() * allowed.length)] : cands[0];
-    return { pick, actualSigma };
-  }
+function thresholdSelect(cands, sigma) {
+  const best = cands[0].cp;
+  const g = Math.abs(randomGaussian());
+
+  // Tempered Gaussian – shrinks only the tails
+  const tempered = g / Math.pow(1 + Math.abs(g) / 2, 0.6);  // you can tune /2 and 0.6
+  const actualSigma = sigma * tempered;
+
+  const allowed = cands.filter(c => (best - c.cp) <= actualSigma);
+  const pick = allowed.length ? allowed[Math.floor(Math.random() * allowed.length)] : cands[0];
+  return { pick, actualSigma };
+}
+
 
   function adjustSigma(base){
     const moves=Math.floor(game.history().length/2)+1;
