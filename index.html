@@ -296,6 +296,37 @@ function updateSelectBackground() {
 updateSelectBackground();
 levelSelect.addEventListener('change', updateSelectBackground);
 
+// === Style Colour Dropdown (Random = grey, White = white, Black = muted black) ===
+const colourSelect = document.getElementById('colourSelect');
+
+for (let i = 0; i < colourSelect.options.length; i++) {
+  const opt = colourSelect.options[i];
+  const val = opt.value.toLowerCase();
+
+  if (val === 'random') {
+    opt.style.backgroundColor = '#cccccc'; // grey
+    opt.style.color = 'black';
+  } else if (val === 'white') {
+    opt.style.backgroundColor = '#ffffff';
+    opt.style.color = 'black';
+  } else if (val === 'black') {
+    opt.style.backgroundColor = '#333333'; // muted dark grey
+    opt.style.color = 'white';
+  }
+
+  opt.style.fontWeight = '700';
+}
+
+// Make closed dropdown reflect selected option’s colour
+function updateColourSelectBackground() {
+  const selected = colourSelect.options[colourSelect.selectedIndex];
+  colourSelect.style.backgroundColor = selected.style.backgroundColor;
+  colourSelect.style.color = selected.style.color;
+  colourSelect.style.fontWeight = '700';
+}
+
+updateColourSelectBackground();
+colourSelect.addEventListener('change', updateColourSelectBackground);
 
   /* ===================== State ===================== */
   let mode=null;
