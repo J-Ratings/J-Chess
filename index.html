@@ -276,10 +276,10 @@ for (let i = 0; i < levelSelect.options.length; i++) {
     const hue = 120 - 120 * t;
     colour = `hsl(${hue}, 65%, 65%)`;
   } else {
-    // Levels 16–20: fixed red→purple hex gradient
-    const redToPurple = ['#AC131C', '#950706', '#750227', '#570044', '#3B005C', '#250740'];
-    const idx = Math.min(level - 15, redToPurple.length - 1);
-    colour = redToPurple[idx];
+    // Levels 16–20: Lighter, muted red→purple tones
+    const redToPurpleMuted = ['#d05a5a', '#b44b72', '#914288', '#6f3c8e', '#593685'];
+    const idx = Math.min(level - 16, redToPurpleMuted.length - 1);
+    colour = redToPurpleMuted[idx];
   }
 
   opt.style.backgroundColor = colour;
