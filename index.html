@@ -257,6 +257,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // Level dropdown
   const levelSelect = document.getElementById('levelSelect');
   for (let i=1;i<=20;i++){
+    // Colour gradient for difficulty levels
+const minHue = 120;  // green
+const maxHue = 0;    // red
+const totalLevels = 20;
+
+for (let i = 0; i < levelSelect.options.length; i++) {
+  const level = i + 1;
+  const hue = minHue - (minHue - maxHue) * ((level - 1) / (totalLevels - 1));
+  const colour = `hsl(${hue}, 80%, 60%)`;
+  const textColour = (level > 13) ? 'white' : 'black'; // darker text for high levels
+  const opt = levelSelect.options[i];
+  opt.style.backgroundColor = colour;
+  opt.style.color = textColour;
+  opt.style.fontWeight = '700';
+}
+
     const opt=document.createElement('option');
     opt.value=String(i);
     opt.textContent=`Lv. ${i} (${baseRatings[i]})`;
