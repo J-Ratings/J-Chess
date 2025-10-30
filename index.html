@@ -294,7 +294,7 @@ levelSelect.innerHTML = '';
 for (let i = 1; i <= 20; i++){
   const opt = document.createElement('option');
   opt.value = String(i);
-  opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
+  opt.textContent = `Lv.${i} (${baseRatings[i]})`;
   if (i === 8) opt.selected = true;
   levelSelect.appendChild(opt);
 }
@@ -385,7 +385,7 @@ levelSelect.addEventListener('change', function(){
     const base = baseRatings[currentLevel];
     const badge = document.getElementById('oppBadge');
     if (badge){
-      badge.textContent = `Lv. ${currentLevel} (${base})`;
+      badge.textContent = `Lv.${currentLevel} (${base})`;
       badge.style.backgroundColor = computeLevelColour(currentLevel);
       badge.style.color = (currentLevel >= 16) ? 'white' : 'black';
     }
