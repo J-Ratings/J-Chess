@@ -250,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const sigmaByLevel = {1:10000,2:2000,3:1000,4:500,5:300,6:250,7:200,8:165,9:145,10:120,11:95,12:70,13:55,14:45,15:35,16:25,17:15,18:10,19:5,20:0};
   const baseRatings = {1:0,2:200,3:400,4:600,5:800,6:1000,7:1200,8:1400,9:1600,10:1800,11:2000,12:2200,13:2400,14:2600,15:2800,16:3000,17:3200,18:3400,19:3600,20:3800};
 
-  // Level dropdown
 // Level dropdown
 const levelSelect = document.getElementById('levelSelect');
 
@@ -263,19 +262,23 @@ for (let i = 1; i <= 20; i++) {
   levelSelect.appendChild(opt);
 }
 
-// === Apply gradient colouring (green → yellow → red → purple, slightly muted) ===
+// === Apply gradient colouring (green → yellow → red → purple, muted) ===
 const totalLevels = 20;
-const hues = [120, 50, 0, 280]; // green → yellow → red → purple
-const numSegments = hues.length - 1;
 
 for (let i = 0; i < levelSelect.options.length; i++) {
   const level = i + 1;
   const t = (level - 1) / (totalLevels - 1);
-  const seg = Math.floor(t * numSegments);
-  const localT = (t * numSegments) - seg;
-  const hue = hues[seg] + (hues[seg + 1] - hues[seg]) * localT;
+  let hue;
 
-  const colour = `hsl(${hue}, 65%, 65%)`; // 65% saturation & lightness = softer tone
+  if (t < 0.5) {
+    // Green (120°) → Red (0°)
+    hue = 120 - 120 * (t / 0.5);
+  } else {
+    // Red (0°) → Purple (280°)
+    hue = 0 + 280 * ((t - 0.5) / 0.5);
+  }
+
+  const colour = `hsl(${hue}, 65%, 65%)`; // muted tones
   const opt = levelSelect.options[i];
   opt.style.backgroundColor = colour;
   opt.style.color = 'black';
@@ -296,7 +299,8 @@ function updateSelectBackground() {
 updateSelectBackground();
 levelSelect.addEventListener('change', updateSelectBackground);
 
-// === Style Colour Dropdown (Random = grey, White = white, Black = muted black) ===
+
+// === Colour dropdown styling (Random = grey, White = white, Black = muted black) ===
 const colourSelect = document.getElementById('colourSelect');
 
 for (let i = 0; i < colourSelect.options.length; i++) {
@@ -317,7 +321,7 @@ for (let i = 0; i < colourSelect.options.length; i++) {
   opt.style.fontWeight = '700';
 }
 
-// Make closed dropdown reflect selected option’s colour
+// Make closed colour dropdown reflect selected option’s colour
 function updateColourSelectBackground() {
   const selected = colourSelect.options[colourSelect.selectedIndex];
   colourSelect.style.backgroundColor = selected.style.backgroundColor;
@@ -327,7 +331,6 @@ function updateColourSelectBackground() {
 
 updateColourSelectBackground();
 colourSelect.addEventListener('change', updateColourSelectBackground);
-
   /* ===================== State ===================== */
   let mode=null;
   let currentLevel=8;
