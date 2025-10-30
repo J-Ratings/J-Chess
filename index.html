@@ -451,14 +451,10 @@ function onDragStart(source, piece) {
 
 function onDrop(source, target) {
   const mv = game.move({ from: source, to: target, promotion: 'q' });
-  if (!mv) return 'snapback';         // illegal → snap back
-
-  // legal move → sync the board and continue
+  if (!mv) return 'snapback';
   requestAnimationFrame(() => board.position(game.fen(), false));
-  playForMove(mv);
   checkGameEnd();
   if (!game.game_over()) handleEngineMove(source, target);
-  // IMPORTANT: don't return anything here
 }
 
 function onSnapEnd() {
