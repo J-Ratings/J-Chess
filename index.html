@@ -294,7 +294,7 @@ levelSelect.innerHTML = '';
 for (let i = 1; i <= 20; i++){
   const opt = document.createElement('option');
   opt.value = String(i);
-  opt.textContent = `Lv.${i} (${baseRatings[i]})`;
+  opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
   if (i === 8) opt.selected = true;
   levelSelect.appendChild(opt);
 }
@@ -385,7 +385,7 @@ levelSelect.addEventListener('change', function(){
     const base = baseRatings[currentLevel];
     const badge = document.getElementById('oppBadge');
     if (badge){
-      badge.textContent = `Lv.${currentLevel} (${base})`;
+      badge.textContent = `Lv. ${currentLevel} (${base})`;
       badge.style.backgroundColor = computeLevelColour(currentLevel);
       badge.style.color = (currentLevel >= 16) ? 'white' : 'black';
     }
@@ -483,6 +483,45 @@ const previewBoard = Chessboard('previewBoard', {
   pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
 });
 
+// --- sizing/orientation + highlights ---
+$(window).on('resize', resizeBoard);
+
+function resizeBoard(){
+  const scene = document.querySelector('.centre');
+  const wrap  = document.getElementById('boardWrap');
+  if (!scene || !wrap) return;
+
+  const styles = getComputedStyle(scene);
+  const w = scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+  const h = scene.clientHeight - parseFloat(styles.paddingTop)  - parseFloat(styles.paddingBottom);
+
+  // Fill width on mobile; otherwise stay square within centre area
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  const size = Math.floor(isMobile ? w : Math.min(w, h));
+
+  wrap.style.width  = size + 'px';
+  wrap.style.height = size + 'px';
+  board.resize();
+}
+
+function setOrientation(){
+  board.orientation(
+    manualFlip ? (isHumanBlack ? 'white' : 'black')
+               : (isHumanBlack ? 'black' : 'white')
+  );
+}
+
+const $board = $('#board');
+function clearHighlights(){
+  $board.find('.square-55d63').removeClass('highlight-white highlight-black');
+}
+function highlightMove(from, to, col){
+  clearHighlights();
+  $board.find(`.square-${from}`).addClass(`highlight-${col}`);
+  $board.find(`.square-${to}`).addClass(`highlight-${col}`);
+}
+
+
   /* ===================== Engines ===================== */
   const engine=new Worker('engine/stockfish-17-lite-single.js');
   engine.postMessage('uci');
@@ -517,22 +556,6 @@ const previewBoard = Chessboard('previewBoard', {
     return base;
   }
 
-  /* ===================== Gameplay ===================== */
-  function onDragStart(src,piece){
-    if(resigned) return false;
-    if(game.game_over()) return false;
-    const t=game.turn();
-    if(!isHumanBlack) return piece[0]==='w' && t==='w';
-    return !waitingForEngineFirst && piece[0]==='b' && t==='b';
-  }
-  function onSnapEnd(){ board.position(game.fen(),false); }
-  function onDrop(src,tgt){
-    const mv=game.move({from:src,to:tgt,promotion:'q'});
-    if(!mv) return 'snapback';
-    playForMove(mv);
-    checkGameEnd();
-    if(!game.game_over()) handleEngineMove(src,tgt);
-  }
 
   function handleEngineMove(src,tgt){
     if(resigned) return;
