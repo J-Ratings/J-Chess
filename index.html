@@ -258,20 +258,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const levelSelect = document.getElementById('levelSelect');
   for (let i=1;i<=20;i++){
     // Colour gradient for difficulty levels
+// Colour gradient for difficulty levels (green → yellow → red)
+// Colour gradient for difficulty levels (green → yellow → red)
 const minHue = 120;  // green
 const maxHue = 0;    // red
 const totalLevels = 20;
 
 for (let i = 0; i < levelSelect.options.length; i++) {
   const level = i + 1;
-  const hue = minHue - (minHue - maxHue) * ((level - 1) / (totalLevels - 1));
-  const colour = `hsl(${hue}, 80%, 60%)`;
-  const textColour = (level > 13) ? 'white' : 'black'; // darker text for high levels
+  const hue = minHue - (minHue - maxHue) * (level / totalLevels);
+  const colour = `hsl(${hue}, 85%, 60%)`;
   const opt = levelSelect.options[i];
   opt.style.backgroundColor = colour;
-  opt.style.color = textColour;
+  opt.style.color = 'black';
   opt.style.fontWeight = '700';
+  opt.style.textAlign = 'center';
 }
+
+// Set initial background and update on change
+function updateSelectBackground() {
+  const selectedIndex = levelSelect.selectedIndex;
+  const selectedOption = levelSelect.options[selectedIndex];
+  levelSelect.style.backgroundColor = selectedOption.style.backgroundColor;
+  levelSelect.style.color = selectedOption.style.color;
+  levelSelect.style.fontWeight = '700';
+  levelSelect.style.textAlign = 'center';
+}
+
+// Apply once on load
+updateSelectBackground();
+
+// Update whenever user changes level
+levelSelect.addEventListener('change', updateSelectBackground);
 
     const opt=document.createElement('option');
     opt.value=String(i);
