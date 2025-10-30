@@ -177,7 +177,6 @@
 <body>
 <header class="site-bar">
   <h1>
-    <img src="/Logo.png" alt="J-Chess logo" style="width:44px;height:44px;vertical-align:middle;">
     <a href="/" style="font-size:1.9rem;">J-Chess</a>
   </h1>
   <nav>
@@ -280,16 +279,17 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---------- Level colour helper ---------- */
   // Lv 1–15: HSL sweep 120° (green) → 0° (red), slightly muted
   // Lv 16–20: muted red → purple swatch, then lightened to match tone
-  function computeLevelColour(level){
-    if (level <= 15){
-      const t = (level - 1) / 14;     // 0 → 1 across 1..15
-      const hue = 120 - 120 * t;      // 120 → 0
-      return `hsl(${hue}, 65%, 65%)`;
-    }
-    const swatch = ['#AC131C','#950706','#750227','#570044','#3B005C','#250740']; // index 1..5 used
-    const idx = Math.min(level - 15, swatch.length - 1);
-    return `color-mix(in srgb, ${swatch[idx]} 65%, white)`; // subtle lightening/muting
+function computeLevelColour(level){
+  if (level <= 15){
+    const t = (level - 1) / 14;
+    const hue = 120 - 120 * t;
+    return `hsl(${hue}, 65%, 65%)`;
   }
+  // deeper and richer shades for 16–20
+  const swatch = ['#8B0000', '#6A0DAD', '#5B008F', '#480078', '#360062']; // deep red → deep purple
+  const idx = Math.min(level - 16, swatch.length - 1);
+  return swatch[idx];
+}
 
   /* ---------- Difficulty dropdown build + paint ---------- */
   const levelSelect = document.getElementById('levelSelect');
