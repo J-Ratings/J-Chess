@@ -340,6 +340,13 @@ html, body {
       <button id="copyPgnBtn" class="muted btn-small">Copy PGN</button>
       <button id="resignBtn" class="btn-small" style="grid-column:1/-1">Resign</button>
     </div>
+
+    <!-- =================== DEBUG PANEL (ADDED) =================== -->
+    <div class="card" id="debugPanel" style="font-family:ui-monospace,Consolas,monospace;font-size:0.9em;max-height:220px;overflow-y:auto;display:none;">
+      <strong>Engine Debug</strong><br>
+      <div id="debugContent"></div>
+    </div>
+    <!-- ================= END DEBUG PANEL (ADDED) ================= -->
   </aside>
 </section>
 
@@ -504,6 +511,31 @@ function resizeBoard(){
   function clearHighlights(){ $board.find('.square-55d63').removeClass('highlight-white highlight-black'); }
   function highlightMove(f,t,col){ clearHighlights(); $board.find(`.square-${f}`).addClass(`highlight-${col}`); $board.find(`.square-${t}`).addClass(`highlight-${col}`); }
 
+  /* ===================== DEBUG PANEL HELPER (ADDED) ===================== */
+  function showDebugInfo(sigma, candidatesObj, chosenMove) {
+    const panel = document.getElementById('debugPanel');
+    const div = document.getElementById('debugContent');
+    if (!panel || !div) return;
+
+    // Convert to array and sort by centipawns desc (best first)
+    const candidates = Object.values(candidatesObj)
+      .filter(c => c && c.move)
+      .sort((a,b) => (b.cp ?? -1e9) - (a.cp ?? -1e9))
+      .slice(0, 10);
+
+    let html = `<div><b>Sigma:</b> ${Number(sigma).toFixed(1)}</div><hr>`;
+    html += '<ol style="margin:0;padding-left:1.2em;">';
+    for (const c of candidates) {
+      const star = (c.move === chosenMove) ? ' <b>*</b>' : '';
+      html += `<li>${c.move} (${c.cp})${star}</li>`;
+    }
+    html += '</ol>';
+
+    div.innerHTML = html;
+    panel.style.display = 'block';
+  }
+  /* ================== END DEBUG PANEL HELPER (ADDED) ==================== */
+
   /* ===================== Engines ===================== */
   const engine=new Worker('engine/stockfish-17-lite-single.js');
   engine.postMessage('uci');
@@ -572,6 +604,11 @@ function resizeBoard(){
         setTimeout(()=>{
           if(resigned) return;
           const pick=thresholdSelect(Object.values(cand),sigma);
+
+          /* ====== CALL DEBUG PANEL (ADDED) ====== */
+          showDebugInfo(sigma, cand, pick.move);
+          /* ==== END CALL DEBUG PANEL (ADDED) ==== */
+
           const f=pick.move.slice(0,2), t=pick.move.slice(2,4);
           highlightMove(f,t,'black');
           const emv=game.move({from:f,to:t,promotion:'q'});
@@ -665,6 +702,11 @@ function resizeBoard(){
         setTimeout(()=>{
           if(resigned) return;
           const pick=thresholdSelect(Object.values(cand),sigma);
+
+          /* ====== CALL DEBUG PANEL (ADDED) ====== */
+          showDebugInfo(sigma, cand, pick.move);
+          /* ==== END CALL DEBUG PANEL (ADDED) ==== */
+
           const f=pick.move.slice(0,2), t=pick.move.slice(2,4);
           const col=game.turn()==='w'?'black':'white';
           highlightMove(f,t,col);
