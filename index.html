@@ -438,43 +438,50 @@ levelSelect.addEventListener('change', function(){
       }).catch(()=>{});
   }
 
-  /* ===================== Boards ===================== */
-  const game=new Chess();
-  const board=Chessboard('board',{
-    draggable:true, position:startFen,
-    pieceTheme:'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-    onDragStart,onDrop,onSnapEnd
-  });
+/* ===================== Boards ===================== */
+const game = new Chess();
 
-  const previewBoard=Chessboard('previewBoard',{
-    draggable:false,
-    position:'8/8/8/8/8/8/8/8 w - - 0 1',
-    showNotation:false,
-    pieceTheme:'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
-  });
+// --- handlers first ---
+function onDragStart(source, piece) {
+  if (resigned || game.game_over()) return false;
+  const t = game.turn(); // 'w' or 'b'
+  if (!isHumanBlack) return piece[0] === 'w' && t === 'w';
+  return !waitingForEngineFirst && piece[0] === 'b' && t === 'b';
+}
 
-  $(window).resize(()=>{ resizeBoard(); });
-  function resizeBoard(){
-    const scene = document.querySelector('.centre');
-    const wrap  = document.getElementById('boardWrap');
-    if (!scene || !wrap) return;
-    const styles = getComputedStyle(scene);
-    const w = scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
-    const h = scene.clientHeight - parseFloat(styles.paddingTop)  - parseFloat(styles.paddingBottom);
-    const isMobile = window.matchMedia('(max-width: 900px)').matches;
-    const size = Math.floor(isMobile ? w : Math.min(w, h));
-    wrap.style.width  = size + 'px';
-    wrap.style.height = size + 'px';
-    board.resize();
-  }
+function onDrop(source, target) {
+  const mv = game.move({ from: source, to: target, promotion: 'q' });
+  if (!mv) return 'snapback';         // illegal → snap back
 
-  function setOrientation(){
-    board.orientation(manualFlip ? (isHumanBlack ? 'white' : 'black') : (isHumanBlack ? 'black' : 'white'));
-  }
+  // legal move → sync the board and continue
+  requestAnimationFrame(() => board.position(game.fen(), false));
+  playForMove(mv);
+  checkGameEnd();
+  if (!game.game_over()) handleEngineMove(source, target);
+  // IMPORTANT: don't return anything here
+}
 
-  const $board=$('#board');
-  function clearHighlights(){ $board.find('.square-55d63').removeClass('highlight-white highlight-black'); }
-  function highlightMove(f,t,col){ clearHighlights(); $board.find(`.square-${f}`).addClass(`highlight-${col}`); $board.find(`.square-${t}`).addClass(`highlight-${col}`); }
+function onSnapEnd() {
+  // final sync in case animations overlap
+  board.position(game.fen(), false);
+}
+
+// --- now create the boards ---
+const board = Chessboard('board', {
+  draggable: true,
+  position: startFen,
+  pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+  onDragStart,
+  onDrop,
+  onSnapEnd
+});
+
+const previewBoard = Chessboard('previewBoard', {
+  draggable: false,
+  position: '8/8/8/8/8/8/8/8 w - - 0 1',
+  showNotation: false,
+  pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
+});
 
   /* ===================== Engines ===================== */
   const engine=new Worker('engine/stockfish-17-lite-single.js');
