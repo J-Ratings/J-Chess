@@ -190,7 +190,7 @@
 </head>
 <body>
 <header class="site-bar">
-  <h1>J-Chess</h1>
+<h1><a href="/" style="color:inherit;text-decoration:none">J-Chess</a></h1>
   <nav>
     <a href="/" class="active">Play</a>
     <a href="/info/">Info</a>
@@ -592,6 +592,59 @@ document.addEventListener('DOMContentLoaded', () => {
     engine.postMessage('position fen '+game.fen());
     engine.postMessage('go nodes '+nodes);
   }
+
+// Engine plays the side to move from the current position (used when human is Black)
+function engineReplyFromCurrent(){
+  const nodes = nodesByLevel[currentLevel];
+  const sigma = adjustSigma(sigmaByLevel[currentLevel]);
+  const cand = {};
+  let seen = false;
+  const startTime = performance.now();
+
+  function listener({ data }){
+    const line = (data || '').trim();
+
+    if (line.startsWith('info') && line.includes('multipv')){
+      const mpv = +line.match(/multipv\s+(\d+)/)[1];
+      const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
+      const cpm = line.match(/score cp\s+(-?\d+)/);
+      const mat = line.match(/score mate\s+(-?\d+)/);
+      if (mpv && pv && (cpm || mat)){
+        const cp = cpm ? +cpm[1] : ( +mat[1] > 0 ? 100000 - (+mat[1])*100 : -100000 - (+mat[1])*100 );
+        cand[mpv] = { move: pv, cp };
+        seen = true;
+      }
+    }
+
+    if (line.startsWith('bestmove')){
+      engine.removeEventListener('message', listener);
+      if (!seen) return;
+
+      const elapsed = performance.now() - startTime;
+      const delay = Math.max(0, 500 - elapsed);
+
+      setTimeout(() => {
+        if (resigned) return;
+
+        const { pick } = thresholdSelect(Object.values(cand), sigma);
+        const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+        const col = (game.turn() === 'w') ? 'black' : 'white'; // highlight colour for engine side
+        highlightMove(f, t, col);
+
+        const emv = game.move({ from: f, to: t, promotion: 'q' });
+        board.position(game.fen(), false);
+        waitingForEngineFirst = false;
+        if (typeof playForMove === 'function') playForMove(emv);
+        checkGameEnd();
+      }, delay);
+    }
+  }
+
+  engine.addEventListener('message', listener);
+  engine.postMessage('position fen ' + game.fen());
+  engine.postMessage('go nodes ' + nodes);
+}
+
 
   function checkGameEnd(){
     if(!game.game_over()) return;
