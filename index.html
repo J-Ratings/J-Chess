@@ -115,7 +115,7 @@
     /* Selects must NOT use metallic gradient so their colour can be painted dynamically */
     #colourSelect, #levelSelect{
       font: inherit; font-weight:700; border:2px solid transparent; border-radius:8px;
-      padding:.6rem 1.1rem; min-width:170px; cursor:pointer;
+      padding:.6rem 1.1rem; min-width:110px; cursor:pointer;
       box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.18);
       background-image:none !important;
       background-color:#e0e0e0; /* default, JS overwrites */
@@ -342,7 +342,7 @@ for (let i = 1; i <= 20; i++){
   const opt = document.createElement('option');
   opt.value = String(i);
   opt.textContent = `Lv.${i}`;
-  if (i === 8) opt.selected = true;
+  if (i === 1) opt.selected = true;
   levelSelect.appendChild(opt);
 }
 
