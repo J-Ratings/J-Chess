@@ -189,12 +189,11 @@
   <h2>Over 8 million starting positions!</h2>
   <h3>Select a game type:</h3>
 
-  <div class="cluster" role="group" aria-label="Game type">
-    <button id="standardBtn" class="mode-btn" aria-pressed="false">Chess</button>
-    <button id="jchessBtn" class="mode-btn" aria-pressed="false">J-Chess</button>
-    <button id="symJchessBtn" class="mode-btn" aria-pressed="false">Symmetric J-Chess</button>
-    <button id="fairBtn" class="mode-btn" aria-pressed="false">Fair J-Chess</button>
-  </div>
+<div class="cluster" role="group" aria-label="Game type">
+  <button id="standardBtn" class="mode-btn" aria-pressed="false">Chess</button>
+  <button id="symJchessBtn" class="mode-btn" aria-pressed="false">J-Chess</button>
+  <button id="fairBtn" class="mode-btn" aria-pressed="false">J-Chess+</button>
+</div>
 
   <div class="block">
     <div class="menu-form">
@@ -707,12 +706,11 @@ function adjustSigma(base){
 
   /* ===================== MENU ===================== */
   const startBtn=document.getElementById('startBtn');
-  const typeButtons=[
-    ['standard','#standardBtn'],
-    ['jchess'  ,'#jchessBtn'],
-    ['sym'     ,'#symJchessBtn'],
-    ['fair'    ,'#fairBtn']
-  ];
+const typeButtons = [
+  ['standard', '#standardBtn'],
+  ['sym', '#symJchessBtn'],
+  ['fair', '#fairBtn']
+];
   typeButtons.forEach(([m,sel])=>{
     document.querySelector(sel).addEventListener('click',()=>{
       mode=m;
@@ -851,7 +849,8 @@ function adjustSigma(base){
 </script>
 
 <footer>
-  Contact: <a href="mailto:stjukes@gmail.com">stjukes@gmail.com</a>
+  Contact: <a href="mailto:stjukes@gmail.com">stjukes@gmail.com</a><br>
+  &copy; 2025 Sam Jukes. “J-Chess” is the name of a chess variant created by Sam Jukes.
 </footer>
 </body>
 </html>
