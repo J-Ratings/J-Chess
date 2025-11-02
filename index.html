@@ -90,14 +90,50 @@
     .mode-btn[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(13,63,102,.25) inset}
     .mode-btn:focus-visible{outline:3px solid rgba(13,63,102,.4)}
 
-    #standardBtn{background:#a8d5a2;border-color:#96c591}
-    #standardBtn:hover{background:#9bcb96}
-    #jchessBtn{background:#9ecae1;border-color:#8ab8d4}
-    #jchessBtn:hover{background:#8fbfe0}
-    #symJchessBtn{background:#bba4d8;border-color:#aa94c9}
-    #symJchessBtn:hover{background:#ad98d1}
-    #fairBtn{background:#f3cc88;border-color:#e2b964}
-    #fairBtn:hover{background:#e7c373}
+/* === Game type buttons === */
+.type-btn {
+  font-weight: bold;
+  font-size: 1.2rem;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 10px 20px;
+  margin: 0 5px;
+  cursor: pointer;
+  background: linear-gradient(145deg, #d9d9d9, #bfbfbf);
+  color: #222;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #999999, 0 2px 4px rgba(0,0,0,0.2);
+  transition: all 0.15s ease-in-out;
+}
+
+.type-btn:hover {
+  background: linear-gradient(145deg, #e0e0e0, #c0c0c0);
+}
+
+.type-btn[aria-pressed="true"] {
+  border-color: #333;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.15), inset 1px 1px 0 #ffffff, inset -1px -1px 0 #999999;
+}
+
+/* Slight tint per button */
+#standardBtn {
+  background: linear-gradient(145deg, #cccccc, #b0b0b0);
+}
+#symJchessBtn {
+  background: linear-gradient(145deg, #c7c2e0, #a79cc9);
+}
+#fairBtn {
+  background: linear-gradient(145deg, #e0c780, #c7a93b);
+}
+
+#standardBtn:hover {
+  background: linear-gradient(145deg, #dcdcdc, #bdbdbd);
+}
+#symJchessBtn:hover {
+  background: linear-gradient(145deg, #d2c8ee, #b4a8d6);
+}
+#fairBtn:hover {
+  background: linear-gradient(145deg, #f0d890, #d1b64a);
+}
 
     .menu-label{font-weight:700;margin-top:.5rem}
     .menu-form{display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center;align-items:center}
@@ -190,9 +226,9 @@
   <h3>Select a game type:</h3>
 
   <div class="cluster" role="group" aria-label="Game type">
-    <button id="standardBtn" class="mode-btn" aria-pressed="false">Chess</button>
-    <button id="symJchessBtn" class="mode-btn" aria-pressed="false">J-Chess</button>
-    <button id="fairBtn" class="mode-btn" aria-pressed="false">J-Chess+</button>
+<button id="standardBtn" class="mode-btn type-btn" aria-pressed="false">Chess</button>
+<button id="symJchessBtn" class="mode-btn type-btn" aria-pressed="false">J-Chess</button>
+<button id="fairBtn" class="mode-btn type-btn" aria-pressed="false">J-Chess+</button>
   </div>
 
   <div class="block">
