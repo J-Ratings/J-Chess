@@ -336,16 +336,15 @@ function computeLevelColour(level){
   return palette[level - 1] || '#ddd';
 }
 
-
-  // Populate levels 1..20
-  levelSelect.innerHTML = '';
-  for (let i = 1; i <= 20; i++){
-    const opt = document.createElement('option');
-    opt.value = String(i);
-    opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
-    if (i === 8) opt.selected = true;
-    levelSelect.appendChild(opt);
-  }
+// Populate levels 1..20 (without Elo)
+levelSelect.innerHTML = '';
+for (let i = 1; i <= 20; i++){
+  const opt = document.createElement('option');
+  opt.value = String(i);
+  opt.textContent = `Lv.${i}`;
+  if (i === 8) opt.selected = true;
+  levelSelect.appendChild(opt);
+}
 
   // Colour options in the dropdown menu
   (function paintColourOptions(){
@@ -415,15 +414,14 @@ function computeLevelColour(level){
   youCard.style.gap = '14px';
   youCard.innerHTML = `<div class="player-avatar" style="width:112px;height:112px;border-radius:10px;background:#eef3f7;display:grid;place-items:center;font-size:2.4rem">👤</div><div><div class="player-name" style="font-weight:800;font-size:1.3rem">You</div></div>`;
 
-  function setOpponentMeta(){
-    const base = baseRatings[currentLevel];
-    const badge = document.getElementById('oppBadge');
-    if (badge){
-      badge.textContent = `Lv. ${currentLevel} (${base})`;
-      badge.style.background = computeLevelColour(currentLevel);
-      badge.style.color = (currentLevel >= 16) ? '#fff' : '#000';
-    }
+function setOpponentMeta(){
+  const badge = document.getElementById('oppBadge');
+  if (badge){
+    badge.textContent = `Lv.${currentLevel}`;
+    badge.style.background = computeLevelColour(currentLevel);
+    badge.style.color = (currentLevel >= 16) ? '#fff' : '#000';
   }
+}
   setOpponentMeta();
 
   function renderCards(){
