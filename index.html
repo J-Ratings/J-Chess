@@ -113,14 +113,14 @@
     .cluster{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin:1rem 0 .8rem}
 
     /* Selects must NOT use metallic gradient so their colour can be painted dynamically */
-    #colourSelect, #levelSelect{
-      font: inherit; font-weight:700; border:2px solid transparent; border-radius:8px;
-      padding:.6rem 1.1rem; min-width:110px; cursor:pointer;
-      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.18);
-      background-image:none !important;
-      background-color:#e0e0e0; /* default, JS overwrites */
-      transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-    }
+#colourSelect, #levelSelect{
+  font: inherit; font-weight:700; border:2px solid transparent; border-radius:8px;
+  padding:.4rem .9rem; line-height:1.1; min-width:110px; cursor:pointer;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.18);
+  background-image:none !important;
+  background-color:#e0e0e0;
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
     #colourSelect:hover, #levelSelect:hover{ border-color: rgba(0,0,0,.12); }
 
     .menu-preview{margin-top:1.1rem;display:grid;place-items:center;min-height:340px}
