@@ -92,6 +92,8 @@
 
     #standardBtn{background:#a8d5a2;border-color:#96c591}
     #standardBtn:hover{background:#9bcb96}
+    #jchessBtn{background:#9ecae1;border-color:#8ab8d4}
+    #jchessBtn:hover{background:#8fbfe0}
     #symJchessBtn{background:#bba4d8;border-color:#aa94c9}
     #symJchessBtn:hover{background:#ad98d1}
     #fairBtn{background:#f3cc88;border-color:#e2b964}
@@ -187,11 +189,11 @@
   <h2>Over 8 million starting positions!</h2>
   <h3>Select a game type:</h3>
 
-  <div class="cluster" role="group" aria-label="Game type">
-    <button id="standardBtn" class="mode-btn" aria-pressed="false">Chess</button>
-    <button id="symJchessBtn" class="mode-btn" aria-pressed="false">J-Chess</button>
-    <button id="fairBtn" class="mode-btn" aria-pressed="false">J-Chess+</button>
-  </div>
+<div class="cluster" role="group" aria-label="Game type">
+  <button id="standardBtn" class="mode-btn" aria-pressed="false">Chess</button>
+  <button id="symJchessBtn" class="mode-btn" aria-pressed="false">J-Chess</button>
+  <button id="fairBtn" class="mode-btn" aria-pressed="false">J-Chess+</button>
+</div>
 
   <div class="block">
     <div class="menu-form">
@@ -261,10 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const sigmaByLevel = {1:10000,2:2000,3:1000,4:500,5:300,6:250,7:200,8:165,9:145,10:120,11:85,12:60,13:45,14:35,15:25,16:20,17:15,18:10,19:5,20:0};
   const baseRatings = {1:0,2:200,3:400,4:600,5:800,6:1000,7:1200,8:1400,9:1600,10:1800,11:2000,12:2200,13:2400,14:2600,15:2800,16:3000,17:3200,18:3400,19:3600,20:3800};
 
-  /* ===================== Server API (set this) ===================== */
-  // Replace with your deployed Worker origin (can be a custom route)
-  const FAIR_API = 'https://jchess-fairfen.YOURNAME.workers.dev';
-
   /* ===================== State ===================== */
   let mode = null;
   let currentLevel = 8;
@@ -277,62 +275,62 @@ document.addEventListener('DOMContentLoaded', () => {
   let resigned = false;
   let previewFen = null;
 
-  /* ---------------- Difficulty dropdown: build + colour ---------------- */
-  const levelSelect = document.getElementById('levelSelect');
+/* ---------------- Difficulty dropdown: build + colour ---------------- */
+const levelSelect = document.getElementById('levelSelect');
 
-  function computeLevelColour(level){
-    const palette = [
-      '#12ff23', '#60f400', '#8be600', '#a2d900', '#b0ce00',
-      '#bac300', '#c1b800', '#c6ae00', '#dfa000', '#cb9a00',
-      '#cc9000', '#cd8700', '#ce7d00', '#ce7200', '#cf6700',
-      '#d05b00', '#d14c00', '#d43800', '#d51b00', '#ce0909'
-    ];
-    return palette[level - 1] || '#ffffff';
+function computeLevelColour(level){
+  const palette = [
+    '#12ff23', '#60f400', '#8be600', '#a2d900', '#b0ce00',
+    '#bac300', '#c1b800', '#c6ae00', '#dfa000', '#cb9a00',
+    '#cc9000', '#cd8700', '#ce7d00', '#ce7200', '#cf6700',
+    '#d05b00', '#d14c00', '#d43800', '#d51b00', '#ce0909'
+  ];
+  return palette[level - 1] || '#ffffff';
+}
+
+// build dropdown options
+levelSelect.innerHTML = '';
+for (let i = 1; i <= 20; i++){
+  const opt = document.createElement('option');
+  opt.value = String(i);
+  opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
+  if (i === 8) opt.selected = true;
+  levelSelect.appendChild(opt);
+}
+
+// colour each option
+function paintLevelOptions(){
+  for (let i = 0; i < levelSelect.options.length; i++){
+    const lvl = i + 1;
+    const opt = levelSelect.options[i];
+    const colour = computeLevelColour(lvl);
+    opt.style.backgroundColor = colour;
+    opt.style.fontWeight = '700';
+    opt.style.textAlign = 'left';
+    opt.style.color = 'black';
   }
+}
 
-  // build dropdown options
-  levelSelect.innerHTML = '';
-  for (let i = 1; i <= 20; i++){
-    const opt = document.createElement('option');
-    opt.value = String(i);
-    opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
-    if (i === 8) opt.selected = true;
-    levelSelect.appendChild(opt);
-  }
+// colour the closed dropdown background
+function updateLevelSelectBackground(){
+  const sel = levelSelect.options[levelSelect.selectedIndex];
+  const lvl = +sel.value;
+  const bg = computeLevelColour(lvl);
+  levelSelect.style.backgroundColor = bg;
+  levelSelect.style.fontWeight = '700';
+  levelSelect.style.textAlign = 'left';
+  levelSelect.style.color = 'black';
+}
 
-  // colour each option
-  function paintLevelOptions(){
-    for (let i = 0; i < levelSelect.options.length; i++){
-      const lvl = i + 1;
-      const opt = levelSelect.options[i];
-      const colour = computeLevelColour(lvl);
-      opt.style.backgroundColor = colour;
-      opt.style.fontWeight = '700';
-      opt.style.textAlign = 'left';
-      opt.style.color = 'black';
-    }
-  }
+paintLevelOptions();
+updateLevelSelectBackground();
 
-  // colour the closed dropdown background
-  function updateLevelSelectBackground(){
-    const sel = levelSelect.options[levelSelect.selectedIndex];
-    const lvl = +sel.value;
-    const bg = computeLevelColour(lvl);
-    levelSelect.style.backgroundColor = bg;
-    levelSelect.style.fontWeight = '700';
-    levelSelect.style.textAlign = 'left';
-    levelSelect.style.color = 'black';
-  }
-
-  paintLevelOptions();
+// handle change
+levelSelect.addEventListener('change', function(){
+  currentLevel = +this.value;
   updateLevelSelectBackground();
-
-  // handle change
-  levelSelect.addEventListener('change', function(){
-    currentLevel = +this.value;
-    updateLevelSelectBackground();
-    setOpponentMeta();
-  });
+  setOpponentMeta();
+});
 
   /* ---------- Player colour dropdown paint ---------- */
   const colourSelect = document.getElementById('colourSelect');
@@ -342,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const v = opt.value.toLowerCase();
       if (v === 'random'){ opt.style.backgroundColor = '#cfcfcf'; opt.style.color = 'black'; }
       else if (v === 'white'){ opt.style.backgroundColor = '#ffffff'; opt.style.color = 'black'; }
-      else if (v === 'black'){ opt.style.backgroundColor = '#3a3a3a'; opt.style.color = 'white'; }
+      else if (v === 'black'){ opt.style.backgroundColor = '#3a3a3a'; opt.style.color = 'white'; } // muted dark
       opt.style.fontWeight = '700';
       opt.style.textAlign = 'left';
     }
@@ -439,84 +437,85 @@ document.addEventListener('DOMContentLoaded', () => {
       }).catch(()=>{});
   }
 
-  /* ===================== Boards ===================== */
-  const game = new Chess();
+/* ===================== Boards ===================== */
+const game = new Chess();
 
-  // --- handlers first ---
-  function onDragStart(source, piece) {
-    if (resigned || game.game_over()) return false;
-    const t = game.turn(); // 'w' or 'b'
-    if (!isHumanBlack) return piece[0] === 'w' && t === 'w';
-    return !waitingForEngineFirst && piece[0] === 'b' && t === 'b';
-  }
+// --- handlers first ---
+function onDragStart(source, piece) {
+  if (resigned || game.game_over()) return false;
+  const t = game.turn(); // 'w' or 'b'
+  if (!isHumanBlack) return piece[0] === 'w' && t === 'w';
+  return !waitingForEngineFirst && piece[0] === 'b' && t === 'b';
+}
 
-  function onDrop(source, target) {
-    const mv = game.move({ from: source, to: target, promotion: 'q' });
-    if (!mv) return 'snapback';
-    requestAnimationFrame(() => board.position(game.fen(), false));
-    checkGameEnd();
-    if (!game.game_over()) handleEngineMove(source, target);
-  }
+function onDrop(source, target) {
+  const mv = game.move({ from: source, to: target, promotion: 'q' });
+  if (!mv) return 'snapback';
+  requestAnimationFrame(() => board.position(game.fen(), false));
+  checkGameEnd();
+  if (!game.game_over()) handleEngineMove(source, target);
+}
 
-  function onSnapEnd() {
-    // final sync in case animations overlap
-    board.position(game.fen(), false);
-  }
+function onSnapEnd() {
+  // final sync in case animations overlap
+  board.position(game.fen(), false);
+}
 
-  // --- now create the boards ---
-  const board = Chessboard('board', {
-    draggable: true,
-    position: startFen,
-    pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-    onDragStart,
-    onDrop,
-    onSnapEnd
-  });
+// --- now create the boards ---
+const board = Chessboard('board', {
+  draggable: true,
+  position: startFen,
+  pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+  onDragStart,
+  onDrop,
+  onSnapEnd
+});
 
-  const previewBoard = Chessboard('previewBoard', {
-    draggable: false,
-    position: '8/8/8/8/8/8/8/8 w - - 0 1',
-    showNotation: false,
-    pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
-  });
+const previewBoard = Chessboard('previewBoard', {
+  draggable: false,
+  position: '8/8/8/8/8/8/8/8 w - - 0 1',
+  showNotation: false,
+  pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
+});
 
-  // --- sizing/orientation + highlights ---
-  $(window).on('resize', resizeBoard);
+// --- sizing/orientation + highlights ---
+$(window).on('resize', resizeBoard);
 
-  function resizeBoard(){
-    const scene = document.querySelector('.centre');
-    const wrap  = document.getElementById('boardWrap');
-    if (!scene || !wrap) return;
+function resizeBoard(){
+  const scene = document.querySelector('.centre');
+  const wrap  = document.getElementById('boardWrap');
+  if (!scene || !wrap) return;
 
-    const styles = getComputedStyle(scene);
-    const w = scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
-    const h = scene.clientHeight - parseFloat(styles.paddingTop)  - parseFloat(styles.paddingBottom);
+  const styles = getComputedStyle(scene);
+  const w = scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+  const h = scene.clientHeight - parseFloat(styles.paddingTop)  - parseFloat(styles.paddingBottom);
 
-    // Fill width on mobile; otherwise stay square within centre area
-    const isMobile = window.matchMedia('(max-width: 900px)').matches;
-    const size = Math.floor(isMobile ? w : Math.min(w, h));
+  // Fill width on mobile; otherwise stay square within centre area
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  const size = Math.floor(isMobile ? w : Math.min(w, h));
 
-    wrap.style.width  = size + 'px';
-    wrap.style.height = size + 'px';
-    board.resize();
-  }
+  wrap.style.width  = size + 'px';
+  wrap.style.height = size + 'px';
+  board.resize();
+}
 
-  function setOrientation(){
-    board.orientation(
-      manualFlip ? (isHumanBlack ? 'white' : 'black')
-                : (isHumanBlack ? 'black' : 'white')
-    );
-  }
+function setOrientation(){
+  board.orientation(
+    manualFlip ? (isHumanBlack ? 'white' : 'black')
+               : (isHumanBlack ? 'black' : 'white')
+  );
+}
 
-  const $board = $('#board');
-  function clearHighlights(){
-    $board.find('.square-55d63').removeClass('highlight-white highlight-black');
-  }
-  function highlightMove(from, to, col){
-    clearHighlights();
-    $board.find(`.square-${from}`).addClass(`highlight-${col}`);
-    $board.find(`.square-${to}`).addClass(`highlight-${col}`);
-  }
+const $board = $('#board');
+function clearHighlights(){
+  $board.find('.square-55d63').removeClass('highlight-white highlight-black');
+}
+function highlightMove(from, to, col){
+  clearHighlights();
+  $board.find(`.square-${from}`).addClass(`highlight-${col}`);
+  $board.find(`.square-${to}`).addClass(`highlight-${col}`);
+}
+
 
   /* ===================== Engines ===================== */
   const engine=new Worker('engine/stockfish-17-lite-single.js');
@@ -545,29 +544,30 @@ document.addEventListener('DOMContentLoaded', () => {
     return { pick, actualSigma };
   }
 
-  function adjustSigma(base){
-    // Only reduce sigma on early moves in normal chess
-    if (mode === 'standard') {
-      const moves = Math.floor(game.history().length / 2) + 1;
+function adjustSigma(base){
+  // Only reduce sigma on early moves in normal chess
+  if (mode === 'standard') {
+    const moves = Math.floor(game.history().length / 2) + 1;
 
-      if (currentLevel >= 3 && currentLevel <= 6) {
-        if (moves <= 3) return base / 3;
-        if (moves === 4) return base / 2;
-        if (moves === 5) return base / 2;
-        return base;
-      }
-
-      if (currentLevel >= 7 && currentLevel <= 19) {
-        if (moves <= 6) return base / 4;
-        if (moves === 7) return base / 3;
-        if (moves === 8) return base / 2;
-        return base;
-      }
+    if (currentLevel >= 3 && currentLevel <= 6) {
+      if (moves <= 3) return base / 3;
+      if (moves === 4) return base / 2;
+      if (moves === 5) return base / 2;
+      return base;
     }
 
-    // For all J-Chess variants, just return base unchanged
-    return base;
+    if (currentLevel >= 7 && currentLevel <= 19) {
+      if (moves <= 6) return base / 4;
+      if (moves === 7) return base / 3;
+      if (moves === 8) return base / 2;
+      return base;
+    }
   }
+
+  // For all J-Chess variants, just return base unchanged
+  return base;
+}
+
 
   function handleEngineMove(src,tgt){
     if(resigned) return;
@@ -631,15 +631,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(()=>overlay.classList.remove('show'),2000);
   }
 
-  /* ===================== Fair J-Chess via queue API (+ fallback) ===================== */
-
-  // local fallback (your existing search loop)
-  function localFairFallback(){
-    spinner.style.display='block';
-    clearStatus();
-    statusDiv.textContent="Generating position...";
-    searchingFair=true; const ms=1000;
-
+  function startStandard(){ spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>afterStartWithFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),750); }
+  function startJChess(makeSym){ spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>{ const fen=makeSym?generateSymmetricJChessFEN():generateJChessFEN(); afterStartWithFEN(fen); },1000); }
+  function startFairJChess(){
+    spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; searchingFair=true; const ms=1000;
     function tryNext(){
       const fen=generateJChessFEN(); let lastCp=null;
       evalEngine.postMessage('position fen '+fen); evalEngine.postMessage('go movetime '+ms);
@@ -650,76 +645,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if(line.startsWith('bestmove')){
           evalEngine.removeEventListener('message',onEval);
           const fair=Math.abs(lastCp||0)<=40;
-          if(fair){ searchingFair=false; setTimeout(()=>afterStartWithFEN(fen), 900); } else setTimeout(tryNext,30);
+          if(fair){ searchingFair=false; afterStartWithFEN(fen); } else setTimeout(tryNext,30);
         }
       }
       evalEngine.addEventListener('message',onEval);
     }
     tryNext();
-  }
-
-  // one-time silent backfill (generate one fair FEN and POST to queue)
-  let backfilledOnce = false;
-  function silentBackfill(){
-    if (backfilledOnce) return;
-    backfilledOnce = true;
-
-    (function tryOne(){
-      const fen = generateJChessFEN();
-      let lastCp = null;
-      const ms = 900;
-      function onEval({data}){
-        const line=data.trim();
-        if(line.startsWith('info') && line.includes('score cp')) lastCp=+line.match(/score cp\s+(-?\d+)/)[1];
-        if(line.startsWith('info') && line.includes('score mate')){ const m=+line.match(/score mate\s+(-?\d+)/)[1]; lastCp=m>0?5000:-5000; }
-        if(line.startsWith('bestmove')){
-          evalEngine.removeEventListener('message',onEval);
-          if (Math.abs(lastCp||0) <= 40) {
-            fetch(FAIR_API + '/submit', {
-              method:'POST',
-              headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({ fen })
-            }).catch(()=>{});
-          } else {
-            setTimeout(tryOne, 50);
-          }
-        }
-      }
-      evalEngine.addEventListener('message', onEval);
-      evalEngine.postMessage('position fen '+fen);
-      evalEngine.postMessage('go movetime '+ms);
-    })();
-  }
-
-  function startStandard(){
-    spinner.style.display='block'; clearStatus();
-    statusDiv.textContent="Generating position...";
-    setTimeout(()=>afterStartWithFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),750);
-  }
-
-  function startJChessSymmetric(){
-    spinner.style.display='block'; clearStatus();
-    statusDiv.textContent="Generating position...";
-    setTimeout(()=>{ const fen=generateSymmetricJChessFEN(); afterStartWithFEN(fen); },900);
-  }
-
-  function startFairJChess(){
-    spinner.style.display='block'; clearStatus();
-    statusDiv.textContent="Generating position...";
-
-    fetch(FAIR_API + '/fairfen')
-      .then(r => (r.status === 204 ? null : r.json()))
-      .then(d => {
-        if (d && d.fen) {
-          setTimeout(()=>afterStartWithFEN(d.fen), 900);  // align UX timing
-          // start background backfill (one per page load)
-          silentBackfill();
-        } else {
-          // queue empty or 204 → fall back to local generation
-          localFairFallback();
-        }
-      })
-      .catch(() => localFairFallback());
   }
 
   function afterStartWithFEN(fen){
@@ -775,11 +706,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ===================== MENU ===================== */
   const startBtn=document.getElementById('startBtn');
-  const typeButtons = [
-    ['standard', '#standardBtn'],
-    ['sym', '#symJchessBtn'],
-    ['fair', '#fairBtn']
-  ];
+const typeButtons = [
+  ['standard', '#standardBtn'],
+  ['sym', '#symJchessBtn'],
+  ['fair', '#fairBtn']
+];
   typeButtons.forEach(([m,sel])=>{
     document.querySelector(sel).addEventListener('click',()=>{
       mode=m;
@@ -822,11 +753,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(mode==='standard'){
       finishPreview('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-    }else if(mode==='sym'){
-      const fen=generateSymmetricJChessFEN();
+    }else if(mode==='jchess' || mode==='sym'){
+      const fen=(mode==='sym')?generateSymmetricJChessFEN():generateJChessFEN();
       finishPreview(fen);
-    }else{ // fair (J-Chess+)
-      // Keep preview local & quick; actual start pulls from queue API
+    }else{
       const ms=800; let lastCp=null; const fen=generateJChessFEN();
       evalEngine.postMessage('position fen '+fen);
       evalEngine.postMessage('go movetime '+ms);
@@ -851,12 +781,17 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCards();
     showPlay();
 
+    const fenToUse = previewFen || (mode==='standard'
+      ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+      : (mode==='sym' ? generateSymmetricJChessFEN() : generateJChessFEN())
+    );
+
     clearStatus(); overlay.classList.remove('show');
 
-    if (mode==='standard'){
-      startStandard();
-    } else if (mode==='sym'){
-      startJChessSymmetric();
+    if (mode==='fair' && previewFen){
+      afterStartWithFEN(previewFen);
+    } else if (mode==='standard' || mode==='jchess' || mode==='sym'){
+      afterStartWithFEN(fenToUse);
     } else {
       startFairJChess();
     }
