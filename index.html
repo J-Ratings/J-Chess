@@ -259,10 +259,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   /* ===================== Config ===================== */
-  // ⬇️ Replace with your Worker origin
-  const FAIR_API = 'https://polished-unit-fa43.stjukes.workers.dev';
-  const POOL_CAP = 100;          // front-end hint to avoid posting if full (best-effort)
-  const MIN_READY_HINT = 10;     // if server is below this it may 204; we then fallback
+  const FAIR_API = 'https://polished-unit-fa43.stjukes.workers.dev'; // your Worker origin
+  const POOL_CAP = 100;        // front-end hint to avoid posting if full (best-effort)
+  const PREVIEW_MIN_WAIT = 750; // artificial smoothing
+  const FAIR_FIND_CUTOFF_MS = 5000; // 5s polite cut-off
 
   const nodesByLevel = {1:5e5,2:5e5,3:5e5,4:5e5,5:5e5,6:5e5,7:5e5,8:5e5,9:5e5,10:5e5,11:5e5,12:5e5,13:5e5,14:5e5,15:1e6,16:1e6,17:1e6,18:1e6,19:1e6,20:1e6};
   const sigmaByLevel = {1:10000,2:2000,3:1000,4:500,5:300,6:250,7:200,8:165,9:145,10:120,11:85,12:60,13:45,14:35,15:25,16:20,17:15,18:10,19:5,20:0};
@@ -293,7 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return palette[level - 1] || '#ffffff';
   }
 
-  // build dropdown options
   levelSelect.innerHTML = '';
   for (let i = 1; i <= 20; i++){
     const opt = document.createElement('option');
@@ -363,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('boardOverlay');
   const overlayText = document.getElementById('overlayText');
   const previewSpinner = document.getElementById('previewSpinner');
+  const startBtn = document.getElementById('startBtn');
 
   // Player cards
   const aiCard = document.createElement('div');
@@ -440,7 +440,6 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ===================== Boards ===================== */
   const game = new Chess();
 
-  // --- handlers first ---
   function onDragStart(source, piece) {
     if (resigned || game.game_over()) return false;
     const t = game.turn();
@@ -458,7 +457,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function onSnapEnd() { board.position(game.fen(), false); }
 
-  // --- create the boards ---
   const board = Chessboard('board', {
     draggable: true,
     position: startFen,
@@ -475,9 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
   });
 
-  // --- sizing/orientation + highlights ---
   $(window).on('resize', resizeBoard);
-
   function resizeBoard(){
     const scene = document.querySelector('.centre');
     const wrap  = document.getElementById('boardWrap');
@@ -516,15 +512,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const engine=new Worker('engine/stockfish-17-lite-single.js');
   engine.postMessage('uci');
   engine.addEventListener('message',function init({data}){
-    if(data.trim()==='uciok'){ engine.postMessage('setoption name MultiPV value 50'); engine.postMessage('ucinewgame'); engine.postMessage('isready'); }
-    if(data.trim()==='readyok') engine.removeEventListener('message',init);
+    if((data||'').trim()==='uciok'){ engine.postMessage('setoption name MultiPV value 50'); engine.postMessage('ucinewgame'); engine.postMessage('isready'); }
+    if((data||'').trim()==='readyok') engine.removeEventListener('message',init);
   });
 
   const evalEngine=new Worker('engine/stockfish-17-lite-single.js');
   evalEngine.postMessage('uci');
   evalEngine.addEventListener('message',function initE({data}){
-    if(data.trim()==='uciok'){ evalEngine.postMessage('ucinewgame'); evalEngine.postMessage('setoption name UCI_LimitStrength value false'); evalEngine.postMessage('isready'); }
-    if(data.trim()==='readyok') evalEngine.removeEventListener('message',initE);
+    if((data||'').trim()==='uciok'){ evalEngine.postMessage('ucinewgame'); evalEngine.postMessage('setoption name UCI_LimitStrength value false'); evalEngine.postMessage('isready'); }
+    if((data||'').trim()==='readyok') evalEngine.removeEventListener('message',initE);
   });
 
   function randomGaussian(){ let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
@@ -566,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cand={}; let seen=false;
     const startTime=performance.now();
     function onInfo({data}){
-      const line=data.trim();
+      const line=(data||'').trim();
       if(line.startsWith('info') && line.includes('multipv')){
         const mpv=+line.match(/multipv\s+(\d+)/)[1];
         const pv=line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
@@ -589,7 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
           highlightMove(f,t,'black');
           const emv=game.move({from:f,to:t,promotion:'q'});
           board.position(game.fen(),false);
-          playForMove(emv);
+          if (typeof playForMove === 'function') playForMove(emv);
           checkGameEnd();
         },delay);
       }
@@ -620,7 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(()=>overlay.classList.remove('show'),2000);
   }
 
-  /* ===================== Fair FEN generation helpers ===================== */
+  /* ===================== Fair FEN helpers with 5s cut-off ===================== */
   function evalFairnessOnce(fen, ms=1000){
     return new Promise(resolve=>{
       let lastCp=null;
@@ -650,28 +646,41 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
   }
 
-  async function findLocalFairFEN(){
-    // ~1s per try, ~22% hit; expect ~4–5s average
-    while(true){
+  async function findLocalFairFENWithCutoff(maxMs=FAIR_FIND_CUTOFF_MS){
+    const start = performance.now();
+    while (performance.now() - start < maxMs){
       const fen = genRandomJChessFEN();
       const fair = await evalFairnessOnce(fen, 1000);
       if (fair) return fen;
     }
+    return null; // exceeded cut-off
   }
 
   /* ===================== Server pool interactions ===================== */
+  async function fetchWithTimeout(url, opts={}, timeoutMs=4500){
+    const ctrl = new AbortController();
+    const id = setTimeout(()=>ctrl.abort(), timeoutMs);
+    try{
+      const res = await fetch(url, {...opts, signal: ctrl.signal });
+      clearTimeout(id);
+      return res;
+    }catch(e){
+      clearTimeout(id);
+      throw e;
+    }
+  }
+
   async function getPoolStats(){
     try{
-      const r = await fetch(FAIR_API + '/stats', { cache:'no-store' });
+      const r = await fetchWithTimeout(FAIR_API + '/stats', { cache:'no-store' }, 3000);
       if(!r.ok) return null;
       return await r.json();
     }catch{ return null; }
   }
 
   async function tryFetchFairFromServer(){
-    // returns {fen} or null if 204/empty
     try{
-      const r = await fetch(FAIR_API + '/fairfen', { cache:'no-store' });
+      const r = await fetchWithTimeout(FAIR_API + '/fairfen', { cache:'no-store' }, 4500);
       if (r.status === 204) return null;
       if (!r.ok) return null;
       const j = await r.json();
@@ -681,11 +690,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function submitToServer(fen){
     try{
-      await fetch(FAIR_API + '/submit', {
+      await fetchWithTimeout(FAIR_API + '/submit', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ fen })
-      });
+      }, 3000);
     }catch{}
   }
 
@@ -706,23 +715,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function startFairJChessPlus(){
+    // Not used for preview; kept for completeness if ever called directly.
     spinner.style.display='block'; clearStatus();
     statusDiv.textContent="Generating position...";
-
-    // 1) Try server pool first
     const served = await tryFetchFairFromServer();
     if (served && served.fen){
-      // Keep UX consistent with other modes
       setTimeout(()=>afterStartWithFEN(served.fen), 900);
       return;
     }
-
-    // 2) Fallback to local fair search, then play
-    const localFen = await findLocalFairFEN();
-    afterStartWithFEN(localFen);
-
-    // 3) Best-effort: push it to server so future users are instant
-    submitToServer(localFen);
+    const localFen = await findLocalFairFENWithCutoff();
+    if (localFen){
+      afterStartWithFEN(localFen);
+      submitToServer(localFen);
+    }else{
+      // cut-off hit: fall back to a vanilla J-Chess position
+      afterStartWithFEN(generateJChessFEN());
+    }
   }
 
   function afterStartWithFEN(fen){
@@ -741,7 +749,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cand={}; let seen=false;
     const startTime=performance.now();
     function listener({data}){
-      const line=data.trim();
+      const line=(data||'').trim();
       if(line.startsWith('info') && line.includes('multipv')){
         const mpv=+line.match(/multipv\s+(\d+)/)[1];
         const pv=line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
@@ -766,7 +774,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const emv=game.move({from:f,to:t,promotion:'q'});
           board.position(game.fen(),false);
           waitingForEngineFirst=false;
-          playForMove(emv);
+          if (typeof playForMove === 'function') playForMove(emv);
           checkGameEnd();
         },delay);
       }
@@ -777,7 +785,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ===================== MENU ===================== */
-  const startBtn=document.getElementById('startBtn');
   const typeButtons = [
     ['standard', '#standardBtn'],
     ['sym',      '#symJchessBtn'],
@@ -788,12 +795,15 @@ document.addEventListener('DOMContentLoaded', () => {
       mode=m;
       typeButtons.forEach(([,s])=>document.querySelector(s).setAttribute('aria-pressed','false'));
       document.querySelector(sel).setAttribute('aria-pressed','true');
-      startBtn.disabled=false;
+
+      // Disable Start until preview is genuinely ready for fair mode.
+      startBtn.disabled = (mode === 'fair');
 
       previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1',false);
       previewSpinner.style.display='block';
       previewFen=null;
-      queuePreview();
+
+      queuePreview(); // async
     });
   });
 
@@ -802,67 +812,76 @@ document.addEventListener('DOMContentLoaded', () => {
     updateColourSelectBackground();
   });
 
-  let previewTimer=null;
-  function queuePreview(){
+  // Async preview builder: server-first for fair; 5s cut-off; Start uses previewFen only
+  let previewTimer = null;
+  async function queuePreview(){
     if(!mode) return;
     if(previewTimer) clearTimeout(previewTimer);
-    const startT=performance.now();
+    const t0 = performance.now();
 
-    function finishPreview(fen){
-      const elapsed=performance.now()-startT;
-      const waitMore=Math.max(0,750-elapsed);
+    const finishPreview = (fen) => {
+      const elapsed = performance.now() - t0;
+      const waitMore = Math.max(0, PREVIEW_MIN_WAIT - elapsed);
       setTimeout(()=>{
         previewBoard.position(fen,false);
         previewSpinner.style.display='none';
-        previewFen=fen;
-      },waitMore);
-    }
+        previewFen = fen;
+        startBtn.disabled = false; // only enable once previewFen is set
+      }, waitMore);
+    };
+
+    // default guard
+    startBtn.disabled = (mode === 'fair');
 
     if(mode==='standard'){
       finishPreview('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-    }else if(mode==='sym'){
+      return;
+    }
+    if(mode==='sym'){
       finishPreview(generateSymmetricJChessFEN());
-    }else{
-      // For J-Chess+, show a fair preview (local eval, not server-consuming)
-      const ms=800; let lastCp=null; const fen=genRandomJChessFEN();
-      evalEngine.postMessage('position fen '+fen);
-      evalEngine.postMessage('go movetime '+ms);
-      function onEval({data}){
-        const line=(data||'').trim();
-        if(line.startsWith('info') && line.includes('score cp')){ const m=line.match(/score cp\s+(-?\d+)/); if(m) lastCp=+m[1]; }
-        if(line.startsWith('info') && line.includes('score mate')){ const m=line.match(/score mate\s+(-?\d+)/); if(m){ const mv=+m[1]; lastCp = mv>0 ? 5000 : -5000; } }
-        if(line.startsWith('bestmove')){
-          evalEngine.removeEventListener('message',onEval);
-          if(Math.abs(lastCp||0)<=40) finishPreview(fen);
-          else queuePreview();
-        }
+      return;
+    }
+
+    // J-Chess+ (fair): try server, then local within 5s; if not, fall back to vanilla J-Chess
+    if(mode==='fair'){
+      let served = null;
+      try { served = await tryFetchFairFromServer(); } catch {}
+      if (served && served.fen){
+        finishPreview(served.fen);
+        return;
       }
-      evalEngine.addEventListener('message',onEval);
+
+      // Local search with 5s cut-off
+      const localFen = await findLocalFairFENWithCutoff();
+      if (localFen){
+        finishPreview(localFen);
+        submitToServer(localFen); // best-effort seed for others
+        return;
+      }
+
+      // Cut-off reached: fall back to a normal J-Chess position
+      finishPreview(generateJChessFEN());
+      return;
     }
   }
 
-  // Start
+  // Start always uses the preview FEN shown (no recalculation)
   startBtn.addEventListener('click', async ()=>{
     if(!mode) return;
+
     isHumanBlack = (chosenColour==='black') ? true : (chosenColour==='white' ? false : Math.random()<0.5);
     manualFlip=false;
     renderCards();
     showPlay();
-
     clearStatus(); overlay.classList.remove('show');
 
-    if (mode==='standard'){
-      startStandard();
-      return;
+    let fenToUse = previewFen;
+    if (!fenToUse){
+      if (mode === 'standard') fenToUse = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+      else if (mode === 'sym') fenToUse = generateSymmetricJChessFEN();
+      else if (mode === 'fair') fenToUse = generateJChessFEN(); // do not recalc here
     }
-    if (mode==='sym'){
-      startJChessSymmetric();
-      return;
-    }
-    if (mode==='fair'){
-      await startFairJChessPlus();
-      return;
-    }
+    afterStartWithFEN(fenToUse);
   });
 
   document.getElementById('backBtn').addEventListener('click',()=>{ showMenu(); });
@@ -907,22 +926,18 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(()=>overlay.classList.remove('show'),2000);
   });
 
-  /* ===================== Background seeding (once per load) ===================== */
+  /* ===================== Background seeding (once per load, 5s cap) ===================== */
   (async function silentBackfill(){
     if (backfilledOnce) return;
     backfilledOnce = true;
 
-    // Lightweight guard: if pool appears near full, skip generating
     const stats = await getPoolStats().catch(()=>null);
     if (stats && typeof stats.ready === 'number' && stats.ready >= POOL_CAP) return;
 
     try{
-      const fen = await findLocalFairFEN();
-      // Best-effort submit; server dedupes and caps
-      submitToServer(fen);
-    }catch{
-      // ignore
-    }
+      const fen = await findLocalFairFENWithCutoff(); // obeys 5s cut-off
+      if (fen) submitToServer(fen);
+    }catch{}
   })();
 
   /* ===================== Init ===================== */
