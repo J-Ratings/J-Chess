@@ -173,6 +173,35 @@
     /* ===== Highlights ===== */
     .highlight-white,.highlight-black{ box-shadow: inset 0 0 0 4px #ffff00; }
 
+
+    /* ===== Highlights ===== */
+.highlight-white,.highlight-black{ box-shadow: inset 0 0 0 4px #ffff00; }
+
+/* Overlay that shows "You are the nth..." */
+.board-overlay{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background:rgba(0,0,0,.05);
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .2s;
+  z-index:10;
+}
+.board-overlay.show{ opacity:1; }
+
+.board-overlay .banner{
+  background:rgba(13,63,102,.9);
+  color:#fff;
+  padding:.8rem 1.2rem;
+  border-radius:6px;
+  font-size:1.1rem;
+  font-weight:800;
+  letter-spacing:.2px;
+  box-shadow:0 6px 18px rgba(0,0,0,.25);
+}
+
     /* ===== Opponent badge (rounded, coloured) ===== */
     .level-badge{
       display:inline-block;padding:.25rem .5rem;border-radius:14px;
@@ -297,15 +326,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const overlayText = document.getElementById('overlayText');
 
   /* ===================== Level colours & painting ===================== */
-  function computeLevelColour(level){
-    const palette = [
-      '#12ff23', '#60f400', '#8be600', '#a2d900', '#b0ce00',
-      '#bac300', '#c1b800', '#c6ae00', '#dfa000', '#cb9a00',
-      '#cc9000', '#cd8700', '#ce7d00', '#ce7200', '#cf6700',
-      '#d05b00', '#d14c00', '#d43800', '#d51b00', '#ce0909'
-    ];
-    return palette[level - 1] || '#ddd';
-  }
+function computeLevelColour(level){
+  const t = (level - 1) / 9;
+  const r = Math.round(255 * t + 40 * (1 - t));
+  const g = Math.round(230 * (1 - t) + 25 * t);
+  const b = Math.round(150 + 30 * (1 - t));
+  return `rgb(${r},${g},${b})`;
+}
 
   // Populate levels 1..20
   levelSelect.innerHTML = '';
