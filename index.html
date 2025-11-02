@@ -114,12 +114,12 @@
 
     /* Selects must NOT use metallic gradient so their colour can be painted dynamically */
 #colourSelect, #levelSelect {
-  font: 600 0.85rem system-ui, sans-serif;
+  font: 600 0.95rem system-ui, sans-serif;
   border: 2px solid transparent;
-  border-radius: 6px;
-  padding: 0.25rem 0.7rem;
-  line-height: 1;
-  min-width: 95px;
+  border-radius: 7px;
+  padding: 0.35rem 0.9rem;
+  line-height: 1.15;
+  min-width: 105px;
   cursor: pointer;
   box-shadow: inset 1px 1px 0 #fff,
               inset -1px -1px 0 rgba(0,0,0,.25),
@@ -128,6 +128,7 @@
   background-color: #e0e0e0;
   transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
 }
+
     #colourSelect:hover, #levelSelect:hover{ border-color: rgba(0,0,0,.12); }
 
     .menu-preview{margin-top:1.1rem;display:grid;place-items:center;min-height:340px}
