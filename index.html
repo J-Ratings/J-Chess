@@ -31,17 +31,6 @@
   <link rel="stylesheet" href="chessboardjs-1.0.0/css/chessboard-1.0.0.min.css" />
 
   <style>
-    /* --- Level badge behind the AI level text --- */
-    .level-badge{
-      display:inline-block;
-      padding:4px 10px;
-      border-radius:12px;
-      font-weight:700;
-      color:#000;
-      background:#ddd;
-      transition:background-color .25s ease,color .25s ease;
-    }
-
     :root{
       --brand-bg:#0d3f66; --brand-fg:#fff;
       --scene-pad:14px; --side-width:300px;
@@ -66,10 +55,52 @@
     .site-bar nav a{padding:.45rem .75rem;border-radius:4px;font-weight:600}
     .site-bar nav a:hover{background:rgba(255,255,255,.18)}
 
-    button,select{font:inherit;padding:.45rem .85rem;border-radius:4px;border:1px solid #bbb;background:#fff;cursor:pointer;transition:background .15s,border-color .15s}
-    button:hover,select:hover{background:#f0f6fa;border-color:#999}
-    .btn-strong{font-weight:700}
-    .btn-small{padding:.4rem .7rem;font-size:.95em}
+    /* === Metallic button + select baseline === */
+    button, select{
+      font: inherit;
+      font-weight: 700;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      padding: .55rem 1rem;
+      cursor: pointer;
+      box-shadow:
+        inset 1px 1px 0 #ffffff,
+        inset -1px -1px 0 rgba(0,0,0,0.28),
+        0 2px 4px rgba(0,0,0,0.18);
+      background: linear-gradient(145deg, #e0e0e0, #bdbdbd);
+      transition: all .15s ease-in-out;
+    }
+    button:hover, select:hover{
+      background: linear-gradient(145deg, #f0f0f0, #c8c8c8);
+      border-color: rgba(0,0,0,0.12);
+    }
+    button:disabled{ opacity:.6; cursor:not-allowed; }
+    button[aria-pressed="true"]{
+      border-color:#333;
+      box-shadow:
+        0 0 0 3px rgba(0,0,0,0.15),
+        inset 1px 1px 0 #ffffff,
+        inset -1px -1px 0 rgba(0,0,0,0.3);
+    }
+
+    /* === Game-type buttons (specific colours) === */
+    /* Chess (silver) */
+    #standardBtn{
+      background: linear-gradient(145deg, #d4d4d4, #a9a9a9);
+      color:#222;
+    }
+    #standardBtn:hover{
+      background: linear-gradient(145deg, #e3e3e3, #b8b8b8);
+    }
+    /* Both J-Chess options (gold) */
+    #symJchessBtn, #fairBtn{
+      background: linear-gradient(145deg, #e0c780, #c7a93b);
+      color:#222;
+    }
+    #symJchessBtn:hover, #fairBtn:hover{
+      background: linear-gradient(145deg, #f0d890, #d1b64a);
+    }
+
     .hidden{display:none !important}
     .muted{opacity:.9;filter:grayscale(12%)}
 
@@ -83,61 +114,16 @@
     .menu h2{margin:.4rem 0 .4rem;font-size:2.2rem}
     .menu h3{margin:.2rem 0 .8rem;font-size:1.6rem}
 
-    .menu .cluster{display:flex;flex-wrap:wrap;gap:.9rem;justify-content:center;margin:.8rem 0}
-    .menu .block{max-width:820px;margin:1.1rem auto 0}
+    .cluster{display:flex;flex-wrap:wrap;gap:.9rem;justify-content:center;margin:.8rem 0}
+    .block{max-width:820px;margin:1.1rem auto 0}
 
-    .mode-btn{font-weight:700;position:relative;outline:0;font-size:1em;padding:.6rem 1rem}
-    .mode-btn[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(13,63,102,.25) inset}
-    .mode-btn:focus-visible{outline:3px solid rgba(13,63,102,.4)}
-
-/* === Game type buttons === */
-.type-btn {
-  font-weight: bold;
-  font-size: 1.2rem;
-  border: 2px solid transparent;
-  border-radius: 6px;
-  padding: 10px 20px;
-  margin: 0 5px;
-  cursor: pointer;
-  background: linear-gradient(145deg, #d9d9d9, #bfbfbf);
-  color: #222;
-  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #999999, 0 2px 4px rgba(0,0,0,0.2);
-  transition: all 0.15s ease-in-out;
-}
-
-.type-btn:hover {
-  background: linear-gradient(145deg, #e0e0e0, #c0c0c0);
-}
-
-.type-btn[aria-pressed="true"] {
-  border-color: #333;
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.15), inset 1px 1px 0 #ffffff, inset -1px -1px 0 #999999;
-}
-
-/* Slight tint per button */
-#standardBtn {
-  background: linear-gradient(145deg, #cccccc, #b0b0b0);
-}
-#symJchessBtn {
-  background: linear-gradient(145deg, #c7c2e0, #a79cc9);
-}
-#fairBtn {
-  background: linear-gradient(145deg, #e0c780, #c7a93b);
-}
-
-#standardBtn:hover {
-  background: linear-gradient(145deg, #dcdcdc, #bdbdbd);
-}
-#symJchessBtn:hover {
-  background: linear-gradient(145deg, #d2c8ee, #b4a8d6);
-}
-#fairBtn:hover {
-  background: linear-gradient(145deg, #f0d890, #d1b64a);
-}
-
-    .menu-label{font-weight:700;margin-top:.5rem}
-    .menu-form{display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center;align-items:center}
-    .menu-form select{font-size:1rem;padding:.5rem .9rem}
+    /* Form row without labels text */
+    .menu-form{
+      display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center;align-items:center;margin-top:.3rem
+    }
+    /* keep selects metallic but neutral */
+    #colourSelect{ min-width: 160px; }
+    #levelSelect{ min-width: 200px; }
 
     .menu-preview{margin-top:1.1rem;display:grid;place-items:center;min-height:340px}
     #previewWrap{position:relative;width:340px;height:340px}
@@ -146,7 +132,6 @@
       position:absolute;top:50%;left:50%;width:60px;height:60px;border:7px solid #eee;border-top:7px solid #0077cc;border-radius:50%;
       animation:spin .8s linear infinite;transform:translate(-50%,-50%);display:none;z-index:2
     }
-
     #previewMask{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; background:rgba(0,0,0,.04); border-radius:4px;}
     #previewMask span{background:transparent;color:#333;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .6rem;font-size:2rem;}
 
@@ -226,21 +211,20 @@
   <h3>Select a game type:</h3>
 
   <div class="cluster" role="group" aria-label="Game type">
-<button id="standardBtn" class="mode-btn type-btn" aria-pressed="false">Chess</button>
-<button id="symJchessBtn" class="mode-btn type-btn" aria-pressed="false">J-Chess</button>
-<button id="fairBtn" class="mode-btn type-btn" aria-pressed="false">J-Chess+</button>
+    <button id="standardBtn" class="mode-btn" aria-pressed="false">Chess</button>
+    <button id="symJchessBtn" class="mode-btn" aria-pressed="false">J-Chess</button>
+    <button id="fairBtn" class="mode-btn" aria-pressed="false">J-Chess+</button>
   </div>
 
   <div class="block">
     <div class="menu-form">
-      <div class="menu-label">Colour:</div>
+      <!-- labels removed per request; keep aria for accessibility -->
       <select id="colourSelect" aria-label="Colour">
         <option value="random" selected>Random</option>
         <option value="white">White</option>
         <option value="black">Black</option>
       </select>
 
-      <div class="menu-label" style="margin-left:1rem">Difficulty:</div>
       <select id="levelSelect" aria-label="Difficulty"></select>
     </div>
 
@@ -248,7 +232,7 @@
       <div id="previewWrap">
         <div id="previewBoard"></div>
         <div id="previewSpinner"></div>
-        <div id="previewMask"><span>Preview</span></div>
+        <div id="previewMask"><span>PREVIEW</span></div>
       </div>
     </div>
 
@@ -296,8 +280,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   /* ===================== Config ===================== */
   const FAIR_API = 'https://polished-unit-fa43.stjukes.workers.dev'; // your Worker origin
-  const POOL_CAP = 100;        // front-end hint to avoid posting if full (best-effort)
-  const PREVIEW_MIN_WAIT = 750; // artificial smoothing
+  const POOL_CAP = 100;
+  const PREVIEW_MIN_WAIT = 750;     // smoothing for preview
   const FAIR_FIND_CUTOFF_MS = 5000; // 5s polite cut-off
 
   const nodesByLevel = {1:5e5,2:5e5,3:5e5,4:5e5,5:5e5,6:5e5,7:5e5,8:5e5,9:5e5,10:5e5,11:5e5,12:5e5,13:5e5,14:5e5,15:1e6,16:1e6,17:1e6,18:1e6,19:1e6,20:1e6};
@@ -316,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let previewFen = null;
   let backfilledOnce = false;
 
-  /* ============ Difficulty dropdown: build + colour ============ */
+  /* ============ Difficulty dropdown: build ============ */
   const levelSelect = document.getElementById('levelSelect');
 
   function computeLevelColour(level){
@@ -734,41 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }catch{}
   }
 
-  /* ===================== Start modes ===================== */
-  function startStandard(){
-    spinner.style.display='block'; clearStatus();
-    statusDiv.textContent="Generating position...";
-    setTimeout(()=>afterStartWithFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),750);
-  }
-
-  function startJChessSymmetric(){
-    spinner.style.display='block'; clearStatus();
-    statusDiv.textContent="Generating position...";
-    setTimeout(()=>{
-      const fen = generateSymmetricJChessFEN();
-      afterStartWithFEN(fen);
-    }, 900);
-  }
-
-  async function startFairJChessPlus(){
-    // Not used for preview; kept for completeness if ever called directly.
-    spinner.style.display='block'; clearStatus();
-    statusDiv.textContent="Generating position...";
-    const served = await tryFetchFairFromServer();
-    if (served && served.fen){
-      setTimeout(()=>afterStartWithFEN(served.fen), 900);
-      return;
-    }
-    const localFen = await findLocalFairFENWithCutoff();
-    if (localFen){
-      afterStartWithFEN(localFen);
-      submitToServer(localFen);
-    }else{
-      // cut-off hit: fall back to a vanilla J-Chess position
-      afterStartWithFEN(generateJChessFEN());
-    }
-  }
-
+  /* ===================== Start modes (preview-driven) ===================== */
   function afterStartWithFEN(fen){
     startFen=fen; resigned=false;
     game.load(fen); board.position(fen,false);
@@ -832,14 +782,13 @@ document.addEventListener('DOMContentLoaded', () => {
       typeButtons.forEach(([,s])=>document.querySelector(s).setAttribute('aria-pressed','false'));
       document.querySelector(sel).setAttribute('aria-pressed','true');
 
-      // Disable Start until preview is genuinely ready for fair mode.
-      startBtn.disabled = (mode === 'fair');
+      startBtn.disabled = (mode === 'fair'); // enable when preview ready
 
       previewBoard.position('8/8/8/8/8/8/8/8 w - - 0 1',false);
       previewSpinner.style.display='block';
       previewFen=null;
 
-      queuePreview(); // async
+      queuePreview();
     });
   });
 
@@ -848,7 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateColourSelectBackground();
   });
 
-  // Async preview builder: server-first for fair; 5s cut-off; Start uses previewFen only
+  // Build preview: server-first for fair; 5s cut-off; Start uses this FEN
   let previewTimer = null;
   async function queuePreview(){
     if(!mode) return;
@@ -862,12 +811,9 @@ document.addEventListener('DOMContentLoaded', () => {
         previewBoard.position(fen,false);
         previewSpinner.style.display='none';
         previewFen = fen;
-        startBtn.disabled = false; // only enable once previewFen is set
+        startBtn.disabled = false;
       }, waitMore);
     };
-
-    // default guard
-    startBtn.disabled = (mode === 'fair');
 
     if(mode==='standard'){
       finishPreview('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
@@ -878,7 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // J-Chess+ (fair): try server, then local within 5s; if not, fall back to vanilla J-Chess
+    // J-Chess+ (fair): try server, then local (5s cap), else vanilla J-Chess
     if(mode==='fair'){
       let served = null;
       try { served = await tryFetchFairFromServer(); } catch {}
@@ -886,22 +832,17 @@ document.addEventListener('DOMContentLoaded', () => {
         finishPreview(served.fen);
         return;
       }
-
-      // Local search with 5s cut-off
       const localFen = await findLocalFairFENWithCutoff();
       if (localFen){
         finishPreview(localFen);
-        submitToServer(localFen); // best-effort seed for others
+        submitToServer(localFen);
         return;
       }
-
-      // Cut-off reached: fall back to a normal J-Chess position
       finishPreview(generateJChessFEN());
-      return;
     }
   }
 
-  // Start always uses the preview FEN shown (no recalculation)
+  // Start always uses preview FEN
   startBtn.addEventListener('click', async ()=>{
     if(!mode) return;
 
@@ -915,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!fenToUse){
       if (mode === 'standard') fenToUse = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
       else if (mode === 'sym') fenToUse = generateSymmetricJChessFEN();
-      else if (mode === 'fair') fenToUse = generateJChessFEN(); // do not recalc here
+      else if (mode === 'fair') fenToUse = generateJChessFEN();
     }
     afterStartWithFEN(fenToUse);
   });
@@ -971,7 +912,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (stats && typeof stats.ready === 'number' && stats.ready >= POOL_CAP) return;
 
     try{
-      const fen = await findLocalFairFENWithCutoff(); // obeys 5s cut-off
+      const fen = await findLocalFairFENWithCutoff();
       if (fen) submitToServer(fen);
     }catch{}
   })();
