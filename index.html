@@ -327,12 +327,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ===================== Level colours & painting ===================== */
 function computeLevelColour(level){
-  const t = (level - 1) / 9;
-  const r = Math.round(255 * t + 40 * (1 - t));
-  const g = Math.round(230 * (1 - t) + 25 * t);
-  const b = Math.round(150 + 30 * (1 - t));
-  return `rgb(${r},${g},${b})`;
+  const palette = [
+    '#4dff56', '#86fa33', '#aaf722', '#bdf21a', '#cce915',
+    '#d6df12', '#ddd411', '#e2ca11', '#f1bc11', '#e7b411',
+    '#e8aa10', '#e99f10', '#ea9410', '#ea8810', '#eb7b10',
+    '#ec6e10', '#ed5f10', '#ef4b10', '#f02e10', '#eb2020'
+  ];
+  return palette[level - 1] || '#ddd';
 }
+
 
   // Populate levels 1..20
   levelSelect.innerHTML = '';
