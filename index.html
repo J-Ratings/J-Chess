@@ -37,8 +37,8 @@
       padding:4px 10px;
       border-radius:12px;
       font-weight:700;
-      color:#000;           /* will switch to white in JS for dark levels */
-      background:#ddd;      /* overridden in JS */
+      color:#000;
+      background:#ddd;
       transition:background-color .25s ease,color .25s ease;
     }
 
@@ -189,11 +189,11 @@
   <h2>Over 8 million starting positions!</h2>
   <h3>Select a game type:</h3>
 
-<div class="cluster" role="group" aria-label="Game type">
-  <button id="standardBtn" class="mode-btn" aria-pressed="false">Chess</button>
-  <button id="symJchessBtn" class="mode-btn" aria-pressed="false">J-Chess</button>
-  <button id="fairBtn" class="mode-btn" aria-pressed="false">J-Chess+</button>
-</div>
+  <div class="cluster" role="group" aria-label="Game type">
+    <button id="standardBtn" class="mode-btn" aria-pressed="false">Chess</button>
+    <button id="symJchessBtn" class="mode-btn" aria-pressed="false">J-Chess</button>
+    <button id="fairBtn" class="mode-btn" aria-pressed="false">J-Chess+</button>
+  </div>
 
   <div class="block">
     <div class="menu-form">
@@ -259,6 +259,11 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   /* ===================== Config ===================== */
+  // ⬇️ Replace with your Worker origin
+  const FAIR_API = 'https://polished-unit-fa43.stjukes.workers.dev';
+  const POOL_CAP = 100;          // front-end hint to avoid posting if full (best-effort)
+  const MIN_READY_HINT = 10;     // if server is below this it may 204; we then fallback
+
   const nodesByLevel = {1:5e5,2:5e5,3:5e5,4:5e5,5:5e5,6:5e5,7:5e5,8:5e5,9:5e5,10:5e5,11:5e5,12:5e5,13:5e5,14:5e5,15:1e6,16:1e6,17:1e6,18:1e6,19:1e6,20:1e6};
   const sigmaByLevel = {1:10000,2:2000,3:1000,4:500,5:300,6:250,7:200,8:165,9:145,10:120,11:85,12:60,13:45,14:35,15:25,16:20,17:15,18:10,19:5,20:0};
   const baseRatings = {1:0,2:200,3:400,4:600,5:800,6:1000,7:1200,8:1400,9:1600,10:1800,11:2000,12:2200,13:2400,14:2600,15:2800,16:3000,17:3200,18:3400,19:3600,20:3800};
@@ -268,69 +273,64 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentLevel = 8;
   let chosenColour = 'random';
   let isHumanBlack = false;
-  let searchingFair = false;
   let startFen = '8/8/8/8/8/8/8/8 w - - 0 1';
   let waitingForEngineFirst = false;
   let manualFlip = false;
   let resigned = false;
   let previewFen = null;
+  let backfilledOnce = false;
 
-/* ---------------- Difficulty dropdown: build + colour ---------------- */
-const levelSelect = document.getElementById('levelSelect');
+  /* ============ Difficulty dropdown: build + colour ============ */
+  const levelSelect = document.getElementById('levelSelect');
 
-function computeLevelColour(level){
-  const palette = [
-    '#12ff23', '#60f400', '#8be600', '#a2d900', '#b0ce00',
-    '#bac300', '#c1b800', '#c6ae00', '#dfa000', '#cb9a00',
-    '#cc9000', '#cd8700', '#ce7d00', '#ce7200', '#cf6700',
-    '#d05b00', '#d14c00', '#d43800', '#d51b00', '#ce0909'
-  ];
-  return palette[level - 1] || '#ffffff';
-}
-
-// build dropdown options
-levelSelect.innerHTML = '';
-for (let i = 1; i <= 20; i++){
-  const opt = document.createElement('option');
-  opt.value = String(i);
-  opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
-  if (i === 8) opt.selected = true;
-  levelSelect.appendChild(opt);
-}
-
-// colour each option
-function paintLevelOptions(){
-  for (let i = 0; i < levelSelect.options.length; i++){
-    const lvl = i + 1;
-    const opt = levelSelect.options[i];
-    const colour = computeLevelColour(lvl);
-    opt.style.backgroundColor = colour;
-    opt.style.fontWeight = '700';
-    opt.style.textAlign = 'left';
-    opt.style.color = 'black';
+  function computeLevelColour(level){
+    const palette = [
+      '#12ff23', '#60f400', '#8be600', '#a2d900', '#b0ce00',
+      '#bac300', '#c1b800', '#c6ae00', '#dfa000', '#cb9a00',
+      '#cc9000', '#cd8700', '#ce7d00', '#ce7200', '#cf6700',
+      '#d05b00', '#d14c00', '#d43800', '#d51b00', '#ce0909'
+    ];
+    return palette[level - 1] || '#ffffff';
   }
-}
 
-// colour the closed dropdown background
-function updateLevelSelectBackground(){
-  const sel = levelSelect.options[levelSelect.selectedIndex];
-  const lvl = +sel.value;
-  const bg = computeLevelColour(lvl);
-  levelSelect.style.backgroundColor = bg;
-  levelSelect.style.fontWeight = '700';
-  levelSelect.style.textAlign = 'left';
-  levelSelect.style.color = 'black';
-}
+  // build dropdown options
+  levelSelect.innerHTML = '';
+  for (let i = 1; i <= 20; i++){
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = `Lv. ${i} (${baseRatings[i]})`;
+    if (i === 8) opt.selected = true;
+    levelSelect.appendChild(opt);
+  }
 
-paintLevelOptions();
-updateLevelSelectBackground();
-
-// handle change
-levelSelect.addEventListener('change', function(){
-  currentLevel = +this.value;
+  function paintLevelOptions(){
+    for (let i = 0; i < levelSelect.options.length; i++){
+      const lvl = i + 1;
+      const opt = levelSelect.options[i];
+      const colour = computeLevelColour(lvl);
+      opt.style.backgroundColor = colour;
+      opt.style.fontWeight = '700';
+      opt.style.textAlign = 'left';
+      opt.style.color = 'black';
+    }
+  }
+  function updateLevelSelectBackground(){
+    const sel = levelSelect.options[levelSelect.selectedIndex];
+    const lvl = +sel.value;
+    const bg = computeLevelColour(lvl);
+    levelSelect.style.backgroundColor = bg;
+    levelSelect.style.fontWeight = '700';
+    levelSelect.style.textAlign = 'left';
+    levelSelect.style.color = 'black';
+  }
+  paintLevelOptions();
   updateLevelSelectBackground();
-  setOpponentMeta();
-});
+
+  levelSelect.addEventListener('change', function(){
+    currentLevel = +this.value;
+    updateLevelSelectBackground();
+    setOpponentMeta();
+  });
 
   /* ---------- Player colour dropdown paint ---------- */
   const colourSelect = document.getElementById('colourSelect');
@@ -340,7 +340,7 @@ levelSelect.addEventListener('change', function(){
       const v = opt.value.toLowerCase();
       if (v === 'random'){ opt.style.backgroundColor = '#cfcfcf'; opt.style.color = 'black'; }
       else if (v === 'white'){ opt.style.backgroundColor = '#ffffff'; opt.style.color = 'black'; }
-      else if (v === 'black'){ opt.style.backgroundColor = '#3a3a3a'; opt.style.color = 'white'; } // muted dark
+      else if (v === 'black'){ opt.style.backgroundColor = '#3a3a3a'; opt.style.color = 'white'; }
       opt.style.fontWeight = '700';
       opt.style.textAlign = 'left';
     }
@@ -437,85 +437,80 @@ levelSelect.addEventListener('change', function(){
       }).catch(()=>{});
   }
 
-/* ===================== Boards ===================== */
-const game = new Chess();
+  /* ===================== Boards ===================== */
+  const game = new Chess();
 
-// --- handlers first ---
-function onDragStart(source, piece) {
-  if (resigned || game.game_over()) return false;
-  const t = game.turn(); // 'w' or 'b'
-  if (!isHumanBlack) return piece[0] === 'w' && t === 'w';
-  return !waitingForEngineFirst && piece[0] === 'b' && t === 'b';
-}
+  // --- handlers first ---
+  function onDragStart(source, piece) {
+    if (resigned || game.game_over()) return false;
+    const t = game.turn();
+    if (!isHumanBlack) return piece[0] === 'w' && t === 'w';
+    return !waitingForEngineFirst && piece[0] === 'b' && t === 'b';
+  }
 
-function onDrop(source, target) {
-  const mv = game.move({ from: source, to: target, promotion: 'q' });
-  if (!mv) return 'snapback';
-  requestAnimationFrame(() => board.position(game.fen(), false));
-  checkGameEnd();
-  if (!game.game_over()) handleEngineMove(source, target);
-}
+  function onDrop(source, target) {
+    const mv = game.move({ from: source, to: target, promotion: 'q' });
+    if (!mv) return 'snapback';
+    requestAnimationFrame(() => board.position(game.fen(), false));
+    checkGameEnd();
+    if (!game.game_over()) handleEngineMove(source, target);
+  }
 
-function onSnapEnd() {
-  // final sync in case animations overlap
-  board.position(game.fen(), false);
-}
+  function onSnapEnd() { board.position(game.fen(), false); }
 
-// --- now create the boards ---
-const board = Chessboard('board', {
-  draggable: true,
-  position: startFen,
-  pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-  onDragStart,
-  onDrop,
-  onSnapEnd
-});
+  // --- create the boards ---
+  const board = Chessboard('board', {
+    draggable: true,
+    position: startFen,
+    pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
+    onDragStart,
+    onDrop,
+    onSnapEnd
+  });
 
-const previewBoard = Chessboard('previewBoard', {
-  draggable: false,
-  position: '8/8/8/8/8/8/8/8 w - - 0 1',
-  showNotation: false,
-  pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
-});
+  const previewBoard = Chessboard('previewBoard', {
+    draggable: false,
+    position: '8/8/8/8/8/8/8/8 w - - 0 1',
+    showNotation: false,
+    pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png'
+  });
 
-// --- sizing/orientation + highlights ---
-$(window).on('resize', resizeBoard);
+  // --- sizing/orientation + highlights ---
+  $(window).on('resize', resizeBoard);
 
-function resizeBoard(){
-  const scene = document.querySelector('.centre');
-  const wrap  = document.getElementById('boardWrap');
-  if (!scene || !wrap) return;
+  function resizeBoard(){
+    const scene = document.querySelector('.centre');
+    const wrap  = document.getElementById('boardWrap');
+    if (!scene || !wrap) return;
 
-  const styles = getComputedStyle(scene);
-  const w = scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
-  const h = scene.clientHeight - parseFloat(styles.paddingTop)  - parseFloat(styles.paddingBottom);
+    const styles = getComputedStyle(scene);
+    const w = scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+    const h = scene.clientHeight - parseFloat(styles.paddingTop)  - parseFloat(styles.paddingBottom);
 
-  // Fill width on mobile; otherwise stay square within centre area
-  const isMobile = window.matchMedia('(max-width: 900px)').matches;
-  const size = Math.floor(isMobile ? w : Math.min(w, h));
+    const isMobile = window.matchMedia('(max-width: 900px)').matches;
+    const size = Math.floor(isMobile ? w : Math.min(w, h));
 
-  wrap.style.width  = size + 'px';
-  wrap.style.height = size + 'px';
-  board.resize();
-}
+    wrap.style.width  = size + 'px';
+    wrap.style.height = size + 'px';
+    board.resize();
+  }
 
-function setOrientation(){
-  board.orientation(
-    manualFlip ? (isHumanBlack ? 'white' : 'black')
-               : (isHumanBlack ? 'black' : 'white')
-  );
-}
+  function setOrientation(){
+    board.orientation(
+      manualFlip ? (isHumanBlack ? 'white' : 'black')
+                 : (isHumanBlack ? 'black' : 'white')
+    );
+  }
 
-const $board = $('#board');
-function clearHighlights(){
-  $board.find('.square-55d63').removeClass('highlight-white highlight-black');
-}
-function highlightMove(from, to, col){
-  clearHighlights();
-  $board.find(`.square-${from}`).addClass(`highlight-${col}`);
-  $board.find(`.square-${to}`).addClass(`highlight-${col}`);
-}
-
+  const $board = $('#board');
+  function clearHighlights(){
+    $board.find('.square-55d63').removeClass('highlight-white highlight-black');
+  }
+  function highlightMove(from, to, col){
+    clearHighlights();
+    $board.find(`.square-${from}`).addClass(`highlight-${col}`);
+    $board.find(`.square-${to}`).addClass(`highlight-${col}`);
+  }
 
   /* ===================== Engines ===================== */
   const engine=new Worker('engine/stockfish-17-lite-single.js');
@@ -544,30 +539,24 @@ function highlightMove(from, to, col){
     return { pick, actualSigma };
   }
 
-function adjustSigma(base){
-  // Only reduce sigma on early moves in normal chess
-  if (mode === 'standard') {
-    const moves = Math.floor(game.history().length / 2) + 1;
-
-    if (currentLevel >= 3 && currentLevel <= 6) {
-      if (moves <= 3) return base / 3;
-      if (moves === 4) return base / 2;
-      if (moves === 5) return base / 2;
-      return base;
+  function adjustSigma(base){
+    if (mode === 'standard') {
+      const moves = Math.floor(game.history().length / 2) + 1;
+      if (currentLevel >= 3 && currentLevel <= 6) {
+        if (moves <= 3) return base / 3;
+        if (moves === 4) return base / 2;
+        if (moves === 5) return base / 2;
+        return base;
+      }
+      if (currentLevel >= 7 && currentLevel <= 19) {
+        if (moves <= 6) return base / 4;
+        if (moves === 7) return base / 3;
+        if (moves === 8) return base / 2;
+        return base;
+      }
     }
-
-    if (currentLevel >= 7 && currentLevel <= 19) {
-      if (moves <= 6) return base / 4;
-      if (moves === 7) return base / 3;
-      if (moves === 8) return base / 2;
-      return base;
-    }
+    return base;
   }
-
-  // For all J-Chess variants, just return base unchanged
-  return base;
-}
-
 
   function handleEngineMove(src,tgt){
     if(resigned) return;
@@ -631,26 +620,109 @@ function adjustSigma(base){
     setTimeout(()=>overlay.classList.remove('show'),2000);
   }
 
-  function startStandard(){ spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>afterStartWithFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),750); }
-  function startJChess(makeSym){ spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; setTimeout(()=>{ const fen=makeSym?generateSymmetricJChessFEN():generateJChessFEN(); afterStartWithFEN(fen); },1000); }
-  function startFairJChess(){
-    spinner.style.display='block'; clearStatus(); statusDiv.textContent="Generating position..."; searchingFair=true; const ms=1000;
-    function tryNext(){
-      const fen=generateJChessFEN(); let lastCp=null;
-      evalEngine.postMessage('position fen '+fen); evalEngine.postMessage('go movetime '+ms);
+  /* ===================== Fair FEN generation helpers ===================== */
+  function evalFairnessOnce(fen, ms=1000){
+    return new Promise(resolve=>{
+      let lastCp=null;
       function onEval({data}){
-        const line=data.trim();
-        if(line.startsWith('info') && line.includes('score cp')) lastCp=+line.match(/score cp\s+(-?\d+)/)[1];
-        if(line.startsWith('info') && line.includes('score mate')){ const m=+line.match(/score mate\s+(-?\d+)/)[1]; lastCp=m>0?5000:-5000; }
+        const line = (data||'').trim();
+        if(line.startsWith('info') && line.includes('score cp')){
+          const m=line.match(/score cp\s+(-?\d+)/);
+          if(m) lastCp=+m[1];
+        }
+        if(line.startsWith('info') && line.includes('score mate')){
+          const m=line.match(/score mate\s+(-?\d+)/);
+          if(m){ const mv=+m[1]; lastCp = mv>0 ? 5000 : -5000; }
+        }
         if(line.startsWith('bestmove')){
           evalEngine.removeEventListener('message',onEval);
-          const fair=Math.abs(lastCp||0)<=40;
-          if(fair){ searchingFair=false; afterStartWithFEN(fen); } else setTimeout(tryNext,30);
+          resolve(Math.abs(lastCp||0) <= 40);
         }
       }
       evalEngine.addEventListener('message',onEval);
+      evalEngine.postMessage('position fen '+fen);
+      evalEngine.postMessage('go movetime '+ms);
+    });
+  }
+
+  function genRandomJChessFEN(){
+    const W=generateBackRank().toUpperCase(); const B=generateBackRank().toLowerCase();
+    return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
+  }
+
+  async function findLocalFairFEN(){
+    // ~1s per try, ~22% hit; expect ~4–5s average
+    while(true){
+      const fen = genRandomJChessFEN();
+      const fair = await evalFairnessOnce(fen, 1000);
+      if (fair) return fen;
     }
-    tryNext();
+  }
+
+  /* ===================== Server pool interactions ===================== */
+  async function getPoolStats(){
+    try{
+      const r = await fetch(FAIR_API + '/stats', { cache:'no-store' });
+      if(!r.ok) return null;
+      return await r.json();
+    }catch{ return null; }
+  }
+
+  async function tryFetchFairFromServer(){
+    // returns {fen} or null if 204/empty
+    try{
+      const r = await fetch(FAIR_API + '/fairfen', { cache:'no-store' });
+      if (r.status === 204) return null;
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j && j.fen ? j : null;
+    }catch{ return null; }
+  }
+
+  async function submitToServer(fen){
+    try{
+      await fetch(FAIR_API + '/submit', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ fen })
+      });
+    }catch{}
+  }
+
+  /* ===================== Start modes ===================== */
+  function startStandard(){
+    spinner.style.display='block'; clearStatus();
+    statusDiv.textContent="Generating position...";
+    setTimeout(()=>afterStartWithFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),750);
+  }
+
+  function startJChessSymmetric(){
+    spinner.style.display='block'; clearStatus();
+    statusDiv.textContent="Generating position...";
+    setTimeout(()=>{
+      const fen = generateSymmetricJChessFEN();
+      afterStartWithFEN(fen);
+    }, 900);
+  }
+
+  async function startFairJChessPlus(){
+    spinner.style.display='block'; clearStatus();
+    statusDiv.textContent="Generating position...";
+
+    // 1) Try server pool first
+    const served = await tryFetchFairFromServer();
+    if (served && served.fen){
+      // Keep UX consistent with other modes
+      setTimeout(()=>afterStartWithFEN(served.fen), 900);
+      return;
+    }
+
+    // 2) Fallback to local fair search, then play
+    const localFen = await findLocalFairFEN();
+    afterStartWithFEN(localFen);
+
+    // 3) Best-effort: push it to server so future users are instant
+    submitToServer(localFen);
   }
 
   function afterStartWithFEN(fen){
@@ -706,11 +778,11 @@ function adjustSigma(base){
 
   /* ===================== MENU ===================== */
   const startBtn=document.getElementById('startBtn');
-const typeButtons = [
-  ['standard', '#standardBtn'],
-  ['sym', '#symJchessBtn'],
-  ['fair', '#fairBtn']
-];
+  const typeButtons = [
+    ['standard', '#standardBtn'],
+    ['sym',      '#symJchessBtn'],
+    ['fair',     '#fairBtn']
+  ];
   typeButtons.forEach(([m,sel])=>{
     document.querySelector(sel).addEventListener('click',()=>{
       mode=m;
@@ -725,11 +797,6 @@ const typeButtons = [
     });
   });
 
-  levelSelect.addEventListener('change',function(){
-    currentLevel=+this.value;
-    updateLevelSelectBackground();
-    setOpponentMeta();
-  });
   colourSelect.addEventListener('change',function(){
     chosenColour=this.value;
     updateColourSelectBackground();
@@ -753,20 +820,21 @@ const typeButtons = [
 
     if(mode==='standard'){
       finishPreview('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-    }else if(mode==='jchess' || mode==='sym'){
-      const fen=(mode==='sym')?generateSymmetricJChessFEN():generateJChessFEN();
-      finishPreview(fen);
+    }else if(mode==='sym'){
+      finishPreview(generateSymmetricJChessFEN());
     }else{
-      const ms=800; let lastCp=null; const fen=generateJChessFEN();
+      // For J-Chess+, show a fair preview (local eval, not server-consuming)
+      const ms=800; let lastCp=null; const fen=genRandomJChessFEN();
       evalEngine.postMessage('position fen '+fen);
       evalEngine.postMessage('go movetime '+ms);
       function onEval({data}){
-        const line=data.trim();
-        if(line.startsWith('info') && line.includes('score cp')) lastCp=+line.match(/score cp\s+(-?\d+)/)[1];
-        if(line.startsWith('info') && line.includes('score mate')){ const m=+line.match(/score mate\s+(-?\d+)/)[1]; lastCp=m>0?5000:-5000; }
+        const line=(data||'').trim();
+        if(line.startsWith('info') && line.includes('score cp')){ const m=line.match(/score cp\s+(-?\d+)/); if(m) lastCp=+m[1]; }
+        if(line.startsWith('info') && line.includes('score mate')){ const m=line.match(/score mate\s+(-?\d+)/); if(m){ const mv=+m[1]; lastCp = mv>0 ? 5000 : -5000; } }
         if(line.startsWith('bestmove')){
           evalEngine.removeEventListener('message',onEval);
-          if(Math.abs(lastCp||0)<=40) finishPreview(fen); else queuePreview();
+          if(Math.abs(lastCp||0)<=40) finishPreview(fen);
+          else queuePreview();
         }
       }
       evalEngine.addEventListener('message',onEval);
@@ -774,26 +842,26 @@ const typeButtons = [
   }
 
   // Start
-  startBtn.addEventListener('click',()=>{
+  startBtn.addEventListener('click', async ()=>{
     if(!mode) return;
     isHumanBlack = (chosenColour==='black') ? true : (chosenColour==='white' ? false : Math.random()<0.5);
     manualFlip=false;
     renderCards();
     showPlay();
 
-    const fenToUse = previewFen || (mode==='standard'
-      ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-      : (mode==='sym' ? generateSymmetricJChessFEN() : generateJChessFEN())
-    );
-
     clearStatus(); overlay.classList.remove('show');
 
-    if (mode==='fair' && previewFen){
-      afterStartWithFEN(previewFen);
-    } else if (mode==='standard' || mode==='jchess' || mode==='sym'){
-      afterStartWithFEN(fenToUse);
-    } else {
-      startFairJChess();
+    if (mode==='standard'){
+      startStandard();
+      return;
+    }
+    if (mode==='sym'){
+      startJChessSymmetric();
+      return;
+    }
+    if (mode==='fair'){
+      await startFairJChessPlus();
+      return;
     }
   });
 
@@ -839,8 +907,28 @@ const typeButtons = [
     setTimeout(()=>overlay.classList.remove('show'),2000);
   });
 
+  /* ===================== Background seeding (once per load) ===================== */
+  (async function silentBackfill(){
+    if (backfilledOnce) return;
+    backfilledOnce = true;
+
+    // Lightweight guard: if pool appears near full, skip generating
+    const stats = await getPoolStats().catch(()=>null);
+    if (stats && typeof stats.ready === 'number' && stats.ready >= POOL_CAP) return;
+
+    try{
+      const fen = await findLocalFairFEN();
+      // Best-effort submit; server dedupes and caps
+      submitToServer(fen);
+    }catch{
+      // ignore
+    }
+  })();
+
   /* ===================== Init ===================== */
   const previewBoardStart='8/8/8/8/8/8/8/8 w - - 0 1';
+  const gameObj = new Chess();
+  gameObj.load(startFen);
   game.load(startFen); board.position(startFen,false); setOrientation(); clearStatus();
   renderCards();
   previewBoard.position(previewBoardStart,false);
