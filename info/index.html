@@ -159,46 +159,47 @@
 
     <section>
       <h2>Rules</h2>
-      <p>The rules of J-Chess are simple. All standard chess rules apply except:</p>
+      <p>The rules of <strong>J-Chess</strong> are simple. All chess rules apply except:</p>
       <ul>
-        <li>There is no castling.</li>
-        <li>The back rank is randomised independently for both sides.</li>
-        <li>The king does not need to start between the rooks.</li>
+        <li>The back rank is <strong>randomised symmetrically.</strong></li>
+        <li>The only constraint is that the Bishops must be on opposite colour squares. The King does not need to be between the rooks.</li>
+        <li>There is <strong>no castling</strong>.</li>
       </ul>
+      <p><strong>J-Chess²</strong> follows the same rules, except the <strong>back ranks are randomised independently</strong> for each side.</p>
     </section>
 
-    <section>
       <h2>How Many Positions?</h2>
-      <p>
-        One side has 2,880 legal back-rank arrangements. Randomising both sides independently yields 2,880 × 2,880 = 8,294,400 possible starting positions.
-      </p>
-      <p>
-        For a bit of added fun, that means if you press the <strong>J-Chess</strong> button, there is a 1 in 2,880 chance the position will be symmetrical. Also a 1 in 8,294,400 chance you get the standard starting position and if you press  <strong>Symmetrical J-Chess</strong> then a 1 in 2,880 chance of getting the standard starting position (without castling of course).
-      </p>
-    </section>
 
-    <section>
-      <h2>Fair Positions</h2>
-      <p>
-        A sample of 10,000 random starts was analysed (Stockfish 17.1, 1 second each). This resulted in about 22 % of positions falling within ±0.40 pawns, so roughly 1.8 million of all positions are “fair”. The <strong>Fair J-Chess</strong> button evaluates a position every second until it finds a fair position. With ~22 % fair you will likely get a position in <5s.
-      </p>
-      <figure>
-        <img src="/histogram.png" alt="Histogram of 10,000 J-Chess starting position evaluations showing fair range">
-        <figcaption>Distribution of 10,000 random starting evaluations. Highlighted band ±0.40 pawns.</figcaption>
-      </figure>
-    </section>
+      <p>There are 2,880 legal back rank arrangements for one side.<br>
+      When you press the <strong>J-Chess</strong> button, one of these layouts is chosen and used for both players, giving 2,880 possible starting positions.</p>
+
+      <p>Since both sides share the same setup, practically all of these positions are <strong>fair</strong>. White usually has a small advantage like in standard chess.</p>
+
+      <p>In <strong>J-Chess²</strong>, each side’s back rank is randomised separately.<br>
+      That makes <strong>2,880 × 2,880 = 8,294,400</strong> possible combinations in total.</p>
+
+      <p>However, not every position is balanced. When tested with Stockfish, roughly 1 in 4 of these positions were found to be roughly fair. That makes around 2 million fair <strong>J-Chess²</strong> positions.</p>
+
+      <p>When you press the <strong>J-Chess²</strong> button, it only uses these fair positions, not all 8 million.<br>
+      This keeps the games interesting while avoiding setups that strongly favour one side.</p>
 
     <section>
       <h2>Why I Made This</h2>
-      <p>
-        I’m not keen on deep opening memorisation. I prefer pattern recognition that you can use in completely different positions. Chess960 helps, but you can still prepare a modest subset even lightly. If it is possible, the top players will do it. Castling is also quite complicated for beginners to learn.
-      </p>
-      <p>
-        Here the sheer number of balanced starting positions makes prep pointless. Dropping castling and independently randomising each back rank boosts variety further. Independent randomising makes sure that the kings don’t always face each other. Without castling this would result in lack of opposite-side castling-like positions. With independent randomising, the kings can be in completely different locations or both tucked away safely.
-      </p>
-      <p>
-        Each side has different pros and cons. That’s what I like about J-Chess. You never know what position you’ll get. You have to make the most of what you’ve been given, knowing that the starting setup is roughly equal.
-      </p>
+
+      <p>I’m not keen on deep opening memorisation. I prefer pattern recognition that you can use in completely different positions. 
+        Chess960 helps, but you can still prepare a small set of openings if you put a lot of effort in. If it is possible, the top players will do it.
+        In <strong>J-Chess</strong> there are 3x as many possible possitions as 960 making memorising harder.
+        Castling is also quite complicated for beginners to learn, especially in 960. I find no-castling chess extremely exciting, so these two points 
+        combined made me remove the castling rule entirely.</p>
+
+      <p>Here the sheer number of balanced starting positions makes prep pointless. Dropping castling and using the same randomised 
+        back rank for both sides keeps the game fair. <strong>J-Chess²</strong>, on the other hand, randomises each back rank independently. 
+        This makes sure that the kings don’t always face each other. Without castling this would result in lack of opposite-side castling-like 
+        positions. With independent randomising, the kings can be in completely different locations or both tucked away safely.</p>
+
+      <p>Each side has different pros and cons. That’s what I like about <strong>J-Chess</strong>. You never know what position you’ll get. 
+        You have to make the most of what you’ve been given, knowing that the starting setup is roughly equal.</p>
+
     </section>
   </div>
 
