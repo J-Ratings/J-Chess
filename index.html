@@ -37,14 +37,24 @@
       --gold-1:#f4d35e; --gold-2:#d9b949; --gold-3:#bda237;
       --silver-1:#e7e7e7; --silver-2:#cfcfcf; --silver-3:#b6b6b6;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-      background:#f5f5f5;color:#222;-webkit-font-smoothing:antialiased;
-      font-size:17px;line-height:1.55;
-    }
-    html, body { overflow-x: hidden; }
+*{box-sizing:border-box}
+html,body{height:100%}
+
+/* NEW: keep vertical scrollbar space so layout does not jump when dragging pieces */
+html{
+  overflow-y: scroll;
+}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  background:#f5f5f5;
+  color:#222;
+  -webkit-font-smoothing:antialiased;
+  font-size:17px;
+  line-height:1.55;
+  overflow-x:hidden; /* was on html,body together before */
+}
 
     .site-bar{
       display:flex;align-items:center;justify-content:space-between;
@@ -190,6 +200,12 @@
 
     /* ===== Highlights ===== */
 .highlight-white,.highlight-black{ box-shadow: inset 0 0 0 4px #ffff00; }
+
+/* Square chosen as the starting point for click-to-move */
+.selected-square{
+  box-shadow: inset 0 0 0 4px #00aaff;
+}
+
 
 /* Overlay that shows "You are the nth..." */
 .board-overlay{
@@ -489,26 +505,61 @@ function setOpponentMeta(){
   /* ===================== Board ===================== */
   const game = new Chess();
 
+  // Click-to-move state
+  let clickFromSquare = null;
+  let isDraggingPiece = false;
+
+  function clearClickSelection(){
+    clickFromSquare = null;
+    $('#board').find('.selected-square').removeClass('selected-square');
+  }
+
   function onDragStart(source, piece) {
     if (resigned || game.game_over()) return false;
+
     const t = game.turn();
-    if (!isHumanBlack) return piece[0] === 'w' && t === 'w';
-    return !waitingForEngineFirst && piece[0] === 'b' && t === 'b';
+    let allowed = false;
+
+    if (!isHumanBlack) {
+      // Human is White
+      allowed = (piece[0] === 'w' && t === 'w');
+    } else {
+      // Human is Black, may need to wait for engine to move first
+      allowed = (!waitingForEngineFirst && piece[0] === 'b' && t === 'b');
+    }
+
+    if (!allowed) return false;
+
+    // If we start dragging, clear any click-selection
+    isDraggingPiece = true;
+    clearClickSelection();
+    return true;
   }
+
   function onDrop(source, target) {
     const mv = game.move({ from: source, to: target, promotion: 'q' });
     if (!mv) return 'snapback';
+
     requestAnimationFrame(() => board.position(game.fen(), false));
     checkGameEnd();
-    if (!game.game_over()) handleEngineMove(source, target);
+    if (!game.game_over()) {
+      // Let the existing engine logic handle highlights + reply
+      handleEngineMove(source, target);
+    }
   }
-  function onSnapEnd(){ board.position(game.fen(), false); }
+
+  function onSnapEnd(){
+    isDraggingPiece = false;
+    board.position(game.fen(), false);
+  }
 
   const board = Chessboard('board', {
     draggable: true,
     position: startFen,
     pieceTheme: 'chessboardjs-1.0.0/img/chesspieces/wikipedia/{piece}.png',
-    onDragStart, onDrop, onSnapEnd
+    onDragStart,
+    onDrop,
+    onSnapEnd
   });
 
   const previewBoard = Chessboard('previewBoard', {
@@ -523,11 +574,13 @@ function setOpponentMeta(){
     const scene = document.querySelector('.centre');
     const wrap  = document.getElementById('boardWrap');
     if (!scene || !wrap) return;
+
     const styles = getComputedStyle(scene);
     const w = scene.clientWidth  - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
     const h = scene.clientHeight - parseFloat(styles.paddingTop)  - parseFloat(styles.paddingBottom);
     const isMobile = window.matchMedia('(max-width: 900px)').matches;
     const size = Math.floor(isMobile ? w : Math.min(w, h));
+
     wrap.style.width  = size + 'px';
     wrap.style.height = size + 'px';
     board.resize();
@@ -541,12 +594,85 @@ function setOpponentMeta(){
   }
 
   const $board = $('#board');
-  function clearHighlights(){ $board.find('.square-55d63').removeClass('highlight-white highlight-black'); }
+
+  function getSquareFromElement(el){
+    const classes = el.className.split(' ');
+    for (const c of classes){
+      if (/^square-[a-h][1-8]$/.test(c)) {
+        // 'square-e4' -> 'e4'
+        return c.substring(7);
+      }
+    }
+    return null;
+  }
+
+  function clearHighlights(){
+    $board.find('.square-55d63').removeClass('highlight-white highlight-black');
+  }
+
   function highlightMove(from, to, col){
     clearHighlights();
     $board.find(`.square-${from}`).addClass(`highlight-${col}`);
     $board.find(`.square-${to}`).addClass(`highlight-${col}`);
   }
+
+  // Click-to-move: click your piece, then click the destination square
+  $board.on('click', '.square-55d63', function () {
+    if (resigned || game.game_over()) return;
+    if (isDraggingPiece) return; // ignore clicks coming from drag operations
+
+    const square = getSquareFromElement(this);
+    if (!square) return;
+
+    const turn = game.turn();
+    const humansTurn = (!isHumanBlack && turn === 'w') || (isHumanBlack && turn === 'b');
+    if (!humansTurn || (isHumanBlack && waitingForEngineFirst)) {
+      clearClickSelection();
+      return;
+    }
+
+    const piece = game.get(square);
+    const isHumansPiece = piece && (
+      (!isHumanBlack && piece.color === 'w') ||
+      ( isHumanBlack && piece.color === 'b')
+    );
+
+    // First click: choose a piece
+    if (!clickFromSquare) {
+      if (!isHumansPiece) return;
+      clickFromSquare = square;
+      $(this).addClass('selected-square');
+      return;
+    }
+
+    // Clicking the same square again cancels selection
+    if (clickFromSquare === square) {
+      clearClickSelection();
+      return;
+    }
+
+    // Second click: try to make the move
+    const mv = game.move({ from: clickFromSquare, to: square, promotion: 'q' });
+    if (!mv) {
+      // Illegal move: if you clicked another of your own pieces, switch selection
+      if (isHumansPiece) {
+        clearClickSelection();
+        clickFromSquare = square;
+        $(this).addClass('selected-square');
+      }
+      return;
+    }
+
+    clearClickSelection();
+
+    // Update board and let engine reply, same as drag-and-drop path
+    requestAnimationFrame(() => board.position(game.fen(), false));
+    checkGameEnd();
+    if (!game.game_over()) {
+      handleEngineMove(mv.from, mv.to);
+    }
+  });
+
 
   /* ===================== Engines ===================== */
   const engine=new Worker('engine/stockfish-17-lite-single.js');
