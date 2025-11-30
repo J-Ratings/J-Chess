@@ -207,7 +207,7 @@ body{
 }
 
 
-/* Overlay that shows "You are the nth..." */
+/* Overlay that shows banners on boards */
 .board-overlay{
   position:absolute;
   inset:0;
@@ -280,6 +280,10 @@ body{
       <div id="previewBoard"></div>
       <div id="previewSpinner"></div>
       <div id="previewMask"><span>PREVIEW</span></div>
+      <!-- NEW preview overlay for generation count -->
+      <div id="previewOverlay" class="board-overlay">
+        <div class="banner" id="previewOverlayText"></div>
+      </div>
     </div>
   </div>
 
@@ -355,27 +359,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const startBtn = document.getElementById('startBtn');
   const overlay = document.getElementById('boardOverlay');
   const overlayText = document.getElementById('overlayText');
+  const previewOverlay = document.getElementById('previewOverlay');
+  const previewOverlayText = document.getElementById('previewOverlayText');
 
   /* ===================== Level colours & painting ===================== */
-function computeLevelColour(level){
-  const palette = [
-    '#4dff56', '#86fa33', '#aaf722', '#bdf21a', '#cce915',
-    '#d6df12', '#ddd411', '#e2ca11', '#f1bc11', '#e7b411',
-    '#e8aa10', '#e99f10', '#ea9410', '#ea8810', '#eb7b10',
-    '#ec6e10', '#ed5f10', '#ef4b10', '#f02e10', '#eb2020'
-  ];
-  return palette[level - 1] || '#ddd';
-}
+  function computeLevelColour(level){
+    const palette = [
+      '#4dff56', '#86fa33', '#aaf722', '#bdf21a', '#cce915',
+      '#d6df12', '#ddd411', '#e2ca11', '#f1bc11', '#e7b411',
+      '#e8aa10', '#e99f10', '#ea9410', '#ea8810', '#eb7b10',
+      '#ec6e10', '#ed5f10', '#ef4b10', '#f02e10', '#eb2020'
+    ];
+    return palette[level - 1] || '#ddd';
+  }
 
-// Populate levels 1..20 (without Elo)
-levelSelect.innerHTML = '';
-for (let i = 1; i <= 20; i++){
-  const opt = document.createElement('option');
-  opt.value = String(i);
-  opt.textContent = `Lv.${i}`;
-  if (i === 1) opt.selected = true;
-  levelSelect.appendChild(opt);
-}
+  // Populate levels 1..20 (without Elo)
+  levelSelect.innerHTML = '';
+  for (let i = 1; i <= 20; i++){
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = `Lv.${i}`;
+    if (i === 1) opt.selected = true;
+    levelSelect.appendChild(opt);
+  }
 
   // Colour options in the dropdown menu
   (function paintColourOptions(){
@@ -445,14 +451,14 @@ for (let i = 1; i <= 20; i++){
   youCard.style.gap = '14px';
   youCard.innerHTML = `<div class="player-avatar" style="width:112px;height:112px;border-radius:10px;background:#eef3f7;display:grid;place-items:center;font-size:2.4rem">👤</div><div><div class="player-name" style="font-weight:800;font-size:1.3rem">You</div></div>`;
 
-function setOpponentMeta(){
-  const badge = document.getElementById('oppBadge');
-  if (badge){
-    badge.textContent = `Lv.${currentLevel}`;
-    badge.style.background = computeLevelColour(currentLevel);
-    badge.style.color = (currentLevel >= 16) ? '#fff' : '#000';
+  function setOpponentMeta(){
+    const badge = document.getElementById('oppBadge');
+    if (badge){
+      badge.textContent = `Lv.${currentLevel}`;
+      badge.style.background = computeLevelColour(currentLevel);
+      badge.style.color = (currentLevel >= 16) ? '#fff' : '#000';
+    }
   }
-}
   setOpponentMeta();
 
   function renderCards(){
@@ -493,13 +499,20 @@ function setOpponentMeta(){
     const suff=(v>=11&&v<=13)?'th':(n%10===1?'st':n%10===2?'nd':n%10===3?'rd':'th');
     return `${formatted}${suff}`;
   }
-  function showCountOverlay(fen){
+
+  // NEW: show generation count overlay on preview, not in-game
+  function showPreviewCountOverlay(fen){
+    if (!previewOverlay || !previewOverlayText) return;
+
     fetch(`https://round-frost-df74.stjukes.workers.dev/?fen=${encodeURIComponent(fen)}`)
-      .then(r=>r.json()).then(d=>{
-        const c=Number(d.count||0);
-        overlayText.textContent=`You are the ${formatOrdinal(c)} to play this position`;
-        overlay.classList.add('show'); setTimeout(()=>overlay.classList.remove('show'),2000);
-      }).catch(()=>{});
+      .then(r => r.json())
+      .then(d => {
+        const c = Number(d.count || 0);
+        previewOverlayText.textContent = `${formatOrdinal(c)} time this position has been generated`;
+        previewOverlay.classList.add('show');
+        setTimeout(() => previewOverlay.classList.remove('show'), 2000);
+      })
+      .catch(() => {});
   }
 
   /* ===================== Board ===================== */
@@ -762,57 +775,57 @@ function setOpponentMeta(){
     engine.postMessage('go nodes '+nodes);
   }
 
-// Engine plays the side to move from the current position (used when human is Black)
-function engineReplyFromCurrent(){
-  const nodes = nodesByLevel[currentLevel];
-  const sigma = adjustSigma(sigmaByLevel[currentLevel]);
-  const cand = {};
-  let seen = false;
-  const startTime = performance.now();
+  // Engine plays the side to move from the current position (used when human is Black)
+  function engineReplyFromCurrent(){
+    const nodes = nodesByLevel[currentLevel];
+    const sigma = adjustSigma(sigmaByLevel[currentLevel]);
+    const cand = {};
+    let seen = false;
+    const startTime = performance.now();
 
-  function listener({ data }){
-    const line = (data || '').trim();
+    function listener({ data }){
+      const line = (data || '').trim();
 
-    if (line.startsWith('info') && line.includes('multipv')){
-      const mpv = +line.match(/multipv\s+(\d+)/)[1];
-      const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
-      const cpm = line.match(/score cp\s+(-?\d+)/);
-      const mat = line.match(/score mate\s+(-?\d+)/);
-      if (mpv && pv && (cpm || mat)){
-        const cp = cpm ? +cpm[1] : ( +mat[1] > 0 ? 100000 - (+mat[1])*100 : -100000 - (+mat[1])*100 );
-        cand[mpv] = { move: pv, cp };
-        seen = true;
+      if (line.startsWith('info') && line.includes('multipv')){
+        const mpv = +line.match(/multipv\s+(\d+)/)[1];
+        const pv  = line.match(/pv\s+([a-h][1-8][a-h][1-8][qrbn]?)/)[1];
+        const cpm = line.match(/score cp\s+(-?\d+)/);
+        const mat = line.match(/score mate\s+(-?\d+)/);
+        if (mpv && pv && (cpm || mat)){
+          const cp = cpm ? +cpm[1] : ( +mat[1] > 0 ? 100000 - (+mat[1])*100 : -100000 - (+mat[1])*100 );
+          cand[mpv] = { move: pv, cp };
+          seen = true;
+        }
+      }
+
+      if (line.startsWith('bestmove')){
+        engine.removeEventListener('message', listener);
+        if (!seen) return;
+
+        const elapsed = performance.now() - startTime;
+        const delay = Math.max(0, 500 - elapsed);
+
+        setTimeout(() => {
+          if (resigned) return;
+
+          const { pick } = thresholdSelect(Object.values(cand), sigma);
+          const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
+          const col = (game.turn() === 'w') ? 'black' : 'white'; // highlight colour for engine side
+          highlightMove(f, t, col);
+
+          const emv = game.move({ from: f, to: t, promotion: 'q' });
+          board.position(game.fen(), false);
+          waitingForEngineFirst = false;
+          if (typeof playForMove === 'function') playForMove(emv);
+          checkGameEnd();
+        }, delay);
       }
     }
 
-    if (line.startsWith('bestmove')){
-      engine.removeEventListener('message', listener);
-      if (!seen) return;
-
-      const elapsed = performance.now() - startTime;
-      const delay = Math.max(0, 500 - elapsed);
-
-      setTimeout(() => {
-        if (resigned) return;
-
-        const { pick } = thresholdSelect(Object.values(cand), sigma);
-        const f = pick.move.slice(0,2), t = pick.move.slice(2,4);
-        const col = (game.turn() === 'w') ? 'black' : 'white'; // highlight colour for engine side
-        highlightMove(f, t, col);
-
-        const emv = game.move({ from: f, to: t, promotion: 'q' });
-        board.position(game.fen(), false);
-        waitingForEngineFirst = false;
-        if (typeof playForMove === 'function') playForMove(emv);
-        checkGameEnd();
-      }, delay);
-    }
+    engine.addEventListener('message', listener);
+    engine.postMessage('position fen ' + game.fen());
+    engine.postMessage('go nodes ' + nodes);
   }
-
-  engine.addEventListener('message', listener);
-  engine.postMessage('position fen ' + game.fen());
-  engine.postMessage('go nodes ' + nodes);
-}
 
 
   function checkGameEnd(){
@@ -909,9 +922,13 @@ function engineReplyFromCurrent(){
     game.load(fen); board.position(fen,false);
     clearHighlights(); setOrientation();
     overlay.classList.remove('show');
-    showCountOverlay(fen);
     setOpponentMeta();
-    if(isHumanBlack){ waitingForEngineFirst=true; engineReplyFromCurrent(); } else { waitingForEngineFirst=false; }
+    if(isHumanBlack){
+      waitingForEngineFirst=true;
+      engineReplyFromCurrent();
+    } else {
+      waitingForEngineFirst=false;
+    }
   }
 
   async function queuePreview(){
@@ -925,6 +942,8 @@ function engineReplyFromCurrent(){
         previewSpinner.style.display='none';
         previewFen = fen;
         startBtn.disabled = false;
+        // NEW: show "nth time position generated" on the preview
+        showPreviewCountOverlay(fen);
       }, waitMore);
     };
 
@@ -932,16 +951,29 @@ function engineReplyFromCurrent(){
     previewSpinner.style.display='block';
     previewFen = null;
 
-    if(mode==='standard'){ finishPreview('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); return; }
-    if(mode==='sym'){ finishPreview(generateSymmetricJChessFEN()); return; }
+    if(mode==='standard'){
+      finishPreview('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+      return;
+    }
+    if(mode==='sym'){
+      finishPreview(generateSymmetricJChessFEN());
+      return;
+    }
 
     // J-Chess+ (fair)
     let served = null;
     try { served = await tryFetchFairFromServer(); } catch {}
-    if (served && served.fen){ finishPreview(served.fen); return; }
+    if (served && served.fen){
+      finishPreview(served.fen);
+      return;
+    }
 
     const localFen = await findLocalFairFENWithCutoff();
-    if (localFen){ finishPreview(localFen); submitToServer(localFen); return; }
+    if (localFen){
+      finishPreview(localFen);
+      submitToServer(localFen);
+      return;
+    }
 
     // cut-off fallback
     finishPreview(generateJChessFEN());
@@ -992,7 +1024,12 @@ function engineReplyFromCurrent(){
     game.load(startFen); board.position(startFen,false);
     clearHighlights(); setOrientation();
     renderCards();
-    if(isHumanBlack){ waitingForEngineFirst=true; engineReplyFromCurrent(); } else { waitingForEngineFirst=false; }
+    if(isHumanBlack){
+      waitingForEngineFirst=true;
+      engineReplyFromCurrent();
+    } else {
+      waitingForEngineFirst=false;
+    }
     overlay.classList.remove('show');
   });
   document.getElementById('copyPgnBtn').addEventListener('click',()=>{
