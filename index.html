@@ -348,6 +348,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let resigned = false;
   let previewFen = null;
   let backfilledOnce = false;
+  let previewLoading = false;   // NEW
+
 
   /* ===================== Elements ===================== */
   const levelSelect = document.getElementById('levelSelect');
@@ -931,67 +933,84 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function queuePreview(){
-    if(!mode) return;
-    const t0 = performance.now();
-    const finishPreview = (fen) => {
-      const elapsed = performance.now() - t0;
-      const waitMore = Math.max(0, PREVIEW_MIN_WAIT - elapsed);
-      setTimeout(()=>{
-        previewBoard.position(fen,false);
-        previewSpinner.style.display='none';
-        previewFen = fen;
-        startBtn.disabled = false;
-        // NEW: show "nth time position generated" on the preview
-        showPreviewCountOverlay(fen);
-      }, waitMore);
-    };
+async function queuePreview(){
+  if (!mode) return;
 
-    startBtn.disabled = (mode === 'fair');
-    previewSpinner.style.display='block';
-    previewFen = null;
+  // NEW: prevent spam — disable mode buttons during preview load
+  previewLoading = true;
+  modeButtons.forEach(btn => { if (btn) btn.disabled = true; });
 
-    if(mode==='standard'){
-      finishPreview('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-      return;
-    }
-    if(mode==='sym'){
-      finishPreview(generateSymmetricJChessFEN());
-      return;
-    }
+  const t0 = performance.now();
+  const finishPreview = (fen) => {
+    const elapsed = performance.now() - t0;
+    const waitMore = Math.max(0, PREVIEW_MIN_WAIT - elapsed);
+    setTimeout(()=>{
+      previewBoard.position(fen,false);
+      previewSpinner.style.display='none';
+      previewFen = fen;
+      startBtn.disabled = false;
 
-    // J-Chess+ (fair)
-    let served = null;
-    try { served = await tryFetchFairFromServer(); } catch {}
-    if (served && served.fen){
-      finishPreview(served.fen);
-      return;
-    }
+      // show preview count overlay
+      showPreviewCountOverlay(fen);
 
-    const localFen = await findLocalFairFENWithCutoff();
-    if (localFen){
-      finishPreview(localFen);
-      submitToServer(localFen);
-      return;
-    }
+      // NEW: unlock mode buttons
+      previewLoading = false;
+      modeButtons.forEach(btn => { if (btn) btn.disabled = false; });
 
-    // cut-off fallback
-    finishPreview(generateJChessFEN());
+    }, waitMore);
+  };
+
+  startBtn.disabled = (mode === 'fair');
+  previewSpinner.style.display='block';
+  previewFen = null;
+
+  if(mode==='standard'){
+    finishPreview('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+    return;
   }
+  if(mode==='sym'){
+    finishPreview(generateSymmetricJChessFEN());
+    return;
+  }
+
+  // J-Chess (fair)
+  let served = null;
+  try { served = await tryFetchFairFromServer(); } catch {}
+  if (served && served.fen){
+    finishPreview(served.fen);
+    return;
+  }
+
+  const localFen = await findLocalFairFENWithCutoff();
+  if (localFen){
+    finishPreview(localFen);
+    submitToServer(localFen);
+    return;
+  }
+
+  // fallback
+  finishPreview(generateJChessFEN());
+}
 
   const typeButtons = [
     ['standard', '#standardBtn'],
     ['sym',      '#symJchessBtn'],
     ['fair',     '#fairBtn']
   ];
-  typeButtons.forEach(([m,sel])=>{
-    document.querySelector(sel).addEventListener('click',()=>{
+
+  // NEW: Flat list of the actual button elements
+const modeButtons = typeButtons.map(([, sel]) => document.querySelector(sel));
+
+typeButtons.forEach(([m,sel])=>{
+  const btn = document.querySelector(sel);
+  btn.addEventListener('click',()=>{
+      if (previewLoading) return;  // NEW: block clicks while loading
       mode=m;
       typeButtons.forEach(([,s])=>document.querySelector(s).setAttribute('aria-pressed','false'));
-      document.querySelector(sel).setAttribute('aria-pressed','true');
+      btn.setAttribute('aria-pressed','true');
       queuePreview();
-    });
   });
+});
 
   // Start always uses the preview FEN (no recalculation)
   document.getElementById('startBtn').addEventListener('click', async ()=>{
