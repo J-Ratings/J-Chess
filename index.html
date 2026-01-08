@@ -329,9 +329,7 @@ body{
 document.addEventListener('DOMContentLoaded', () => {
   /* ===================== Config ===================== */
   const FAIR_API = 'https://polished-unit-fa43.stjukes.workers.dev';
-  const POOL_CAP = 100;
   const PREVIEW_MIN_WAIT = 750;
-  const FAIR_FIND_CUTOFF_MS = 5000;
 
   const nodesByLevel = {1:5e5,2:5e5,3:5e5,4:5e5,5:5e5,6:5e5,7:5e5,8:5e5,9:5e5,10:5e5,11:5e5,12:5e5,13:5e5,14:5e5,15:1e6,16:1e6,17:1e6,18:2e6,19:2e6,20:2e6};
   const sigmaByLevel = {1:10000,2:1000,3:400,4:300,5:260,6:230,7:190,8:170,9:140,10:110,11:95,12:70,13:55,14:40,15:30,16:25,17:18,18:12,19:6,20:0};
@@ -849,42 +847,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(()=>overlay.classList.remove('show'),2000);
   }
 
-  /* ===================== Fair FEN (with 5s cut-off) ===================== */
-  function evalFairnessOnce(fen, ms=1000){
-    return new Promise(resolve=>{
-      let lastCp=null;
-      function onEval({data}){
-        const line = (data||'').trim();
-        if(line.startsWith('info') && line.includes('score cp')){
-          const m=line.match(/score cp\s+(-?\d+)/); if(m) lastCp=+m[1];
-        }
-        if(line.startsWith('info') && line.includes('score mate')){
-          const m=line.match(/score mate\s+(-?\d+)/);
-          if(m){ const mv=+m[1]; lastCp = mv>0 ? 5000 : -5000; }
-        }
-        if(line.startsWith('bestmove')){
-          evalEngine.removeEventListener('message',onEval);
-          resolve(Math.abs(lastCp||0) <= 40);
-        }
-      }
-      evalEngine.addEventListener('message',onEval);
-      evalEngine.postMessage('position fen '+fen);
-      evalEngine.postMessage('go movetime '+ms);
-    });
-  }
   function genRandomJChessFEN(){
     const W=generateBackRank().toUpperCase(); const B=generateBackRank().toLowerCase();
     return `${B}/pppppppp/8/8/8/8/PPPPPPPP/${W} w - - 0 1`;
   }
-  async function findLocalFairFENWithCutoff(maxMs=FAIR_FIND_CUTOFF_MS){
-    const start = performance.now();
-    while (performance.now() - start < maxMs){
-      const fen = genRandomJChessFEN();
-      const fair = await evalFairnessOnce(fen, 1000);
-      if (fair) return fen;
-    }
-    return null;
-  }
+
 
   async function fetchWithTimeout(url, opts={}, timeoutMs=4500){
     const ctrl = new AbortController();
@@ -894,12 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clearTimeout(id); return res;
     }catch(e){ clearTimeout(id); throw e; }
   }
-  async function getPoolStats(){
-    try{
-      const r = await fetchWithTimeout(FAIR_API + '/stats', { cache:'no-store' }, 3000);
-      if(!r.ok) return null; return await r.json();
-    }catch{ return null; }
-  }
+
   async function tryFetchFairFromServer(){
     try{
       const r = await fetchWithTimeout(FAIR_API + '/fairfen', { cache:'no-store' }, 4500);
@@ -909,14 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return j && j.fen ? j : null;
     }catch{ return null; }
   }
-  async function submitToServer(fen){
-    try{
-      await fetchWithTimeout(FAIR_API + '/submit', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ fen })
-      }, 3000);
-    }catch{}
-  }
+
 
   /* ===================== Start modes & preview ===================== */
   function afterStartWithFEN(fen){
@@ -973,24 +928,19 @@ async function queuePreview(){
     return;
   }
 
-  // J-Chess (fair)
-  let served = null;
-  try { served = await tryFetchFairFromServer(); } catch {}
-  if (served && served.fen){
-    finishPreview(served.fen);
-    return;
-  }
+// Double J-Chess (fair): SERVER ONLY
+let served = null;
+try { served = await tryFetchFairFromServer(); } catch {}
 
-  const localFen = await findLocalFairFENWithCutoff();
-  if (localFen){
-    finishPreview(localFen);
-    submitToServer(localFen);
-    return;
-  }
-
-  // fallback
-  finishPreview(generateJChessFEN());
+if (served && served.fen) {
+  finishPreview(served.fen);
+  return;
 }
+
+// If KV is empty, fall back to a random (unverified) position
+finishPreview(generateJChessFEN());
+}
+
 
   const typeButtons = [
     ['standard', '#standardBtn'],
@@ -1074,17 +1024,6 @@ typeButtons.forEach(([m,sel])=>{
     setTimeout(()=>overlay.classList.remove('show'),2000);
   });
 
-  /* ===================== Background seeding (5s cap) ===================== */
-  (async function silentBackfill(){
-    if (backfilledOnce) return;
-    backfilledOnce = true;
-    const stats = await getPoolStats().catch(()=>null);
-    if (stats && typeof stats.ready === 'number' && stats.ready >= POOL_CAP) return;
-    try{
-      const fen = await findLocalFairFENWithCutoff();
-      if (fen) submitToServer(fen);
-    }catch{}
-  })();
 
   /* ===================== Init ===================== */
   renderCards();
