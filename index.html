@@ -906,7 +906,9 @@ async function queuePreview(){
       startBtn.disabled = false;
 
       // show preview count overlay
-      showPreviewCountOverlay(fen);
+      if (mode !== 'standard') {
+  showPreviewCountOverlay(fen);
+}
 
       // NEW: unlock mode buttons
       previewLoading = false;
