@@ -315,7 +315,7 @@ body{
       <button id="undoBtn" class="btn btn-silver btn-small muted">Undo</button>
       <button id="flipBtn" class="btn btn-silver btn-small muted">Flip</button>
       <button id="resetBtn" class="btn btn-silver btn-small muted">Reset</button>
-      <button id="copyPgnBtn" class="btn btn-silver btn-small muted">Copy PGN</button>
+      <button id="lichessBtn" class="btn btn-silver btn-small muted">lichess</button>
       <button id="resignBtn" class="btn btn-silver btn-small" style="grid-column:1/-1">Resign</button>
     </div>
   </aside>
@@ -1003,12 +1003,26 @@ typeButtons.forEach(([m,sel])=>{
     }
     overlay.classList.remove('show');
   });
-  document.getElementById('copyPgnBtn').addEventListener('click',()=>{
-    const pgn=game.pgn()||''; navigator.clipboard.writeText(pgn).then(()=>{
-      overlayText.textContent='PGN copied';
-      overlay.classList.add('show'); setTimeout(()=>overlay.classList.remove('show'),900);
-    });
-  });
+document.getElementById('lichessBtn').addEventListener('click', () => {
+  const headers = [
+    '[Event "J-Chess"]',
+    '[Site "j-chess.org"]'
+  ];
+
+  const standardStart =
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+  if ((startFen || '').trim() && startFen.trim() !== standardStart) {
+    headers.push('[SetUp "1"]');
+    headers.push(`[FEN "${startFen.trim()}"]`);
+  }
+
+  const movesOnly = game.pgn({ newline_char: '\n' }).trim();
+  const pgn = `${headers.join('\n')}\n\n${movesOnly || '*'}`;
+
+  const url = 'https://lichess.org/analysis/pgn/' + encodeURIComponent(pgn);
+  window.open(url, '_blank');
+});
   document.getElementById('undoBtn').addEventListener('click',()=>{
     if(resigned) return;
     const turn=game.turn(); const first=game.undo();
